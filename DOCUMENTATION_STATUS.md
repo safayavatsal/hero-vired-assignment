@@ -15,13 +15,20 @@ Implemented:
 - Three deterministic simulator scenarios.
 - Simulator evidence query, alert, typed action, reset, and verification endpoints.
 - Alert webhook normalization, fingerprinting, deduplication, incident correlation, and timeline read APIs.
+- PostgreSQL-backed incident, alert, and timeline persistence with startup schema initialization.
+- Transactional alert idempotency and restart-safe incident reads.
+- Validated incident state transitions with timeline events and version checks.
+- Bounded deterministic investigation with evidence identifiers, findings, confidence, uncertainty, and citations.
+- PostgreSQL-backed investigation, evidence, and finding records.
+- Visible degraded results when an evidence source is unavailable.
+- Model boundary with sensitive-value masking, structured response validation, and safe degraded statuses.
+- Contradictory evidence detection and versioned investigation caching.
 
 Open:
 
-- Incident workflow implementation.
-- Alert-to-incident persistence and correlation.
-- PostgreSQL-backed alert and incident persistence.
-- Durable incident state transitions and restart recovery.
+- Paging, human response, approval, and action workflow implementation.
+- Restart recovery for in-progress investigations and actions.
+- Configured model analysis and model failure handling.
 - Durable simulator state and full failure orchestration.
 - Runtime verification after the local container socket is available.
-- Feature tests beyond the baseline health test.
+- Full API, UI, restart-recovery, and end-to-end scenario tests.

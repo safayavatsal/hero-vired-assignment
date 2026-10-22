@@ -4,6 +4,20 @@ from typing import Any
 from uuid import UUID
 
 
+INCIDENT_TRANSITIONS = {
+    "received": {"investigating", "escalated", "resolved", "unfixable", "failed"},
+    "investigating": {"awaiting_human", "action_pending", "resolved", "unfixable", "failed"},
+    "awaiting_human": {"investigating", "escalated", "action_pending", "resolved", "failed"},
+    "escalated": {"awaiting_human", "action_pending", "resolved", "unfixable", "failed"},
+    "action_pending": {"action_running", "awaiting_human", "failed"},
+    "action_running": {"action_unknown", "resolved", "failed"},
+    "action_unknown": {"action_running", "resolved", "failed"},
+    "resolved": {"received"},
+    "unfixable": {"received"},
+    "failed": {"received"},
+}
+
+
 @dataclass
 class Alert:
     id: UUID

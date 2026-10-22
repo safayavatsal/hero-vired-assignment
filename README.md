@@ -32,4 +32,4 @@ docker compose up --build
 - API readiness: `http://localhost:8001/api/v1/readiness`
 - Frontend: `http://localhost:8000`
 
-The current slice establishes the API, worker, frontend, PostgreSQL services, deterministic simulator scenarios, and an in-memory alert-to-incident pipeline. PostgreSQL persistence and the remaining incident workflow are implemented in later feature slices.
+The current slice establishes the API, worker, frontend, PostgreSQL services, deterministic simulator scenarios, a PostgreSQL-backed alert-to-incident pipeline, and bounded deterministic investigations. Paging, model analysis, actions, and the incident UI are implemented in later feature slices.

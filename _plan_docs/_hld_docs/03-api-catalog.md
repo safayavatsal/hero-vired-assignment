@@ -7,6 +7,8 @@ This document lists the major HTTP APIs in the product. Detailed request validat
 | Path | Responsibility |
 | --- | --- |
 | `/api/v1/alerts` | Accept and correlate an incoming alert idempotently |
+| `/api/v1/incidents/{incident_id}/status` | Apply a validated incident state transition |
+| `/api/v1/incidents/{incident_id}/investigate` | Collect bounded evidence and produce deterministic findings |
 | `/api/v1/incidents/{incident_id}/acknowledge` | Record human acknowledgement |
 | `/api/v1/incidents/{incident_id}/reply` | Record a responder reply |
 | `/api/v1/incidents/{incident_id}/actions/{action_id}/approve` | Approve a typed action |

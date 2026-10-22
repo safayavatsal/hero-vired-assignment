@@ -35,8 +35,7 @@ Implemented in the current slice:
 - Deterministic timeline ordering by source time, receive time, and sequence.
 - Incident list, detail, and timeline read APIs.
 
-Open for the incident-state slice:
+Remaining:
 
-- PostgreSQL persistence and restart recovery.
 - Durable incident transitions and optimistic concurrency.
 - Correlation across dependency and time-window rules beyond the shared key.

@@ -24,4 +24,14 @@ The simulator service, scenario definitions, evidence queries, typed actions, ti
 
 The alert normalization, fingerprinting, duplicate handling, incident correlation, timeline ordering, incident read APIs, and focused tests were implemented with AI assistance from the approved alert-pipeline plan.
 
+The PostgreSQL repository, schema initialization, transactional alert persistence, idempotent delivery handling, and restart-safe incident reads were implemented with AI assistance from the approved incident-state plan.
+
+The explicit incident transition validation, optimistic version check, transition endpoint, and transition timeline records were implemented with AI assistance from the approved incident-state plan.
+
+The bounded evidence collection, deterministic scenario analyzers, finding schema, citation validation, investigation API, and focused tests were implemented with AI assistance from the approved investigation plan. Model analysis remains deliberately unconfigured in this slice.
+
+The investigation repository, durable evidence and finding records, restart-boundary test, and unavailable-source handling were implemented with AI assistance from the approved investigation plan.
+
+The model gateway boundary, sensitive-value masking, structured-response validation, citation checks, and safe model failure statuses were implemented with AI assistance from the approved investigation plan. No provider credential is stored in the repository.
+
 Implementation-specific mistakes caught and changes directly authored by the project owner will be recorded as the implementation progresses.

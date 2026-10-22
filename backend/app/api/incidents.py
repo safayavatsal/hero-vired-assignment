@@ -24,6 +24,11 @@ class AlertWebhook(BaseModel):
     correlation_key: str | None = None
 
 
+class IncidentTransition(BaseModel):
+    target_status: str = Field(min_length=1)
+    expected_version: int | None = Field(default=None, ge=1)
+
+
 @router.post("/alerts")
 def create_alert(alert: AlertWebhook) -> dict[str, Any]:
     return alert_pipeline_service.accept(alert.model_dump())
@@ -48,3 +53,14 @@ def get_timeline(incident_id: UUID) -> list[dict[str, Any]]:
         return alert_pipeline_service.get_timeline(incident_id)
     except ValueError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
+
+
+@router.post("/incidents/{incident_id}/status")
+def transition_incident(incident_id: UUID, request: IncidentTransition) -> dict[str, Any]:
+    try:
+        return alert_pipeline_service.transition(
+            incident_id, request.target_status, request.expected_version
+        )
+    except ValueError as error:
+        status_code = 404 if str(error) == "incident not found" else 409
+        raise HTTPException(status_code=status_code, detail=str(error)) from error

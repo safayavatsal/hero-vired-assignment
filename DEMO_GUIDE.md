@@ -38,4 +38,23 @@ curl -X POST http://localhost:8001/api/v1/alerts \
 curl http://localhost:8001/api/v1/incidents
 ```
 
+Move an incident into investigation after replacing `<incident-id>` with the returned identifier:
+
+```bash
+curl -X POST http://localhost:8001/api/v1/incidents/<incident-id>/status \
+  -H 'Content-Type: application/json' \
+  -d '{"target_status":"investigating"}'
+```
+
+Restart the API container and call `GET /api/v1/incidents` again to demonstrate that the incident data is loaded from PostgreSQL.
+
+Run a bounded investigation for the selected scenario:
+
+```bash
+curl -X POST http://localhost:8001/api/v1/incidents/<incident-id>/investigate \
+  -H 'Content-Type: application/json' \
+  -d '{"scenario_id":"deployment_regression"}'
+curl http://localhost:8001/api/v1/incidents/<incident-id>/evidence
+```
+
 Incident scenarios will be added as later feature slices.
