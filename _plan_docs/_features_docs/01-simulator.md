@@ -21,3 +21,20 @@ Provide repeatable production-like data and behavior without real infrastructure
 - Each required evidence source is queryable.
 - Each action changes simulator state and creates audit data.
 - Failure controls are deterministic in tests.
+
+## Implementation status
+
+Implemented in the baseline simulator slice:
+
+- Three deterministic scenarios with hidden causes that are exposed only through evidence queries.
+- Scenario selection, reset, state inspection, and alert generation endpoints.
+- Duplicate, late, and flapping alert generation controls.
+- Logs, metrics, deploy history, and service-health evidence queries.
+- Typed action execution with action records and verification.
+- Deterministic timeout-after-completion behavior for the rollback scenario.
+
+Open for later slices:
+
+- Durable simulator state.
+- Explicit delayed and out-of-order delivery scheduling.
+- Full responder and third-party outage orchestration.

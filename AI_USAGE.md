@@ -20,4 +20,6 @@ The following work is deliberately authored and reviewed as project design work:
 
 The baseline runtime wiring, service configuration, health endpoints, worker process, and frontend shell were implemented with AI assistance from the approved design.
 
+The simulator service, scenario definitions, evidence queries, typed actions, timeout state, verification endpoint, and focused tests were implemented with AI assistance from the approved simulator plan.
+
 Implementation-specific mistakes caught and changes directly authored by the project owner will be recorded as the implementation progresses.

@@ -32,4 +32,4 @@ docker compose up --build
 - API readiness: `http://localhost:8001/api/v1/readiness`
 - Frontend: `http://localhost:8000`
 
-The current slice establishes the API, worker, frontend, and PostgreSQL services. Incident workflows and simulator scenarios are implemented in later feature slices.
+The current slice establishes the API, worker, frontend, PostgreSQL services, and deterministic simulator scenarios. Alert correlation and incident workflows are implemented in later feature slices.

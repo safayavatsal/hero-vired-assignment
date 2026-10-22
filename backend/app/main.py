@@ -3,6 +3,7 @@ import os
 import psycopg
 from fastapi import FastAPI
 
+from app.api.simulator import router as simulator_router
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
@@ -10,6 +11,7 @@ DATABASE_URL = os.getenv(
 )
 
 app = FastAPI(title="Hero Vired Assignment API", version="0.1.0")
+app.include_router(simulator_router)
 
 
 @app.get("/api/v1/health")
