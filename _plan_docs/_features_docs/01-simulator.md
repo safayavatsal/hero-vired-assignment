@@ -35,7 +35,6 @@ Implemented in the baseline simulator slice:
 - Optional file-backed simulator state for restart-safe local runs.
 - Explicit delayed and out-of-order delivery controls.
 - Action idempotency keys prevent a repeated request from running twice.
+- Explicit responder availability and third-party dependency controls are exposed in simulator state.
 
-Open for later slices:
-
-- Full responder and third-party outage orchestration.
+The external notification and ownership workflow is covered by Feature 5; this simulator supplies its deterministic responder and dependency controls.

@@ -62,3 +62,15 @@ def test_alert_delivery_controls_make_ordering_and_delay_visible() -> None:
 
     assert [item["lifecycle"] for item in result["deliveries"]] == ["resolved", "resolved", "firing", "firing"]
     assert all(item["received_time"] > item["source_time"] for item in result["deliveries"])
+
+
+def test_failure_controls_are_visible_and_change_dependency_availability() -> None:
+    service = SimulatorService()
+    service.select_scenario("third_party_outage")
+    assert service.state()["failure_controls"]["third_party_available"] is False
+
+    evidence = service.query_evidence("service_health")
+    assert evidence["availability"] == "unavailable"
+
+    service.set_failure_controls(third_party_available=True)
+    assert service.query_evidence("service_health")["availability"] == "available"

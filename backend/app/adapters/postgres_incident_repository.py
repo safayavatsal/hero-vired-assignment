@@ -101,6 +101,20 @@ class PostgresIncidentRepository:
                     (alert.service, str(correlation_key), alert.source_time, alert.source_time),
                 ).fetchone()
             if incident is None:
+                incident = connection.execute(
+                    """
+                    SELECT i.*
+                    FROM incidents i
+                    JOIN alerts a ON a.incident_id = i.id
+                    WHERE a.service = %s
+                      AND a.source_time BETWEEN %s - INTERVAL '15 minutes' AND %s + INTERVAL '15 minutes'
+                    ORDER BY a.source_time DESC
+                    LIMIT 1
+                    FOR UPDATE OF i
+                    """,
+                    (alert.service, alert.source_time, alert.source_time),
+                ).fetchone()
+            if incident is None:
                 incident = {
                     "id": uuid4(),
                     "fingerprint": alert.fingerprint,

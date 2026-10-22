@@ -35,4 +35,4 @@ Implemented:
 
 Open:
 
-- Recovery and reconciliation of an action interrupted between execution and persistence.
+- Automatic reconciliation of an unknown action against an external executor.

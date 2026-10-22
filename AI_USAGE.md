@@ -38,4 +38,11 @@ The simulator restart state, delivery delay/order controls, action idempotency, 
 
 The durable paging, fallback escalation, typed approval workflow, simulator execution boundary, audit timeline events, and incident timeline UI were implemented with AI assistance from the approved paging, action, and UI plans. The human-authored workflow boundary remains explicit: provider text cannot execute actions, and approval is required before execution.
 
-Implementation-specific mistakes caught and changes directly authored by the project owner will be recorded as the implementation progresses.
+## Issues Caught
+
+The project owner identified these implementation issues during verification:
+
+- The frontend build lacked React type declarations. The fix added the required type dependencies and Vite environment declaration.
+- The backend container reported zero tests because the image excluded `tests/`. The Dockerfile was corrected to include the test suite.
+
+These contributions are recorded as detection, direction, and verification; implementation changes remain explicitly attributed as AI-assisted.

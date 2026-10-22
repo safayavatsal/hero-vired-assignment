@@ -26,6 +26,7 @@ class SimulatorState:
     alerts: list[dict[str, Any]] = field(default_factory=list)
     actions: list[dict[str, Any]] = field(default_factory=list)
     service_state: dict[str, Any] = field(default_factory=dict)
+    failure_controls: dict[str, Any] = field(default_factory=dict)
 
 
 def scenario_definitions() -> dict[str, ScenarioDefinition]:
@@ -113,6 +114,7 @@ class SimulatorService:
         self._state = SimulatorState(
             scenario_id=scenario_id,
             service_state=dict(definition.initial_state),
+            failure_controls=self._controls(definition),
         )
         self._save()
         return self.state()
@@ -123,6 +125,7 @@ class SimulatorService:
         self._state = SimulatorState(
             scenario_id=scenario_id,
             service_state=dict(definition.initial_state) if definition else {},
+            failure_controls=self._controls(definition) if definition else {},
         )
         self._save()
         return self.state()
@@ -134,8 +137,18 @@ class SimulatorService:
             "alert_count": len(self._state.alerts),
             "action_count": len(self._state.actions),
             "service_state": self._state.service_state,
+            "failure_controls": self._state.failure_controls,
             "actions": self._state.actions,
         }
+
+    def set_failure_controls(self, responder_available: bool | None = None,
+                             third_party_available: bool | None = None) -> dict[str, Any]:
+        if responder_available is not None:
+            self._state.failure_controls["responder_available"] = responder_available
+        if third_party_available is not None:
+            self._state.failure_controls["third_party_available"] = third_party_available
+        self._save()
+        return self.state()
 
     def trigger_alert(
         self,
@@ -183,6 +196,8 @@ class SimulatorService:
         if source_type not in definition.evidence:
             raise ValueError("unsupported evidence source")
         availability = "slow" if source_type in definition.controls["evidence_slow"] else "available"
+        if definition.controls["third_party_outage"] and not self._state.failure_controls.get("third_party_available", False):
+            availability = "unavailable" if source_type == "service_health" else availability
         return {
             "scenario_id": definition.id,
             "source_type": source_type,
@@ -271,6 +286,7 @@ class SimulatorService:
                 alerts=payload.get("alerts", []),
                 actions=payload.get("actions", []),
                 service_state=payload.get("service_state", {}),
+                failure_controls=payload.get("failure_controls", {}),
             )
         except (FileNotFoundError, json.JSONDecodeError, OSError):
             return SimulatorState()
@@ -290,6 +306,15 @@ class SimulatorService:
         if not scenario_id or scenario_id not in self._definitions:
             raise ValueError("unknown scenario")
         return self._definitions[scenario_id]
+
+    @staticmethod
+    def _controls(definition: ScenarioDefinition | None) -> dict[str, Any]:
+        if definition is None:
+            return {}
+        return {
+            "responder_available": not definition.controls["responder_non_response"],
+            "third_party_available": not definition.controls["third_party_outage"],
+        }
 
     @staticmethod
     def _public_definition(definition: ScenarioDefinition | None) -> dict[str, Any] | None:

@@ -30,12 +30,13 @@ Implemented:
 - Transition events appended to the incident timeline.
 - Investigation results are reused after service restart when the persisted scenario matches.
 - Simulator action requests can be made idempotent with a caller-supplied key.
+- Startup recovery marks interrupted actions as unknown and escalates overdue pages once.
 
 Open:
 
-- Recovery of in-progress actions and pages.
-- Idempotency for pages and human decisions.
-- Optimistic concurrency enforcement for human decisions and action updates.
+- External notification delivery and ownership resolution.
+- Automatic reconciliation of unknown actions against an external executor.
+- Explicit version tokens on human decision payloads.
 
 ## Acceptance checks
 

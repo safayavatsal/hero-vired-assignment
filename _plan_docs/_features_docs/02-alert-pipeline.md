@@ -35,7 +35,8 @@ Implemented in the current slice:
 - Deterministic timeline ordering by source time, receive time, and sequence.
 - Incident list, detail, and timeline read APIs.
 - Shared service/correlation-key alerts within a 15-minute source-time window are grouped into one incident.
+- Alerts for the same service within the source-time window are correlated when no explicit key is available.
 
 Remaining:
 
-- Correlation rules beyond the shared service/correlation-key window.
+- Dependency graph correlation beyond service and time-window signals.

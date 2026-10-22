@@ -30,6 +30,9 @@ Implemented:
 - Persisted primary/fallback pages with acknowledgement, reply, and one-time escalation.
 - Typed action proposals, human approval/rejection, idempotent execution, verification, and timeline audit events.
 - React incident list and timeline view with refresh and empty/error states.
+- Explicit simulator responder/dependency failure controls.
+- Service/time-window incident correlation beyond explicit correlation keys.
+- Startup recovery for interrupted actions and overdue pages.
 
 Open:
 

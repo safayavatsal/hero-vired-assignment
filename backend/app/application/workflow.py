@@ -55,6 +55,29 @@ class WorkflowService:
     def initialize(self) -> None:
         with psycopg.connect(self.database_url) as connection:
             connection.execute(SCHEMA)
+            now = datetime.now(timezone.utc)
+            running = connection.execute(
+                "UPDATE action_proposals SET status = 'unknown', updated_at = %s WHERE status = 'running' RETURNING incident_id, id",
+                (now,),
+            ).fetchall()
+            for incident_id, action_id in running:
+                self._timeline(connection, incident_id, "action_recovered_unknown", {"action_id": str(action_id)})
+            overdue = connection.execute(
+                "SELECT * FROM pages WHERE level = 'primary' AND status = 'delivered' AND deadline_at <= %s FOR UPDATE",
+                (now,),
+            ).fetchall()
+            for page in overdue:
+                connection.execute("UPDATE pages SET status = 'escalated', response_type = 'timeout', updated_at = %s WHERE id = %s", (now, page["id"]))
+                fallback_id = uuid4()
+                connection.execute(
+                    """INSERT INTO pages
+                    (id, incident_id, level, responder, fallback_responder, status, deadline_at, created_at, updated_at)
+                    VALUES (%s, %s, 'fallback', %s, %s, 'delivered', %s, %s, %s)
+                    ON CONFLICT (incident_id, level) DO NOTHING""",
+                    (fallback_id, page["incident_id"], page["fallback_responder"], page["fallback_responder"],
+                     now + timedelta(seconds=300), now, now),
+                )
+                self._timeline(connection, page["incident_id"], "page_recovered_escalated", {"page_id": str(page["id"])})
 
     def create_page(self, incident_id: UUID, responder: str, fallback: str, deadline_seconds: int) -> dict[str, Any]:
         now = datetime.now(timezone.utc)

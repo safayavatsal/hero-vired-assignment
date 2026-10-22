@@ -30,6 +30,11 @@ class ActionRequest(BaseModel):
     idempotency_key: str | None = Field(default=None, min_length=1)
 
 
+class FailureControlRequest(BaseModel):
+    responder_available: bool | None = None
+    third_party_available: bool | None = None
+
+
 @router.get("/scenarios")
 def list_scenarios() -> list[dict[str, Any]]:
     return simulator_service.list_scenarios()
@@ -51,6 +56,11 @@ def reset_scenario() -> dict[str, Any]:
 @router.get("/state")
 def get_state() -> dict[str, Any]:
     return simulator_service.state()
+
+
+@router.post("/failure-controls")
+def set_failure_controls(request: FailureControlRequest) -> dict[str, Any]:
+    return simulator_service.set_failure_controls(request.responder_available, request.third_party_available)
 
 
 @router.post("/alerts")
