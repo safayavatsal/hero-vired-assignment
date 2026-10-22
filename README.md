@@ -28,8 +28,8 @@ Start the current foundation with:
 docker compose up --build
 ```
 
-- API health: `http://localhost:8000/api/v1/health`
-- API readiness: `http://localhost:8000/api/v1/readiness`
-- Frontend: `http://localhost:5173`
+- API health: `http://localhost:8001/api/v1/health`
+- API readiness: `http://localhost:8001/api/v1/readiness`
+- Frontend: `http://localhost:8000`
 
 The current slice establishes the API, worker, frontend, and PostgreSQL services. Incident workflows and simulator scenarios are implemented in later feature slices.
