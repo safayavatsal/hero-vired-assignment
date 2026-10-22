@@ -22,4 +22,6 @@ The baseline runtime wiring, service configuration, health endpoints, worker pro
 
 The simulator service, scenario definitions, evidence queries, typed actions, timeout state, verification endpoint, and focused tests were implemented with AI assistance from the approved simulator plan.
 
+The alert normalization, fingerprinting, duplicate handling, incident correlation, timeline ordering, incident read APIs, and focused tests were implemented with AI assistance from the approved alert-pipeline plan.
+
 Implementation-specific mistakes caught and changes directly authored by the project owner will be recorded as the implementation progresses.

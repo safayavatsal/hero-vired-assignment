@@ -29,4 +29,13 @@ curl -X POST http://localhost:8001/api/v1/simulator/alerts \
   -d '{"duplicate_count":2,"late":true,"flapping":true}'
 ```
 
+Submit an alert directly to the alert pipeline:
+
+```bash
+curl -X POST http://localhost:8001/api/v1/alerts \
+  -H 'Content-Type: application/json' \
+  -d '{"source_event_id":"event-1","source":"simulator","service":"payments-api","severity":"critical","alert_type":"p99_latency_high","source_time":"2026-10-22T12:00:00Z","labels":{"region":"primary"},"description":"p99 latency is above threshold","correlation_key":"payments-latency"}'
+curl http://localhost:8001/api/v1/incidents
+```
+
 Incident scenarios will be added as later feature slices.

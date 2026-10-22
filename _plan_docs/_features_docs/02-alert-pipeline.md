@@ -21,3 +21,22 @@ Turn unreliable alert webhooks into canonical events and incidents.
 - Repeated alerts do not create a new incident each time.
 - Correlated alerts appear under one incident with explainable grouping.
 - Raw and normalized alert data remain available.
+
+## Implementation status
+
+Implemented in the current slice:
+
+- Validated alert webhook model with raw payload preservation.
+- Canonical alert normalization and stable SHA-256 fingerprints.
+- Duplicate delivery acknowledgement without duplicate incident side effects.
+- Correlated alerts grouped into one incident.
+- Separate source and received timestamps.
+- Resolution and reopening lifecycle handling.
+- Deterministic timeline ordering by source time, receive time, and sequence.
+- Incident list, detail, and timeline read APIs.
+
+Open for the incident-state slice:
+
+- PostgreSQL persistence and restart recovery.
+- Durable incident transitions and optimistic concurrency.
+- Correlation across dependency and time-window rules beyond the shared key.

@@ -16,4 +16,6 @@ curl -X POST http://localhost:8001/api/v1/simulator/scenarios \
   -d '{"scenario_id":"deployment_regression"}'
 ```
 
-The incident workflow that consumes these scenarios will be documented after alert intake is implemented.
+The incident workflow that investigates and responds to these scenarios will be documented after those feature slices are implemented.
+
+The alert pipeline now accepts canonical webhook payloads at `POST /api/v1/alerts` and exposes incidents through `GET /api/v1/incidents`.
