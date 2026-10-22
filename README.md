@@ -19,3 +19,17 @@ Documentation-first design for the incident investigation and response product d
 - [LLD UML class diagram](_plan_docs/_lld_docs/06-lld-system-diagram.md)
 
 The assignment source is available as `FDE-Assignment.docx` at the repository root and under `_research_refs/`.
+
+## Baseline runtime
+
+Start the current foundation with:
+
+```bash
+docker compose up --build
+```
+
+- API health: `http://localhost:8000/api/v1/health`
+- API readiness: `http://localhost:8000/api/v1/readiness`
+- Frontend: `http://localhost:5173`
+
+The current slice establishes the API, worker, frontend, and PostgreSQL services. Incident workflows and simulator scenarios are implemented in later feature slices.

@@ -1,0 +1,30 @@
+:root {
+  color: #18202a;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  background: #f4f6f8;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 44rem;
+  margin: 12vh auto;
+  padding: 2rem;
+  background: white;
+  border: 1px solid #d8dee6;
+}
+
+.eyebrow {
+  color: #52606d;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+output {
+  display: inline-block;
+  margin-top: 1rem;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}

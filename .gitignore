@@ -4,3 +4,7 @@
 # Local and source-only files
 .DS_Store
 FDE-Assignment.docx
+__pycache__/
+.pytest_cache/
+node_modules/
+frontend/dist/
