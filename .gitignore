@@ -1,0 +1,6 @@
+# OpenMemory - IDE/Assistant specific rules
+.cursor/rules/openmemory.mdc
+
+# Local and source-only files
+.DS_Store
+FDE-Assignment.docx
