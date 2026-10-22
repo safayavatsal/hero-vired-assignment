@@ -36,7 +36,4 @@ Implemented in the current slice:
 - Incident list, detail, and timeline read APIs.
 - Shared service/correlation-key alerts within a 15-minute source-time window are grouped into one incident.
 - Alerts for the same service within the source-time window are correlated when no explicit key is available.
-
-Remaining:
-
-- Dependency graph correlation beyond service and time-window signals.
+- Alerts carrying a dependency label are correlated with the related service within the same source-time window.

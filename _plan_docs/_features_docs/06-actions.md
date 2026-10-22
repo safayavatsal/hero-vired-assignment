@@ -29,10 +29,21 @@ Execute safe, approved simulator actions exactly once and verify their outcomes.
 Implemented:
 
 - Typed action proposals with parameter validation.
+- Scenario and target validation before approval.
 - Durable approval and rejection records with approving responder.
 - Idempotency-key protected simulator execution.
 - Post-action verification and timeline audit events.
+- Workflow timeline writes serialize sequence allocation under concurrent requests.
+- Action proposals are blocked until investigation is in an allowed state and the selected scenario matches the incident service.
 
-Open:
+Verified locally through Docker/Postgres on 2026-10-22: proposal, approval, simulator execution, and verification persisted as one action with the expected result and timeline events.
 
-- Automatic reconciliation of an unknown action against an external executor.
+Implemented:
+
+- Unknown actions can be reconciled through `POST /api/v1/actions/{action_id}/reconcile` when an action-executor URL is configured.
+- Executor status is validated and persisted with an `action_reconciled` timeline event.
+- Missing executor configuration leaves the action unknown and returns an explicit error instead of retrying it.
+
+Boundary verification:
+
+- Configured action-executor reconciliation is covered by adapter contract tests; live verification requires a reachable executor URL.

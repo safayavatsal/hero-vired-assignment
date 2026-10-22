@@ -9,6 +9,7 @@ from app.application.model_gateway import (
     ModelGateway,
     ModelRateLimitError,
     ModelUnavailableError,
+    UnavailableModelGateway,
     configured_model_gateway,
     mask_sensitive,
     validate_model_response,
@@ -37,12 +38,20 @@ class InvestigationService:
             self.repository.initialize()
 
     def investigate(self, incident_id: UUID, scenario_id: str) -> dict[str, Any]:
-        self.incident_service.get_incident(incident_id)
+        incident = self.incident_service.get_incident(incident_id)
+        scenario_state = self.evidence_provider.select_scenario(scenario_id)
+        scenario_service = (scenario_state.get("scenario") or {}).get("service")
+        if scenario_service and incident.get("service") and incident["service"] != scenario_service:
+            raise ValueError("selected scenario does not match the incident service")
         persisted = self.repository.get(incident_id) if self.repository is not None else None
-        if persisted is not None and persisted["scenario_id"] == scenario_id:
+        if (
+            persisted is not None
+            and persisted["scenario_id"] == scenario_id
+            and (persisted["model_status"] == "completed" or isinstance(self.model_gateway, UnavailableModelGateway))
+        ):
             self._results[incident_id] = persisted
+            self._mark_investigating(incident, incident_id, scenario_id)
             return persisted
-        self.evidence_provider.select_scenario(scenario_id)
         evidence = [self._collect(scenario_id, source_type) for source_type in (
             "logs", "metrics", "deploys", "service_health"
         )]
@@ -65,7 +74,15 @@ class InvestigationService:
         self._results[cache_key] = result
         if self.repository is not None:
             self.repository.save(result)
+        self._mark_investigating(incident, incident_id, scenario_id)
         return result
+
+    def _mark_investigating(self, incident: dict[str, Any], incident_id: UUID, scenario_id: str) -> None:
+        if incident.get("status") == "received":
+            self.incident_service.transition(incident_id, "investigating", incident.get("version"))
+            self.incident_service.append_timeline_event(
+                incident_id, "investigation_started", {"scenario_id": scenario_id}
+            )
 
     @staticmethod
     def _cache_key(incident_id: UUID, scenario_id: str, evidence: list[Evidence]) -> UUID:
@@ -214,7 +231,7 @@ class InvestigationService:
     @staticmethod
     def _serialize_evidence(evidence: Evidence) -> dict[str, Any]:
         return {"id": evidence.id, "source_type": evidence.source_type, "availability": evidence.availability,
-                "observed_at": evidence.observed_at.isoformat(), "items": evidence.items}
+                "observed_at": evidence.observed_at.isoformat(), "items": mask_sensitive(evidence.items)}
 
     @staticmethod
     def _serialize_finding(finding: Finding) -> dict[str, Any]:

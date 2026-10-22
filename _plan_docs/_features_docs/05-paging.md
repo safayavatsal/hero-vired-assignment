@@ -30,7 +30,16 @@ Implemented:
 - Acknowledgement and reply responses.
 - One-time timeout escalation to a fallback responder.
 - Page delivery, response, timeout, and escalation timeline events.
+- Timeline writes lock the incident row before allocating the next sequence number.
 
-Open:
+Verified locally through Docker/Postgres on 2026-10-22: acknowledgement persisted, timeout created one delivered fallback, retry returned the escalated primary, and the page list contained exactly two records for the timeout scenario.
 
-- External notification delivery and service-ownership lookup.
+Implemented:
+
+- Optional ownership lookup resolves primary and fallback responders when page responders are omitted.
+- Optional notification delivery receives a page payload and records an external delivery identifier in the timeline.
+- Missing external configuration keeps the deterministic local paging behavior.
+
+Boundary verification:
+
+- Configured notification and ownership calls are covered by adapter contract tests; live verification requires reachable service URLs.

@@ -31,12 +31,15 @@ Implemented:
 - Investigation results are reused after service restart when the persisted scenario matches.
 - Simulator action requests can be made idempotent with a caller-supplied key.
 - Startup recovery marks interrupted actions as unknown and escalates overdue pages once.
+- Investigation of a received incident transitions it to `investigating` and records an `investigation_started` timeline event.
+- Action proposals require an investigating/awaiting-human incident and a scenario matching the incident service.
+- Page responses and action decisions accept an optional incident version token and reject stale decisions.
 
-Open:
+Boundary verification:
 
-- External notification delivery and ownership resolution.
-- Automatic reconciliation of unknown actions against an external executor.
-- Explicit version tokens on human decision payloads.
+- External notification delivery and ownership resolution are implemented as opt-in adapters.
+- Automatic reconciliation of unknown actions is implemented through the action-executor adapter.
+- Explicit version tokens on human decisions are implemented and persisted with pages and action proposals.
 
 ## Acceptance checks
 
@@ -44,4 +47,4 @@ Open:
 - Incident reads come from PostgreSQL after process restart.
 - Timeline order is deterministic.
 - Invalid state transitions are rejected and valid transitions create timeline events.
-- Full workflow transition and action-safety checks remain open for later slices.
+- Full external-provider reconciliation remains outside the deterministic local boundary and is covered by opt-in adapter contracts.

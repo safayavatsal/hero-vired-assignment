@@ -40,4 +40,16 @@ h1 { margin-bottom: 0.5rem; }
 .timeline { padding-left: 1.25rem; }
 .timeline li { padding: 0.6rem 0; border-bottom: 1px solid #e6eaf0; }
 .timeline time { display: block; color: #52606d; font-size: 0.8rem; margin-top: 0.2rem; }
+.controls { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
+.controls button, .controls select { border: 1px solid #b8c4d1; border-radius: 0.35rem; background: #f8fafc; padding: 0.5rem 0.7rem; color: #18202a; cursor: pointer; }
+.evidence { border-top: 1px solid #e6eaf0; margin-top: 1rem; padding-top: 1rem; }
+.evidence-header, .evidence-card > div { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.evidence h3 { margin: 0; }
+.finding, .evidence-card { border: 1px solid #d8dee6; padding: 0.8rem; margin-top: 0.75rem; background: #fbfcfd; }
+.finding p { margin: 0.35rem 0; }
+.finding small, .evidence-card small { color: #52606d; }
+.evidence-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin-top: 0.75rem; }
+.evidence-card.degraded { border-color: #d97706; }
+.evidence-card pre { overflow: auto; max-height: 12rem; background: #18202a; color: #f8fafc; padding: 0.7rem; font-size: 0.75rem; }
 @media (max-width: 700px) { .layout { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .evidence-grid { grid-template-columns: 1fr; } }

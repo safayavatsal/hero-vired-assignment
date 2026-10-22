@@ -37,6 +37,9 @@ class AlertPipelineService:
     def transition(self, incident_id, target_status: str, expected_version: int | None) -> dict[str, Any]:
         return self.repository.transition(incident_id, target_status, expected_version)
 
+    def append_timeline_event(self, incident_id, event_type: str, payload: dict[str, Any]) -> None:
+        self.repository.append_timeline_event(incident_id, event_type, payload)
+
     def _normalize(self, payload: dict[str, Any], received_time: datetime) -> Alert:
         source = str(payload["source"]).strip()
         service = str(payload["service"]).strip()

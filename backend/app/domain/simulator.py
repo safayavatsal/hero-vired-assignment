@@ -243,6 +243,18 @@ class SimulatorService:
         self._save()
         return record
 
+    def validate_action(self, scenario_id: str, action_type: str, target: str,
+                        parameters: dict[str, Any]) -> None:
+        definition = self._definition(scenario_id)
+        if action_type not in definition.allowed_actions:
+            raise ValueError("action is not allowed for the selected scenario")
+        if target != definition.service:
+            raise ValueError("action target does not match the selected scenario")
+        if action_type == "scale":
+            replicas = parameters.get("replicas")
+            if not isinstance(replicas, int) or replicas < 1:
+                raise ValueError("scale requires a positive integer replicas parameter")
+
     def verify_action(self, action_id: UUID) -> dict[str, Any]:
         for action in self._state.actions:
             if action["id"] == str(action_id):

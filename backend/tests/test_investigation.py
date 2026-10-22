@@ -2,12 +2,33 @@ from uuid import uuid4
 
 from app.application.investigation import InvestigationService
 from app.application.simulator import SimulatorService
-from app.application.model_gateway import _openai_request, _openai_response, mask_sensitive
+from app.application.model_gateway import (
+    DEFAULT_MODEL_GATEWAY_URL,
+    HttpModelGateway,
+    _openai_request,
+    _openai_response,
+    mask_sensitive,
+)
 
 
 class ExistingIncident:
+    def __init__(self, service=None, status="received"):
+        self.incident = {"id": str(uuid4()), "status": status, "version": 1}
+        if service is not None:
+            self.incident["service"] = service
+
     def get_incident(self, incident_id):
-        return {"id": str(incident_id)}
+        self.incident["id"] = str(incident_id)
+        return self.incident
+
+    def transition(self, incident_id, target_status, expected_version):
+        assert target_status == "investigating"
+        self.incident["status"] = target_status
+        self.incident["version"] += 1
+        return self.incident
+
+    def append_timeline_event(self, incident_id, event_type, payload):
+        self.incident.setdefault("timeline", []).append({"event_type": event_type, "payload": payload})
 
 
 class MemoryInvestigationRepository:
@@ -43,6 +64,19 @@ class ContradictoryEvidenceProvider(SimulatorService):
 class InvalidModelGateway:
     def analyze(self, prompt):
         return {"evidence_ids": ["not-collected"]}
+
+
+class CompletedModelGateway:
+    def analyze(self, prompt):
+        evidence_ids = [item["id"] for item in prompt["evidence"]]
+        return {
+            "current_condition": "latency is elevated",
+            "likely_cause": "a recent deployment",
+            "confidence": 0.9,
+            "suggested_next_step": "rollback",
+            "evidence_ids": evidence_ids,
+            "uncertainty": None,
+        }
 
 
 def test_investigation_findings_cite_collected_evidence() -> None:
@@ -84,12 +118,24 @@ def test_unavailable_evidence_is_visible_in_findings() -> None:
     assert "logs" in result["findings"][0]["uncertainty"]
 
 
-def test_model_gateway_is_safe_when_unconfigured() -> None:
+def test_model_gateway_is_safe_when_unconfigured(monkeypatch) -> None:
+    monkeypatch.delenv("MODEL_GATEWAY_URL", raising=False)
+    monkeypatch.delenv("MODEL_GATEWAY_TOKEN", raising=False)
     service = InvestigationService(ExistingIncident(), SimulatorService(), MemoryInvestigationRepository())
 
     result = service.investigate(uuid4(), "disk_pressure")
 
     assert result["model_status"] == "unavailable"
+
+
+def test_model_gateway_uses_default_url_when_only_token_is_configured(monkeypatch) -> None:
+    monkeypatch.delenv("MODEL_GATEWAY_URL", raising=False)
+    monkeypatch.setenv("MODEL_GATEWAY_TOKEN", "test-token")
+
+    service = InvestigationService(ExistingIncident(), SimulatorService(), MemoryInvestigationRepository())
+
+    assert isinstance(service.model_gateway, HttpModelGateway)
+    assert service.model_gateway.url == DEFAULT_MODEL_GATEWAY_URL
 
 
 def test_invalid_model_citations_are_rejected() -> None:
@@ -106,6 +152,20 @@ def test_sensitive_values_are_masked_before_model_use() -> None:
     masked = mask_sensitive({"token": "secret-value", "message": "Bearer abc123"})
 
     assert masked == {"token": "[REDACTED]", "message": "Bearer [REDACTED]"}
+
+
+def test_evidence_returned_to_reviewers_is_masked() -> None:
+    class SecretEvidenceProvider(SimulatorService):
+        def query_evidence(self, source_type):
+            response = super().query_evidence(source_type)
+            response["items"] = [{"message": "Bearer secret-value"}]
+            return response
+
+    service = InvestigationService(ExistingIncident(), SecretEvidenceProvider(), MemoryInvestigationRepository())
+
+    result = service.investigate(uuid4(), "disk_pressure")
+
+    assert result["evidence"][0]["items"] == [{"message": "Bearer [REDACTED]"}]
 
 
 def test_contradictory_metrics_are_visible_in_uncertainty() -> None:
@@ -136,7 +196,9 @@ def test_same_evidence_uses_versioned_cache() -> None:
     assert first["prompt_version"] == "investigation-v1"
 
 
-def test_persisted_investigation_is_idempotent_after_service_restart() -> None:
+def test_persisted_investigation_is_idempotent_after_service_restart(monkeypatch) -> None:
+    monkeypatch.delenv("MODEL_GATEWAY_URL", raising=False)
+    monkeypatch.delenv("MODEL_GATEWAY_TOKEN", raising=False)
     repository = MemoryInvestigationRepository()
     incident_id = uuid4()
     first = InvestigationService(ExistingIncident(), SimulatorService(), repository)
@@ -144,3 +206,44 @@ def test_persisted_investigation_is_idempotent_after_service_restart() -> None:
 
     restarted = InvestigationService(ExistingIncident(), SimulatorService(), repository)
     assert restarted.investigate(incident_id, "disk_pressure") == original
+
+
+def test_persisted_unavailable_investigation_retries_after_provider_configuration(monkeypatch) -> None:
+    monkeypatch.delenv("MODEL_GATEWAY_URL", raising=False)
+    monkeypatch.delenv("MODEL_GATEWAY_TOKEN", raising=False)
+    repository = MemoryInvestigationRepository()
+    incident_id = uuid4()
+    first = InvestigationService(ExistingIncident(), SimulatorService(), repository)
+    unavailable = first.investigate(incident_id, "disk_pressure")
+    assert unavailable["model_status"] == "unavailable"
+
+    restarted = InvestigationService(
+        ExistingIncident(), SimulatorService(), repository, CompletedModelGateway()
+    )
+
+    completed = restarted.investigate(incident_id, "disk_pressure")
+
+    assert completed["model_status"] == "completed"
+    assert completed["model_analysis"]["suggested_next_step"] == "rollback"
+
+
+def test_investigation_transitions_received_incident_to_investigating() -> None:
+    incident_service = ExistingIncident(service="orders-worker")
+    service = InvestigationService(incident_service, SimulatorService(), MemoryInvestigationRepository())
+
+    service.investigate(uuid4(), "disk_pressure")
+
+    assert incident_service.incident["status"] == "investigating"
+    assert incident_service.incident["timeline"][0]["event_type"] == "investigation_started"
+
+
+def test_investigation_rejects_cross_service_scenario() -> None:
+    incident_service = ExistingIncident(service="feature57-api")
+    service = InvestigationService(incident_service, SimulatorService(), MemoryInvestigationRepository())
+
+    try:
+        service.investigate(uuid4(), "deployment_regression")
+    except ValueError as error:
+        assert str(error) == "selected scenario does not match the incident service"
+    else:
+        raise AssertionError("cross-service investigation was accepted")

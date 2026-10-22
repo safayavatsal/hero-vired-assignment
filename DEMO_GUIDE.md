@@ -2,7 +2,7 @@
 
 ## Baseline runtime
 
-Run `docker compose up --build`, open `http://localhost:8000`, and confirm that the page reports the API as healthy.
+Run `docker compose up --build`, open `http://localhost:8000`, and confirm that the incident console loads.
 
 The API endpoints are available at `http://localhost:8001/api/v1/health` and `http://localhost:8001/api/v1/readiness`.
 
@@ -46,17 +46,9 @@ curl -X POST http://localhost:8001/api/v1/alerts \
 curl http://localhost:8001/api/v1/incidents
 ```
 
-Move an incident into investigation after replacing `<incident-id>` with the returned identifier:
-
-```bash
-curl -X POST http://localhost:8001/api/v1/incidents/<incident-id>/status \
-  -H 'Content-Type: application/json' \
-  -d '{"target_status":"investigating"}'
-```
-
 Restart the API container and call `GET /api/v1/incidents` again to demonstrate that the incident data is loaded from PostgreSQL.
 
-Run a bounded investigation for the selected scenario:
+Run a bounded investigation for the matching scenario. The API advances a received incident to `investigating` and records the investigation start in the timeline:
 
 ```bash
 curl -X POST http://localhost:8001/api/v1/incidents/<incident-id>/investigate \
@@ -65,4 +57,33 @@ curl -X POST http://localhost:8001/api/v1/incidents/<incident-id>/investigate \
 curl http://localhost:8001/api/v1/incidents/<incident-id>/evidence
 ```
 
-Incident scenarios will be added as later feature slices.
+## Paging and approved actions
+
+After creating an incident, create and acknowledge a page:
+
+```bash
+curl -X POST http://localhost:8001/api/v1/incidents/<incident-id>/page \
+  -H 'Content-Type: application/json' \
+  -d '{"responder":"primary-oncall","fallback_responder":"secondary-oncall","deadline_seconds":300}'
+curl -X POST http://localhost:8001/api/v1/pages/<page-id>/respond \
+  -H 'Content-Type: application/json' \
+  -d '{"response_type":"acknowledge","response_text":"Investigating"}'
+curl http://localhost:8001/api/v1/incidents/<incident-id>/pages
+```
+
+Propose, approve, execute, and verify a typed action:
+
+```bash
+curl -X POST http://localhost:8001/api/v1/incidents/<incident-id>/actions \
+  -H 'Content-Type: application/json' \
+  -d '{"scenario_id":"deployment_regression","action_type":"rollback","target":"payments-api","parameters":{},"idempotency_key":"demo-action-1"}'
+curl -X POST http://localhost:8001/api/v1/actions/<action-id>/decision \
+  -H 'Content-Type: application/json' \
+  -d '{"approved":true,"responder":"primary-oncall"}'
+curl -X POST http://localhost:8001/api/v1/actions/<action-id>/execute
+curl -X POST http://localhost:8001/api/v1/actions/<action-id>/verify
+curl http://localhost:8001/api/v1/incidents/<incident-id>/actions
+curl http://localhost:8001/api/v1/incidents/<incident-id>/timeline
+```
+
+The UI exposes the same page, investigation, evidence, and action controls after selecting an incident. Choose a scenario, select `Investigate`, then review the finding, confidence, uncertainty, citations, source availability, and masked evidence payloads. The live Docker verification covered acknowledgement, approval, simulator execution, verification, timeline persistence, fallback escalation, and retry safety.

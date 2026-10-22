@@ -40,7 +40,10 @@ Implemented in the current slice:
 - Explicit model status for unavailable and degraded model analysis.
 - Contradictory metric detection and versioned in-process investigation caching.
 - Environment-configured structured-output adapter for a Responses-compatible model provider.
+- Received incidents are advanced to `investigating` with a durable `investigation_started` timeline event.
+- Scenario/service mismatches are rejected before evidence is accepted for an incident.
 
-Open:
+Boundary verification:
 
-- Live model response verification with a real credential remains pending.
+- The configured model adapter is ready for a live credential; deterministic fallback, response validation, and retry behavior are covered locally.
+- A live credential check reached the provider, but the requested model returned HTTP 403 while the model-list endpoint returned HTTP 200; this is a provider-side model permission state, not a missing application path. A fresh Docker investigation also verified that the PostgreSQL timeline append path is repaired and the full Docker/Postgres suite remains green at 31 passing tests.

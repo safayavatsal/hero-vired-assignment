@@ -19,7 +19,8 @@ def investigate(incident_id: UUID, request: InvestigationRequest) -> dict[str, A
     try:
         return investigation_service.investigate(incident_id, request.scenario_id)
     except ValueError as error:
-        raise HTTPException(status_code=404, detail=str(error)) from error
+        status_code = 404 if str(error) == "incident not found" else 409
+        raise HTTPException(status_code=status_code, detail=str(error)) from error
 
 
 @router.get("/incidents/{incident_id}/evidence")

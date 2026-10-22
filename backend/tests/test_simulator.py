@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 from pathlib import Path
+import pytest
 
 from app.domain.simulator import SimulatorService
 from app.main import app
@@ -74,3 +75,10 @@ def test_failure_controls_are_visible_and_change_dependency_availability() -> No
 
     service.set_failure_controls(third_party_available=True)
     assert service.query_evidence("service_health")["availability"] == "available"
+
+
+def test_action_validation_rejects_actions_not_allowed_by_scenario() -> None:
+    service = SimulatorService()
+
+    with pytest.raises(ValueError, match="not allowed"):
+        service.validate_action("third_party_outage", "rollback", "checkout-api", {})

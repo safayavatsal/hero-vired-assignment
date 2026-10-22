@@ -5,6 +5,9 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from typing import Any, Protocol
 
+DEFAULT_MODEL_GATEWAY_URL = "https://api.groq.com/openai/v1/responses"
+
+
 class ModelUnavailableError(Exception):
     pass
 
@@ -58,14 +61,14 @@ class HttpModelGateway:
 
 
 def configured_model_gateway() -> ModelGateway:
-    url = os.getenv("MODEL_GATEWAY_URL")
+    url = os.getenv("MODEL_GATEWAY_URL") or DEFAULT_MODEL_GATEWAY_URL
     token = os.getenv("MODEL_GATEWAY_TOKEN")
     if not url or not token:
         return UnavailableModelGateway()
     return HttpModelGateway(
         url,
         token,
-        model=os.getenv("MODEL_GATEWAY_MODEL", "gpt-4.1-mini"),
+        model=os.getenv("MODEL_GATEWAY_MODEL", "openai/gpt-oss-20b"),
         response_format=os.getenv("MODEL_GATEWAY_FORMAT", "structured"),
     )
 

@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -106,13 +106,25 @@ class PostgresIncidentRepository:
                     SELECT i.*
                     FROM incidents i
                     JOIN alerts a ON a.incident_id = i.id
-                    WHERE a.service = %s
-                      AND a.source_time BETWEEN %s - INTERVAL '15 minutes' AND %s + INTERVAL '15 minutes'
+                    WHERE a.source_time BETWEEN %s - INTERVAL '15 minutes' AND %s + INTERVAL '15 minutes'
+                      AND (
+                          a.service = %s
+                          OR a.labels->>'dependency' = %s
+                          OR a.service = %s
+                          OR a.labels->>'dependency' = %s
+                      )
                     ORDER BY a.source_time DESC
                     LIMIT 1
                     FOR UPDATE OF i
                     """,
-                    (alert.service, alert.source_time, alert.source_time),
+                    (
+                        alert.source_time,
+                        alert.source_time,
+                        alert.service,
+                        alert.raw_payload.get("labels", {}).get("dependency"),
+                        alert.raw_payload.get("labels", {}).get("dependency"),
+                        alert.service,
+                    ),
                 ).fetchone()
             if incident is None:
                 incident = {
@@ -163,6 +175,10 @@ class PostgresIncidentRepository:
                     alert.source_time, alert.received_time, Jsonb(_json_safe(alert.raw_payload)),
                 ),
             )
+            sequence = connection.execute(
+                "SELECT id FROM incidents WHERE id = %s FOR UPDATE",
+                (alert.incident_id,),
+            ).fetchone()
             sequence = connection.execute(
                 "SELECT COALESCE(MAX(sequence_number), 0) + 1 AS next FROM timeline_events WHERE incident_id = %s",
                 (alert.incident_id,),
@@ -255,6 +271,24 @@ class PostgresIncidentRepository:
             if result is None:
                 raise ValueError("incident not found")
             return result
+
+    def append_timeline_event(self, incident_id: UUID, event_type: str, payload: dict[str, Any]) -> None:
+        with psycopg.connect(self.database_url, row_factory=dict_row) as connection:
+            connection.execute("SELECT id FROM incidents WHERE id = %s FOR UPDATE", (incident_id,)).fetchone()
+            sequence = connection.execute(
+                "SELECT COALESCE(MAX(sequence_number), 0) + 1 AS next FROM timeline_events WHERE incident_id = %s",
+                (incident_id,),
+            ).fetchone()["next"]
+            now = datetime.now(timezone.utc)
+            connection.execute(
+                """
+                INSERT INTO timeline_events
+                (id, incident_id, event_type, event_time, received_time, sequence_number, payload)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """,
+                (uuid4(), incident_id, event_type, now, now, sequence, Jsonb(_json_safe(payload))),
+            )
+            connection.commit()
 
     def _response(self, connection: Any, incident_id: UUID, alert_id: UUID, duplicate: bool) -> dict[str, Any]:
         incident = connection.execute(
