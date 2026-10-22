@@ -28,11 +28,13 @@ Implemented:
 - Deterministic timeline ordering by source time, received time, and sequence.
 - Validated incident state transitions with optional optimistic version checks.
 - Transition events appended to the incident timeline.
+- Investigation results are reused after service restart when the persisted scenario matches.
+- Simulator action requests can be made idempotent with a caller-supplied key.
 
 Open:
 
-- Recovery of in-progress investigations and actions.
-- Idempotency for investigations, pages, decisions, and action attempts.
+- Recovery of in-progress actions and pages.
+- Idempotency for pages and human decisions.
 - Optimistic concurrency enforcement for human decisions and action updates.
 
 ## Acceptance checks

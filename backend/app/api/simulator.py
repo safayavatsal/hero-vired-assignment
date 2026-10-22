@@ -19,12 +19,15 @@ class AlertRequest(BaseModel):
     duplicate_count: int = Field(default=1, ge=1, le=5)
     late: bool = False
     flapping: bool = False
+    out_of_order: bool = False
+    delayed_seconds: int = Field(default=0, ge=0, le=300)
 
 
 class ActionRequest(BaseModel):
     action_type: str
     target: str
     parameters: dict[str, Any] = Field(default_factory=dict)
+    idempotency_key: str | None = Field(default=None, min_length=1)
 
 
 @router.get("/scenarios")
@@ -58,6 +61,8 @@ def trigger_alert(request: AlertRequest) -> dict[str, Any]:
             request.duplicate_count,
             request.late,
             request.flapping,
+            request.out_of_order,
+            request.delayed_seconds,
         )
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
@@ -78,6 +83,7 @@ def execute_action(request: ActionRequest) -> dict[str, Any]:
             request.action_type,
             request.target,
             request.parameters,
+            request.idempotency_key,
         )
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error

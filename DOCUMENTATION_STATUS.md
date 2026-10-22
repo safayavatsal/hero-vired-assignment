@@ -23,12 +23,18 @@ Implemented:
 - Visible degraded results when an evidence source is unavailable.
 - Model boundary with sensitive-value masking, structured response validation, and safe degraded statuses.
 - Contradictory evidence detection and versioned investigation caching.
+- Optional file-backed simulator state for local restart recovery.
+- Simulator delivery ordering/delay controls and action idempotency keys.
+- Restart-safe reuse of persisted investigations.
+- Structured-output adapter configuration for a Responses-compatible provider.
+- Persisted primary/fallback pages with acknowledgement, reply, and one-time escalation.
+- Typed action proposals, human approval/rejection, idempotent execution, verification, and timeline audit events.
+- React incident list and timeline view with refresh and empty/error states.
 
 Open:
 
-- Paging, human response, approval, and action workflow implementation.
-- Restart recovery for in-progress investigations and actions.
-- Configured model analysis and model failure handling.
-- Durable simulator state and full failure orchestration.
-- Runtime verification after the local container socket is available.
-- Full API, UI, restart-recovery, and end-to-end scenario tests.
+- Restart recovery for in-progress actions and pages.
+- Live configured model response verification with a real credential.
+- Full responder and third-party outage orchestration.
+- Runtime verification after the latest local container build.
+- Full end-to-end scenario tests.

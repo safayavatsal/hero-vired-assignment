@@ -9,10 +9,12 @@ This document lists the major HTTP APIs in the product. Detailed request validat
 | `/api/v1/alerts` | Accept and correlate an incoming alert idempotently |
 | `/api/v1/incidents/{incident_id}/status` | Apply a validated incident state transition |
 | `/api/v1/incidents/{incident_id}/investigate` | Collect bounded evidence and produce deterministic findings |
-| `/api/v1/incidents/{incident_id}/acknowledge` | Record human acknowledgement |
-| `/api/v1/incidents/{incident_id}/reply` | Record a responder reply |
-| `/api/v1/incidents/{incident_id}/actions/{action_id}/approve` | Approve a typed action |
-| `/api/v1/incidents/{incident_id}/actions/{action_id}/reject` | Reject a typed action |
+| `/api/v1/incidents/{incident_id}/page` | Deliver a durable primary responder page |
+| `/api/v1/pages/{page_id}/respond` | Acknowledge, reply to, or timeout a page |
+| `/api/v1/incidents/{incident_id}/actions` | Create an approval-bound typed action proposal |
+| `/api/v1/actions/{action_id}/decision` | Approve or reject a typed action |
+| `/api/v1/actions/{action_id}/execute` | Execute an approved action through the simulator |
+| `/api/v1/actions/{action_id}/verify` | Verify the persisted action outcome |
 | `/api/v1/simulator/scenarios` | Add or select a deterministic simulator scenario |
 | `/api/v1/simulator/alerts` | Trigger a simulator alert for a scenario |
 | `/api/v1/simulator/reset` | Reset the selected simulator scenario |

@@ -84,6 +84,22 @@ class PostgresIncidentRepository:
                 "SELECT * FROM incidents WHERE fingerprint = %s FOR UPDATE",
                 (alert.fingerprint,),
             ).fetchone()
+            correlation_key = alert.raw_payload.get("correlation_key")
+            if incident is None and correlation_key:
+                incident = connection.execute(
+                    """
+                    SELECT i.*
+                    FROM incidents i
+                    JOIN alerts a ON a.incident_id = i.id
+                    WHERE a.service = %s
+                      AND a.raw_payload->>'correlation_key' = %s
+                      AND a.source_time BETWEEN %s - INTERVAL '15 minutes' AND %s + INTERVAL '15 minutes'
+                    ORDER BY a.source_time DESC
+                    LIMIT 1
+                    FOR UPDATE OF i
+                    """,
+                    (alert.service, str(correlation_key), alert.source_time, alert.source_time),
+                ).fetchone()
             if incident is None:
                 incident = {
                     "id": uuid4(),

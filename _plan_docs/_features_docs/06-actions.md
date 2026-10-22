@@ -23,3 +23,16 @@ Execute safe, approved simulator actions exactly once and verify their outcomes.
 - Changed parameters require new approval.
 - A timeout after completion is detected by verification.
 - Rejected, expired, or unapproved actions never execute.
+
+## Implementation status
+
+Implemented:
+
+- Typed action proposals with parameter validation.
+- Durable approval and rejection records with approving responder.
+- Idempotency-key protected simulator execution.
+- Post-action verification and timeline audit events.
+
+Open:
+
+- Recovery and reconciliation of an action interrupted between execution and persistence.

@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from app.api.simulator import router as simulator_router
 from app.api.incidents import router as incident_router
 from app.api.investigations import router as investigation_router
+from app.api.workflow import router as workflow_router
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
@@ -16,9 +17,11 @@ DATABASE_URL = os.getenv(
 def initialize_storage() -> None:
     from app.application.incident import alert_pipeline_service
     from app.application.incident import investigation_service
+    from app.api.workflow import workflow_service
 
     alert_pipeline_service.initialize()
     investigation_service.initialize()
+    workflow_service.initialize()
 
 
 @asynccontextmanager
@@ -31,6 +34,7 @@ app = FastAPI(title="Hero Vired Assignment API", version="0.1.0", lifespan=lifes
 app.include_router(simulator_router)
 app.include_router(incident_router)
 app.include_router(investigation_router)
+app.include_router(workflow_router)
 
 
 @app.get("/api/v1/health")

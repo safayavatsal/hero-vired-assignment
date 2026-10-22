@@ -6,6 +6,14 @@ Run `docker compose up --build`, open `http://localhost:8000`, and confirm that 
 
 The API endpoints are available at `http://localhost:8001/api/v1/health` and `http://localhost:8001/api/v1/readiness`.
 
+Optional model configuration:
+
+```bash
+cp .env.example .env
+# Set MODEL_GATEWAY_URL and MODEL_GATEWAY_TOKEN in .env before starting Compose.
+# For the Responses API adapter, also set MODEL_GATEWAY_FORMAT=openai_responses.
+```
+
 List scenarios:
 
 ```bash

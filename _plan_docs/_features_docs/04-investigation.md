@@ -39,7 +39,8 @@ Implemented in the current slice:
 - Evidence-citation validation for model responses.
 - Explicit model status for unavailable and degraded model analysis.
 - Contradictory metric detection and versioned in-process investigation caching.
+- Environment-configured structured-output adapter for a Responses-compatible model provider.
 
 Open:
 
-- A configured model provider and live model response verification.
+- Live model response verification with a real credential remains pending.

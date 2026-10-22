@@ -34,8 +34,8 @@ Implemented in the current slice:
 - Resolution and reopening lifecycle handling.
 - Deterministic timeline ordering by source time, receive time, and sequence.
 - Incident list, detail, and timeline read APIs.
+- Shared service/correlation-key alerts within a 15-minute source-time window are grouped into one incident.
 
 Remaining:
 
-- Durable incident transitions and optimistic concurrency.
-- Correlation across dependency and time-window rules beyond the shared key.
+- Correlation rules beyond the shared service/correlation-key window.

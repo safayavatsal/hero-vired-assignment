@@ -3,6 +3,7 @@
 
 # Local and source-only files
 .DS_Store
+.env
 FDE-Assignment.docx
 __pycache__/
 .pytest_cache/

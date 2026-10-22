@@ -32,4 +32,8 @@ docker compose up --build
 - API readiness: `http://localhost:8001/api/v1/readiness`
 - Frontend: `http://localhost:8000`
 
-The current slice establishes the API, worker, frontend, PostgreSQL services, deterministic simulator scenarios, a PostgreSQL-backed alert-to-incident pipeline, and bounded deterministic investigations. Paging, model analysis, actions, and the incident UI are implemented in later feature slices.
+The current slice establishes the API, worker, frontend, PostgreSQL services, deterministic simulator scenarios, a PostgreSQL-backed alert-to-incident pipeline, bounded investigations, persisted paging and approval workflow, typed action execution, and an incident timeline UI.
+
+## Model gateway configuration
+
+Copy `.env.example` to `.env` and set `MODEL_GATEWAY_URL` and `MODEL_GATEWAY_TOKEN` locally. Use `MODEL_GATEWAY_FORMAT=openai_responses` for the Responses API adapter and set `MODEL_GATEWAY_MODEL`. Docker Compose passes them only to the API container. `.env` is ignored by Git and real credentials must never be committed.

@@ -32,9 +32,10 @@ Implemented in the baseline simulator slice:
 - Logs, metrics, deploy history, and service-health evidence queries.
 - Typed action execution with action records and verification.
 - Deterministic timeout-after-completion behavior for the rollback scenario.
+- Optional file-backed simulator state for restart-safe local runs.
+- Explicit delayed and out-of-order delivery controls.
+- Action idempotency keys prevent a repeated request from running twice.
 
 Open for later slices:
 
-- Durable simulator state.
-- Explicit delayed and out-of-order delivery scheduling.
 - Full responder and third-party outage orchestration.

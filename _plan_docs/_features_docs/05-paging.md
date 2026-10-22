@@ -21,3 +21,16 @@ Deliver actionable incidents to the right person and handle non-response.
 - A non-responsive responder causes exactly one fallback escalation.
 - Approval and rejection are tied to the current action proposal.
 - Delivery failure does not erase the incident.
+
+## Implementation status
+
+Implemented:
+
+- Durable primary and fallback page records.
+- Acknowledgement and reply responses.
+- One-time timeout escalation to a fallback responder.
+- Page delivery, response, timeout, and escalation timeline events.
+
+Open:
+
+- External notification delivery and service-ownership lookup.

@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
+from pathlib import Path
 
+from app.domain.simulator import SimulatorService
 from app.main import app
 
 
@@ -39,3 +41,24 @@ def test_scenario_exposes_evidence_and_verifies_timeout() -> None:
     verified = client.post(f"/api/v1/simulator/actions/{action_body['id']}/verify")
     assert verified.status_code == 200
     assert verified.json()["verified"] is True
+
+
+def test_simulator_state_and_action_idempotency_survive_service_restart(tmp_path: Path) -> None:
+    state_path = str(tmp_path / "simulator.json")
+    first = SimulatorService(state_path)
+    first.select_scenario("disk_pressure")
+    action = first.execute_action("clear_disk", "orders-worker", {}, "clear-1")
+
+    restarted = SimulatorService(state_path)
+    assert restarted.state()["service_state"]["disk_usage_percent"] == 62
+    assert restarted.execute_action("clear_disk", "orders-worker", {}, "clear-1")["id"] == action["id"]
+
+
+def test_alert_delivery_controls_make_ordering_and_delay_visible() -> None:
+    service = SimulatorService()
+    service.select_scenario("deployment_regression")
+
+    result = service.trigger_alert(None, 2, False, True, out_of_order=True, delayed_seconds=3)
+
+    assert [item["lifecycle"] for item in result["deliveries"]] == ["resolved", "resolved", "firing", "firing"]
+    assert all(item["received_time"] > item["source_time"] for item in result["deliveries"])

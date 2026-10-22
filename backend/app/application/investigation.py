@@ -38,6 +38,10 @@ class InvestigationService:
 
     def investigate(self, incident_id: UUID, scenario_id: str) -> dict[str, Any]:
         self.incident_service.get_incident(incident_id)
+        persisted = self.repository.get(incident_id) if self.repository is not None else None
+        if persisted is not None and persisted["scenario_id"] == scenario_id:
+            self._results[incident_id] = persisted
+            return persisted
         self.evidence_provider.select_scenario(scenario_id)
         evidence = [self._collect(scenario_id, source_type) for source_type in (
             "logs", "metrics", "deploys", "service_health"

@@ -2,7 +2,7 @@ from uuid import uuid4
 
 from app.application.investigation import InvestigationService
 from app.application.simulator import SimulatorService
-from app.application.model_gateway import mask_sensitive
+from app.application.model_gateway import _openai_request, _openai_response, mask_sensitive
 
 
 class ExistingIncident:
@@ -116,6 +116,15 @@ def test_contradictory_metrics_are_visible_in_uncertainty() -> None:
     assert "Conflicting metric values" in result["findings"][0]["uncertainty"]
 
 
+def test_openai_responses_adapter_uses_structured_output() -> None:
+    request = _openai_request({"instruction": "inspect"}, "test-model")
+    assert request["model"] == "test-model"
+    assert request["text"]["format"]["type"] == "json_schema"
+
+    response = _openai_response({"output_text": '{"current_condition":"bad","likely_cause":"release","confidence":0.9,"suggested_next_step":"rollback","evidence_ids":[],"uncertainty":null}'})
+    assert response["suggested_next_step"] == "rollback"
+
+
 def test_same_evidence_uses_versioned_cache() -> None:
     service = InvestigationService(ExistingIncident(), SimulatorService(), MemoryInvestigationRepository())
     incident_id = uuid4()
@@ -125,3 +134,13 @@ def test_same_evidence_uses_versioned_cache() -> None:
 
     assert first is second
     assert first["prompt_version"] == "investigation-v1"
+
+
+def test_persisted_investigation_is_idempotent_after_service_restart() -> None:
+    repository = MemoryInvestigationRepository()
+    incident_id = uuid4()
+    first = InvestigationService(ExistingIncident(), SimulatorService(), repository)
+    original = first.investigate(incident_id, "disk_pressure")
+
+    restarted = InvestigationService(ExistingIncident(), SimulatorService(), repository)
+    assert restarted.investigate(incident_id, "disk_pressure") == original

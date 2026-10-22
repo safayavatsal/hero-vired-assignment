@@ -1,4 +1,6 @@
-from dataclasses import dataclass, field
+import json
+import os
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID, uuid4
@@ -98,9 +100,10 @@ def scenario_definitions() -> dict[str, ScenarioDefinition]:
 
 
 class SimulatorService:
-    def __init__(self) -> None:
+    def __init__(self, state_path: str | None = None) -> None:
         self._definitions = scenario_definitions()
-        self._state = SimulatorState()
+        self._state_path = state_path or os.getenv("SIMULATOR_STATE_PATH")
+        self._state = self._load()
 
     def list_scenarios(self) -> list[dict[str, Any]]:
         return [self._public_definition(definition) for definition in self._definitions.values()]
@@ -111,6 +114,7 @@ class SimulatorService:
             scenario_id=scenario_id,
             service_state=dict(definition.initial_state),
         )
+        self._save()
         return self.state()
 
     def reset(self) -> dict[str, Any]:
@@ -120,6 +124,7 @@ class SimulatorService:
             scenario_id=scenario_id,
             service_state=dict(definition.initial_state) if definition else {},
         )
+        self._save()
         return self.state()
 
     def state(self) -> dict[str, Any]:
@@ -138,6 +143,8 @@ class SimulatorService:
         duplicate_count: int,
         late: bool,
         flapping: bool,
+        out_of_order: bool = False,
+        delayed_seconds: int = 0,
     ) -> dict[str, Any]:
         selected_id = scenario_id or self._state.scenario_id
         definition = self._definition(selected_id)
@@ -162,10 +169,13 @@ class SimulatorService:
                     "alert_type": definition.alert_type,
                     "lifecycle": lifecycle,
                     "source_time": source_time.isoformat(),
-                    "received_time": datetime.now(timezone.utc).isoformat(),
+                    "received_time": (datetime.now(timezone.utc) + timedelta(seconds=delayed_seconds)).isoformat(),
                 }
                 self._state.alerts.append(alert)
                 deliveries.append(alert)
+        if out_of_order:
+            deliveries.reverse()
+        self._save()
         return {"scenario_id": definition.id, "deliveries": deliveries}
 
     def query_evidence(self, source_type: str) -> dict[str, Any]:
@@ -181,10 +191,20 @@ class SimulatorService:
             "items": definition.evidence[source_type],
         }
 
-    def execute_action(self, action_type: str, target: str, parameters: dict[str, Any]) -> dict[str, Any]:
+    def execute_action(
+        self,
+        action_type: str,
+        target: str,
+        parameters: dict[str, Any],
+        idempotency_key: str | None = None,
+    ) -> dict[str, Any]:
         definition = self._require_selected()
         if action_type not in definition.allowed_actions:
             raise ValueError("action is not allowed for the selected scenario")
+        if idempotency_key:
+            for action in self._state.actions:
+                if action.get("idempotency_key") == idempotency_key:
+                    return action
         now = datetime.now(timezone.utc).isoformat()
         timed_out = action_type in definition.controls["action_timeout_after_completion"]
         state_before = dict(self._state.service_state)
@@ -202,8 +222,10 @@ class SimulatorService:
             "state_before": state_before,
             "state_after": state_after,
             "verified": False,
+            "idempotency_key": idempotency_key,
         }
         self._state.actions.append(record)
+        self._save()
         return record
 
     def verify_action(self, action_id: UUID) -> dict[str, Any]:
@@ -211,6 +233,7 @@ class SimulatorService:
             if action["id"] == str(action_id):
                 action["verified"] = True
                 action["verified_at"] = datetime.now(timezone.utc).isoformat()
+                self._save()
                 return action
         raise ValueError("action not found")
 
@@ -236,6 +259,32 @@ class SimulatorService:
         if not self._state.scenario_id:
             raise ValueError("select a scenario first")
         return self._definition(self._state.scenario_id)
+
+    def _load(self) -> SimulatorState:
+        if not self._state_path:
+            return SimulatorState()
+        try:
+            with open(self._state_path, encoding="utf-8") as handle:
+                payload = json.load(handle)
+            return SimulatorState(
+                scenario_id=payload.get("scenario_id"),
+                alerts=payload.get("alerts", []),
+                actions=payload.get("actions", []),
+                service_state=payload.get("service_state", {}),
+            )
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            return SimulatorState()
+
+    def _save(self) -> None:
+        if not self._state_path:
+            return
+        directory = os.path.dirname(self._state_path)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+        temporary_path = f"{self._state_path}.tmp"
+        with open(temporary_path, "w", encoding="utf-8") as handle:
+            json.dump(asdict(self._state), handle)
+        os.replace(temporary_path, self._state_path)
 
     def _definition(self, scenario_id: str | None) -> ScenarioDefinition:
         if not scenario_id or scenario_id not in self._definitions:

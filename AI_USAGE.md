@@ -34,4 +34,8 @@ The investigation repository, durable evidence and finding records, restart-boun
 
 The model gateway boundary, sensitive-value masking, structured-response validation, citation checks, and safe model failure statuses were implemented with AI assistance from the approved investigation plan. No provider credential is stored in the repository.
 
+The simulator restart state, delivery delay/order controls, action idempotency, correlation-window lookup, restart-safe investigation reuse, and structured-output provider adapter were implemented with AI assistance from the approved Feature 1–4 plans. The project owner remains responsible for the design boundaries and review of these changes.
+
+The durable paging, fallback escalation, typed approval workflow, simulator execution boundary, audit timeline events, and incident timeline UI were implemented with AI assistance from the approved paging, action, and UI plans. The human-authored workflow boundary remains explicit: provider text cannot execute actions, and approval is required before execution.
+
 Implementation-specific mistakes caught and changes directly authored by the project owner will be recorded as the implementation progresses.
