@@ -10,48 +10,11 @@ from psycopg.types.json import Jsonb
 
 from app.application.simulator import simulator_service
 from app.application.external_boundaries import ActionExecutorGateway, NotificationGateway, OwnershipGateway
+from app.application.job_queue import JobRepository
 
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/oncall")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/hero_vired")
 ACTION_TYPES = {"restart", "rollback", "scale", "clear_disk"}
-
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS pages (
-    id UUID PRIMARY KEY,
-    incident_id UUID NOT NULL REFERENCES incidents(id),
-    level TEXT NOT NULL,
-    responder TEXT NOT NULL,
-    fallback_responder TEXT NOT NULL,
-    status TEXT NOT NULL,
-    deadline_at TIMESTAMPTZ NOT NULL,
-    response_type TEXT,
-    response_text TEXT,
-    incident_version INTEGER NOT NULL DEFAULT 1,
-    created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL,
-    UNIQUE (incident_id, level)
-);
-CREATE TABLE IF NOT EXISTS action_proposals (
-    id UUID PRIMARY KEY,
-    incident_id UUID NOT NULL REFERENCES incidents(id),
-    scenario_id TEXT NOT NULL,
-    action_type TEXT NOT NULL,
-    target TEXT NOT NULL,
-    parameters JSONB NOT NULL,
-    status TEXT NOT NULL,
-    approval_expires_at TIMESTAMPTZ,
-    approved_by TEXT,
-    idempotency_key TEXT NOT NULL UNIQUE,
-    simulator_action_id UUID,
-    result JSONB,
-    incident_version INTEGER NOT NULL DEFAULT 1,
-    created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL
-);
-ALTER TABLE pages ADD COLUMN IF NOT EXISTS incident_version INTEGER NOT NULL DEFAULT 1;
-ALTER TABLE action_proposals ADD COLUMN IF NOT EXISTS incident_version INTEGER NOT NULL DEFAULT 1;
-"""
-
 
 class WorkflowService:
     def __init__(self, database_url: str = DATABASE_URL) -> None:
@@ -59,10 +22,10 @@ class WorkflowService:
         self.ownership_gateway = OwnershipGateway()
         self.notification_gateway = NotificationGateway()
         self.action_executor_gateway = ActionExecutorGateway()
+        self.job_repository = JobRepository(database_url)
 
     def initialize(self) -> None:
         with psycopg.connect(self.database_url, row_factory=dict_row) as connection:
-            connection.execute(SCHEMA)
             now = datetime.now(timezone.utc)
             running = connection.execute(
                 "UPDATE action_proposals SET status = 'unknown', updated_at = %s WHERE status = 'running' RETURNING incident_id, id",
@@ -70,6 +33,12 @@ class WorkflowService:
             ).fetchall()
             for action in running:
                 self._timeline(connection, action["incident_id"], "action_recovered_unknown", {"action_id": str(action["id"])})
+        self.recover_overdue_pages()
+
+    def recover_overdue_pages(self) -> int:
+        now = datetime.now(timezone.utc)
+        recovered = 0
+        with psycopg.connect(self.database_url, row_factory=dict_row) as connection:
             overdue = connection.execute(
                 "SELECT * FROM pages WHERE level = 'primary' AND status = 'delivered' AND deadline_at <= %s FOR UPDATE",
                 (now,),
@@ -77,15 +46,25 @@ class WorkflowService:
             for page in overdue:
                 connection.execute("UPDATE pages SET status = 'escalated', response_type = 'timeout', updated_at = %s WHERE id = %s", (now, page["id"]))
                 fallback_id = uuid4()
-                connection.execute(
+                inserted = connection.execute(
                     """INSERT INTO pages
                     (id, incident_id, level, responder, fallback_responder, status, deadline_at, created_at, updated_at, incident_version)
                     VALUES (%s, %s, 'fallback', %s, %s, 'delivered', %s, %s, %s, %s)
-                    ON CONFLICT (incident_id, level) DO NOTHING""",
+                    ON CONFLICT (incident_id, level) DO NOTHING
+                    RETURNING id""",
                     (fallback_id, page["incident_id"], page["fallback_responder"], page["fallback_responder"],
                      now + timedelta(seconds=300), now, now, page["incident_version"]),
-                )
-                self._timeline(connection, page["incident_id"], "page_recovered_escalated", {"page_id": str(page["id"])})
+                ).fetchone()
+                if inserted:
+                    connection.execute(
+                        """INSERT INTO page_delivery_attempts
+                        (id, page_id, attempt_number, status, created_at)
+                        VALUES (%s, %s, 1, 'delivered', %s)""",
+                        (uuid4(), inserted["id"], now),
+                    )
+                    self._timeline(connection, page["incident_id"], "page_recovered_escalated", {"page_id": str(page["id"]), "fallback_page_id": str(inserted["id"])})
+                    recovered += 1
+        return recovered
 
     def create_page(self, incident_id: UUID, responder: str | None, fallback: str | None, deadline_seconds: int) -> dict[str, Any]:
         incident = self._incident(incident_id)
@@ -110,6 +89,12 @@ class WorkflowService:
                 (id, incident_id, level, responder, fallback_responder, status, deadline_at, created_at, updated_at, incident_version)
                 VALUES (%s, %s, 'primary', %s, %s, 'delivered', %s, %s, %s, %s)""",
                 (page_id, incident_id, responder, fallback, deadline, now, now, incident["version"]),
+            )
+            connection.execute(
+                """INSERT INTO page_delivery_attempts
+                (id, page_id, attempt_number, status, external_id, created_at)
+                VALUES (%s, %s, 1, %s, %s, %s)""",
+                (uuid4(), page_id, "delivered", delivery.get("id") if delivery else None, now),
             )
             timeline = {"page_id": str(page_id), "responder": responder}
             if delivery and delivery.get("id"):
@@ -148,6 +133,16 @@ class WorkflowService:
                     VALUES (%s, %s, 'fallback', %s, %s, 'delivered', %s, %s, %s, %s)""",
                     (fallback_id, page["incident_id"], page["fallback_responder"], page["fallback_responder"],
                      now + timedelta(seconds=300), now, now, page["incident_version"]),
+                )
+                delivery = self.notification_gateway.deliver({
+                    "page_id": str(fallback_id), "incident_id": str(page["incident_id"]),
+                    "responder": page["fallback_responder"], "fallback_responder": page["fallback_responder"],
+                })
+                connection.execute(
+                    """INSERT INTO page_delivery_attempts
+                    (id, page_id, attempt_number, status, external_id, created_at)
+                    VALUES (%s, %s, 1, %s, %s, %s)""",
+                    (uuid4(), fallback_id, "delivered", delivery.get("id") if delivery else None, now),
                 )
                 self._timeline(connection, page["incident_id"], "page_escalated", {"from_page_id": str(page_id), "page_id": str(fallback_id)})
                 return {"page": self._get_page(connection, page_id), "escalated_page": self._get_page(connection, fallback_id)}
@@ -232,13 +227,43 @@ class WorkflowService:
             raise ValueError("incident version conflict")
 
     def execute_action(self, action_id: UUID) -> dict[str, Any]:
-        now = datetime.now(timezone.utc)
         with psycopg.connect(self.database_url, row_factory=dict_row) as connection:
             action = connection.execute("SELECT * FROM action_proposals WHERE id = %s FOR UPDATE", (action_id,)).fetchone()
             if action is None:
                 raise ValueError("action proposal not found")
             if action["status"] != "approved":
                 raise ValueError("action is not approved")
+            job = self.job_repository.enqueue(
+                "action",
+                action["incident_id"],
+                {"action_id": str(action_id)},
+                f"action-execution:{action['idempotency_key']}",
+            )
+            connection.execute("UPDATE action_proposals SET status = 'queued', updated_at = %s WHERE id = %s", (datetime.now(timezone.utc), action_id))
+            self._timeline(connection, action["incident_id"], "action_enqueued", {"action_id": str(action_id), "job_id": job["id"]})
+            return self._get_action(connection, action_id)
+
+    def execute_claimed_action(self, action_id: UUID) -> dict[str, Any]:
+        now = datetime.now(timezone.utc)
+        with psycopg.connect(self.database_url, row_factory=dict_row) as connection:
+            action = connection.execute("SELECT * FROM action_proposals WHERE id = %s FOR UPDATE", (action_id,)).fetchone()
+            if action is None:
+                raise ValueError("action proposal not found")
+            if action["status"] == "approved":
+                raise ValueError("action is not queued")
+            if action["status"] != "queued":
+                return self._action(action)
+            attempt_number = connection.execute(
+                "SELECT COALESCE(MAX(attempt_number), 0) + 1 AS next FROM action_attempts WHERE action_proposal_id = %s",
+                (action_id,),
+            ).fetchone()["next"]
+            attempt_id = uuid4()
+            connection.execute(
+                """INSERT INTO action_attempts
+                (id, action_proposal_id, attempt_number, status, started_at)
+                VALUES (%s, %s, %s, 'running', %s)""",
+                (attempt_id, action_id, attempt_number, now),
+            )
             connection.execute("UPDATE action_proposals SET status = 'running', updated_at = %s WHERE id = %s", (now, action_id))
             try:
                 simulator_service.select_scenario(action["scenario_id"])
@@ -251,6 +276,12 @@ class WorkflowService:
                 "UPDATE action_proposals SET status = %s, simulator_action_id = %s, result = %s, updated_at = %s WHERE id = %s",
                 (status, UUID(result["id"]) if result.get("id") else None, Jsonb(result), now, action_id),
             )
+            connection.execute(
+                """UPDATE action_attempts
+                SET status = %s, simulator_action_id = %s, result = %s, completed_at = %s
+                WHERE id = %s""",
+                (status, UUID(result["id"]) if result.get("id") else None, Jsonb(result), now, attempt_id),
+            )
             self._timeline(connection, action["incident_id"], "action_result", {"action_id": str(action_id), "status": status})
             return self._get_action(connection, action_id)
 
@@ -262,6 +293,18 @@ class WorkflowService:
             if not action["simulator_action_id"]:
                 raise ValueError("action has not executed")
             result = simulator_service.verify_action(action["simulator_action_id"])
+            attempt = connection.execute(
+                "SELECT id FROM action_attempts WHERE action_proposal_id = %s ORDER BY attempt_number DESC LIMIT 1",
+                (action_id,),
+            ).fetchone()
+            if attempt is None:
+                raise ValueError("action attempt not found")
+            connection.execute(
+                """INSERT INTO verifications
+                (id, action_attempt_id, status, observed_state, verified_at)
+                VALUES (%s, %s, %s, %s, %s)""",
+                (uuid4(), attempt["id"], "verified" if result.get("verified") else "failed", Jsonb(result), datetime.now(timezone.utc)),
+            )
             connection.execute("UPDATE action_proposals SET status = 'verified', result = %s, updated_at = %s WHERE id = %s", (Jsonb(result), datetime.now(timezone.utc), action_id))
             self._timeline(connection, action["incident_id"], "action_verified", {"action_id": str(action_id), "verified": True})
             return self._get_action(connection, action_id)
@@ -301,7 +344,17 @@ class WorkflowService:
                 for key, value in row.items()}
 
     def _get_action(self, connection: Any, action_id: UUID) -> dict[str, Any]:
-        return self._action(connection.execute("SELECT * FROM action_proposals WHERE id = %s", (action_id,)).fetchone())
+        action = self._action(connection.execute("SELECT * FROM action_proposals WHERE id = %s", (action_id,)).fetchone())
+        action["attempts"] = [self._action(row) for row in connection.execute(
+            "SELECT * FROM action_attempts WHERE action_proposal_id = %s ORDER BY attempt_number",
+            (action_id,),
+        ).fetchall()]
+        for attempt in action["attempts"]:
+            attempt["verifications"] = [self._action(row) for row in connection.execute(
+                "SELECT * FROM verifications WHERE action_attempt_id = %s ORDER BY verified_at",
+                (UUID(attempt["id"]),),
+            ).fetchall()]
+        return action
 
     @staticmethod
     def _timeline(connection: Any, incident_id: UUID, event_type: str, payload: dict[str, Any]) -> None:

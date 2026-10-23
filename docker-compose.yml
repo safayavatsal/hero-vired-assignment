@@ -1,50 +1,97 @@
 services:
   db:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: oncall
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.50
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d oncall"]
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 10s
+    networks:
+      - backend
+    logging: &default-logging
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
 
   api:
     build: ./backend
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/oncall
-      MODEL_GATEWAY_URL: ${MODEL_GATEWAY_URL:-https://api.groq.com/openai/v1/responses}
-      MODEL_GATEWAY_TOKEN: ${MODEL_GATEWAY_TOKEN:-}
-      MODEL_GATEWAY_FORMAT: ${MODEL_GATEWAY_FORMAT:-openai_responses}
-      MODEL_GATEWAY_MODEL: ${MODEL_GATEWAY_MODEL:-openai/gpt-oss-20b}
-      NOTIFICATION_GATEWAY_URL: ${NOTIFICATION_GATEWAY_URL:-}
-      NOTIFICATION_GATEWAY_TOKEN: ${NOTIFICATION_GATEWAY_TOKEN:-}
-      OWNERSHIP_GATEWAY_URL: ${OWNERSHIP_GATEWAY_URL:-}
-      OWNERSHIP_GATEWAY_TOKEN: ${OWNERSHIP_GATEWAY_TOKEN:-}
-      ACTION_EXECUTOR_URL: ${ACTION_EXECUTOR_URL:-}
-      ACTION_EXECUTOR_TOKEN: ${ACTION_EXECUTOR_TOKEN:-}
-      SIMULATOR_STATE_PATH: /tmp/hero-vired-simulator-state.json
+    restart: unless-stopped
+    init: true
+    mem_limit: 512m
+    cpus: 0.50
+    env_file:
+      - .env
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     depends_on:
       db:
         condition: service_healthy
     ports:
       - "8001:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/readiness', timeout=2)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - backend
+      - frontend
+    logging: *default-logging
 
   worker:
     build: ./backend
-    environment:
-      WORKER_POLL_INTERVAL: "1"
+    restart: unless-stopped
+    init: true
+    mem_limit: 256m
+    cpus: 0.25
+    env_file:
+      - .env
     command: python -m app.execution.worker
     depends_on:
       db:
         condition: service_healthy
+      api:
+        condition: service_healthy
+    networks:
+      - backend
+      - egress
+    logging: *default-logging
 
   frontend:
     build: ./frontend
+    restart: unless-stopped
+    init: true
+    mem_limit: 256m
+    cpus: 0.25
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     ports:
-      - "8000:5173"
+      - "8000:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - frontend
+    logging: *default-logging
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:
+    internal: true
+  egress:
+  frontend:

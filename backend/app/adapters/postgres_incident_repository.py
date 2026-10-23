@@ -13,59 +13,12 @@ from app.domain.incident import Alert, INCIDENT_TRANSITIONS
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5432/oncall",
+    "postgresql://postgres:postgres@localhost:5432/hero_vired",
 )
-
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS incidents (
-    id UUID PRIMARY KEY,
-    fingerprint TEXT NOT NULL UNIQUE,
-    service TEXT NOT NULL,
-    severity TEXT NOT NULL,
-    status TEXT NOT NULL,
-    summary TEXT NOT NULL,
-    version INTEGER NOT NULL DEFAULT 1,
-    created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL
-);
-CREATE TABLE IF NOT EXISTS alerts (
-    id UUID PRIMARY KEY,
-    incident_id UUID NOT NULL REFERENCES incidents(id),
-    source_event_id TEXT NOT NULL UNIQUE,
-    fingerprint TEXT NOT NULL,
-    source TEXT NOT NULL,
-    service TEXT NOT NULL,
-    severity TEXT NOT NULL,
-    alert_type TEXT NOT NULL,
-    labels JSONB NOT NULL,
-    description TEXT NOT NULL,
-    lifecycle TEXT NOT NULL,
-    source_time TIMESTAMPTZ NOT NULL,
-    received_time TIMESTAMPTZ NOT NULL,
-    raw_payload JSONB NOT NULL
-);
-CREATE TABLE IF NOT EXISTS timeline_events (
-    id UUID PRIMARY KEY,
-    incident_id UUID NOT NULL REFERENCES incidents(id),
-    event_type TEXT NOT NULL,
-    event_time TIMESTAMPTZ NOT NULL,
-    received_time TIMESTAMPTZ NOT NULL,
-    sequence_number INTEGER NOT NULL,
-    payload JSONB NOT NULL,
-    UNIQUE (incident_id, sequence_number)
-);
-CREATE INDEX IF NOT EXISTS timeline_events_incident_order
-    ON timeline_events (incident_id, event_time, received_time, sequence_number);
-"""
-
 
 class PostgresIncidentRepository:
     def __init__(self, database_url: str = DATABASE_URL) -> None:
         self.database_url = database_url
-
-    def initialize(self) -> None:
-        with psycopg.connect(self.database_url) as connection:
-            connection.execute(SCHEMA)
 
     def accept_alert(self, alert: Alert) -> dict[str, Any]:
         with psycopg.connect(self.database_url, row_factory=dict_row) as connection:

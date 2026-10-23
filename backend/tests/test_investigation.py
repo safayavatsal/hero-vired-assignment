@@ -119,7 +119,6 @@ def test_unavailable_evidence_is_visible_in_findings() -> None:
 
 
 def test_model_gateway_is_safe_when_unconfigured(monkeypatch) -> None:
-    monkeypatch.delenv("MODEL_GATEWAY_URL", raising=False)
     monkeypatch.delenv("MODEL_GATEWAY_TOKEN", raising=False)
     service = InvestigationService(ExistingIncident(), SimulatorService(), MemoryInvestigationRepository())
 
@@ -128,14 +127,28 @@ def test_model_gateway_is_safe_when_unconfigured(monkeypatch) -> None:
     assert result["model_status"] == "unavailable"
 
 
-def test_model_gateway_uses_default_url_when_only_token_is_configured(monkeypatch) -> None:
-    monkeypatch.delenv("MODEL_GATEWAY_URL", raising=False)
+def test_model_gateway_uses_configured_url_and_format(monkeypatch) -> None:
     monkeypatch.setenv("MODEL_GATEWAY_TOKEN", "test-token")
+    monkeypatch.setenv("MODEL_GATEWAY_URL", "https://provider.test/responses")
+    monkeypatch.setenv("MODEL_GATEWAY_FORMAT", "openai_responses")
+
+    service = InvestigationService(ExistingIncident(), SimulatorService(), MemoryInvestigationRepository())
+
+    assert isinstance(service.model_gateway, HttpModelGateway)
+    assert service.model_gateway.url == "https://provider.test/responses"
+    assert service.model_gateway.response_format == "openai_responses"
+
+
+def test_model_gateway_uses_default_url_when_url_is_unset(monkeypatch) -> None:
+    monkeypatch.setenv("MODEL_GATEWAY_TOKEN", "test-token")
+    monkeypatch.delenv("MODEL_GATEWAY_URL", raising=False)
+    monkeypatch.delenv("MODEL_GATEWAY_FORMAT", raising=False)
 
     service = InvestigationService(ExistingIncident(), SimulatorService(), MemoryInvestigationRepository())
 
     assert isinstance(service.model_gateway, HttpModelGateway)
     assert service.model_gateway.url == DEFAULT_MODEL_GATEWAY_URL
+    assert service.model_gateway.response_format == "openai_responses"
 
 
 def test_invalid_model_citations_are_rejected() -> None:
@@ -197,7 +210,6 @@ def test_same_evidence_uses_versioned_cache() -> None:
 
 
 def test_persisted_investigation_is_idempotent_after_service_restart(monkeypatch) -> None:
-    monkeypatch.delenv("MODEL_GATEWAY_URL", raising=False)
     monkeypatch.delenv("MODEL_GATEWAY_TOKEN", raising=False)
     repository = MemoryInvestigationRepository()
     incident_id = uuid4()
@@ -209,7 +221,6 @@ def test_persisted_investigation_is_idempotent_after_service_restart(monkeypatch
 
 
 def test_persisted_unavailable_investigation_retries_after_provider_configuration(monkeypatch) -> None:
-    monkeypatch.delenv("MODEL_GATEWAY_URL", raising=False)
     monkeypatch.delenv("MODEL_GATEWAY_TOKEN", raising=False)
     repository = MemoryInvestigationRepository()
     incident_id = uuid4()

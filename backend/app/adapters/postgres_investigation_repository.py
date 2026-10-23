@@ -11,54 +11,12 @@ from psycopg.types.json import Jsonb
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5432/oncall",
+    "postgresql://postgres:postgres@localhost:5432/hero_vired",
 )
-
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS investigations (
-    id UUID PRIMARY KEY,
-    incident_id UUID NOT NULL REFERENCES incidents(id),
-    scenario_id TEXT NOT NULL,
-    generated_at TIMESTAMPTZ NOT NULL,
-    model_status TEXT NOT NULL,
-    model_error TEXT,
-    model_analysis JSONB,
-    prompt_version TEXT NOT NULL DEFAULT 'investigation-v1',
-    UNIQUE (incident_id)
-);
-ALTER TABLE investigations ADD COLUMN IF NOT EXISTS model_error TEXT;
-ALTER TABLE investigations ADD COLUMN IF NOT EXISTS model_analysis JSONB;
-ALTER TABLE investigations ADD COLUMN IF NOT EXISTS prompt_version TEXT NOT NULL DEFAULT 'investigation-v1';
-CREATE TABLE IF NOT EXISTS investigation_evidence (
-    id TEXT NOT NULL,
-    investigation_id UUID NOT NULL REFERENCES investigations(id) ON DELETE CASCADE,
-    source_type TEXT NOT NULL,
-    availability TEXT NOT NULL,
-    observed_at TIMESTAMPTZ NOT NULL,
-    items JSONB NOT NULL,
-    PRIMARY KEY (investigation_id, id)
-);
-CREATE TABLE IF NOT EXISTS investigation_findings (
-    id TEXT NOT NULL,
-    investigation_id UUID NOT NULL REFERENCES investigations(id) ON DELETE CASCADE,
-    category TEXT NOT NULL,
-    statement TEXT NOT NULL,
-    confidence DOUBLE PRECISION NOT NULL,
-    suggested_next_step TEXT NOT NULL,
-    evidence_ids JSONB NOT NULL,
-    uncertainty TEXT,
-    PRIMARY KEY (investigation_id, id)
-);
-"""
-
 
 class PostgresInvestigationRepository:
     def __init__(self, database_url: str = DATABASE_URL) -> None:
         self.database_url = database_url
-
-    def initialize(self) -> None:
-        with psycopg.connect(self.database_url) as connection:
-            connection.execute(SCHEMA)
 
     def save(self, result: dict[str, Any]) -> None:
         investigation_id = uuid4()
@@ -133,6 +91,7 @@ class PostgresInvestigationRepository:
             return {
                 "incident_id": str(incident_id),
                 "scenario_id": investigation["scenario_id"],
+                "status": "completed",
                 "generated_at": investigation["generated_at"].isoformat(),
                 "model_status": investigation["model_status"],
                 "model_error": investigation["model_error"],

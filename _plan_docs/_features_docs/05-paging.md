@@ -39,6 +39,8 @@ Implemented:
 - Optional ownership lookup resolves primary and fallback responders when page responders are omitted.
 - Optional notification delivery receives a page payload and records an external delivery identifier in the timeline.
 - Missing external configuration keeps the deterministic local paging behavior.
+- Page delivery attempts are persisted for primary and fallback pages.
+- The worker checks overdue pages during polling and creates one fallback page without duplication.
 
 Boundary verification:
 

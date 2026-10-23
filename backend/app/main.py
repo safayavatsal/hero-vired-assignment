@@ -2,6 +2,7 @@ import os
 from contextlib import asynccontextmanager
 
 import psycopg
+from app.migrations import run_migrations
 from fastapi import FastAPI
 
 from app.api.simulator import router as simulator_router
@@ -11,16 +12,13 @@ from app.api.workflow import router as workflow_router
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5432/oncall",
+    "postgresql://postgres:postgres@localhost:5432/hero_vired",
 )
 
 def initialize_storage() -> None:
-    from app.application.incident import alert_pipeline_service
-    from app.application.incident import investigation_service
     from app.api.workflow import workflow_service
 
-    alert_pipeline_service.initialize()
-    investigation_service.initialize()
+    run_migrations()
     workflow_service.initialize()
 
 

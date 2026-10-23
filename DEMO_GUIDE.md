@@ -10,8 +10,10 @@ Optional model configuration:
 
 ```bash
 cp .env.example .env
-# Set MODEL_GATEWAY_URL and MODEL_GATEWAY_TOKEN in .env before starting Compose.
-# For the Responses API adapter, also set MODEL_GATEWAY_FORMAT=openai_responses.
+# Set MODEL_GATEWAY_TOKEN and database credentials in .env before starting Compose.
+# MODEL_GATEWAY_URL and MODEL_GATEWAY_FORMAT are optional provider overrides.
+# MODEL_GATEWAY_MODEL defaults to openai/gpt-oss-20b.
+# The API applies backend migrations automatically during startup.
 ```
 
 List scenarios:
@@ -48,7 +50,7 @@ curl http://localhost:8001/api/v1/incidents
 
 Restart the API container and call `GET /api/v1/incidents` again to demonstrate that the incident data is loaded from PostgreSQL.
 
-Run a bounded investigation for the matching scenario. The API advances a received incident to `investigating` and records the investigation start in the timeline:
+Queue a bounded investigation for the matching scenario. The API advances a received incident to `investigating`, records the investigation start in the timeline, and returns a durable queued job. The worker collects evidence and persists the completed result:
 
 ```bash
 curl -X POST http://localhost:8001/api/v1/incidents/<incident-id>/investigate \
@@ -81,6 +83,7 @@ curl -X POST http://localhost:8001/api/v1/actions/<action-id>/decision \
   -H 'Content-Type: application/json' \
   -d '{"approved":true,"responder":"primary-oncall"}'
 curl -X POST http://localhost:8001/api/v1/actions/<action-id>/execute
+# The response is queued; the worker processes it and the action status becomes completed or timed_out.
 curl -X POST http://localhost:8001/api/v1/actions/<action-id>/verify
 curl http://localhost:8001/api/v1/incidents/<incident-id>/actions
 curl http://localhost:8001/api/v1/incidents/<incident-id>/timeline

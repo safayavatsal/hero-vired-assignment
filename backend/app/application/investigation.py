@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from typing import Any, Protocol
 from uuid import UUID
 
+from app.application.job_queue import JobRepository
 from app.domain.investigation import Evidence, Finding
 from app.application.model_gateway import (
     ModelGateway,
@@ -26,11 +27,12 @@ class InvestigationService:
     PROMPT_VERSION = "investigation-v1"
 
     def __init__(self, incident_service: Any, evidence_provider: EvidenceProvider, repository: Any = None,
-                 model_gateway: ModelGateway | None = None) -> None:
+                 model_gateway: ModelGateway | None = None, jobs: JobRepository | None = None) -> None:
         self.incident_service = incident_service
         self.evidence_provider = evidence_provider
         self.repository = repository
         self.model_gateway = model_gateway or configured_model_gateway()
+        self.jobs = jobs
         self._results: dict[UUID, dict[str, Any]] = {}
 
     def initialize(self) -> None:
@@ -63,6 +65,7 @@ class InvestigationService:
         result = {
             "incident_id": str(incident_id),
             "scenario_id": scenario_id,
+            "status": "completed",
             "generated_at": datetime.now().astimezone().isoformat(),
             "evidence": [self._serialize_evidence(item) for item in evidence],
             "findings": [self._serialize_finding(item) for item in findings],
@@ -76,6 +79,54 @@ class InvestigationService:
             self.repository.save(result)
         self._mark_investigating(incident, incident_id, scenario_id)
         return result
+
+    def enqueue(self, incident_id: UUID, scenario_id: str) -> dict[str, Any]:
+        incident = self.incident_service.get_incident(incident_id)
+        scenario_state = self.evidence_provider.select_scenario(scenario_id)
+        scenario_service = (scenario_state.get("scenario") or {}).get("service")
+        if scenario_service and incident.get("service") and incident["service"] != scenario_service:
+            raise ValueError("selected scenario does not match the incident service")
+        if self.jobs is None:
+            return self.investigate(incident_id, scenario_id)
+        persisted = self.repository.get(incident_id) if self.repository is not None else None
+        if persisted is not None and persisted["scenario_id"] == scenario_id:
+            return persisted
+        if incident["status"] == "received":
+            self.incident_service.transition(incident_id, "investigating", incident["version"])
+        job = self.jobs.enqueue(
+            "investigation",
+            incident_id,
+            {"incident_id": str(incident_id), "scenario_id": scenario_id},
+            f"investigation:{incident_id}:{scenario_id}",
+        )
+        return {
+            "incident_id": str(incident_id),
+            "scenario_id": scenario_id,
+            "status": job["status"],
+            "job_id": job["id"],
+            "model_status": "pending",
+            "findings": [],
+            "evidence": [],
+        }
+
+    def get_status(self, incident_id: UUID) -> dict[str, Any]:
+        try:
+            return self.get(incident_id)
+        except ValueError:
+            pass
+        if self.jobs is not None:
+            job = self.jobs.latest_for_incident(incident_id, "investigation")
+            if job is not None:
+                return {
+                    "incident_id": str(incident_id),
+                    "scenario_id": job["payload"]["scenario_id"],
+                    "status": job["status"],
+                    "job_id": job["id"],
+                    "model_status": "pending",
+                    "findings": [],
+                    "evidence": [],
+                }
+        raise ValueError("investigation not found")
 
     def _mark_investigating(self, incident: dict[str, Any], incident_id: UUID, scenario_id: str) -> None:
         if incident.get("status") == "received":

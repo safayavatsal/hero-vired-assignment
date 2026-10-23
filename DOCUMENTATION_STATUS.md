@@ -1,5 +1,20 @@
 # Documentation Status
 
+## Current feature parity audit
+
+| Version | Scope | Current result |
+|---|---|---|
+| 0.0 | Baseline, simulator, and runtime | Implemented; static checks and live readiness pass |
+| 0.1 | Simulator controls and typed actions | Implemented; deterministic behavior covered by the backend suite |
+| 0.2 | Alert normalization, deduplication, correlation, and timeline | Implemented; live duplicate delivery returned `duplicate: true` |
+| 0.3 | Durable incident state and recovery guards | Implemented; PostgreSQL persistence and version checks are present |
+| 0.4 | Evidence-first investigation and model boundary | Implemented with durable investigation jobs; fresh worker-backed live investigation completed with model analysis |
+| 0.5 | Paging, replies, ownership, and escalation | Implemented; rebuilt Docker/PostgreSQL suite passed with the worker running |
+| 0.6 | Approval, durable execution, attempts, and verification | Implemented; rebuilt Docker/PostgreSQL suite passed with migrations `002_jobs.sql` and `003_action_attempts.sql` |
+| 0.7 | Incident UI and selection safety | Implemented; frontend smoke tests, build, and port `8000` health pass |
+
+The approved HLD and LLD remain the authority for boundaries and relationships. The current implementation includes durable investigation and action jobs, action-attempt, verification, delivery-attempt, and worker-startup pieces required by those documents.
+
 ## Baseline runtime
 
 Status: Implemented and verified locally through the Docker/Postgres stack.
@@ -15,7 +30,7 @@ Implemented:
 - Three deterministic simulator scenarios.
 - Simulator evidence query, alert, typed action, reset, and verification endpoints.
 - Alert webhook normalization, fingerprinting, deduplication, incident correlation, and timeline read APIs.
-- PostgreSQL-backed incident, alert, and timeline persistence with startup schema initialization.
+- PostgreSQL-backed incident, alert, and timeline persistence with versioned backend migrations applied at startup.
 - Transactional alert idempotency and restart-safe incident reads.
 - Validated incident state transitions with timeline events and version checks.
 - Bounded deterministic investigation with evidence identifiers, findings, confidence, uncertainty, and citations.
@@ -43,17 +58,26 @@ Implemented:
 - Service/time-window incident correlation beyond explicit correlation keys.
 - Startup recovery for interrupted actions and overdue pages.
 - Opt-in HTTP boundaries for model-backed investigation, notification delivery, service ownership lookup, and unknown-action reconciliation.
+- Compose loads database and runtime credentials from `.env`; secret values are not written into `docker-compose.yml`.
+- Backend and frontend use multi-stage production images; the backend runs non-root, and the frontend serves the built application through an unprivileged web server with API proxying.
+- Durable jobs now persist queued, leased, succeeded, retried, and dead-lettered work with idempotency keys and lease timestamps.
+- The worker claims typed action jobs, executes them through the workflow boundary, and recovers overdue pages during polling.
+- Page delivery attempts are persisted, including fallback delivery records.
+- Action attempts and post-action verifications are persisted separately from the action proposal.
+- Worker startup waits for API migration readiness and retries transient database-startup failures.
+- The UI refreshes the selected incident while polling, supports free-form page replies, and displays queued and running action states.
 
-Environment-dependent verification:
+## Environment-dependent verification:
 
-- The model gateway now applies its documented default URL when only a credential is configured. Persisted non-completed investigations retry when the provider is configured; the running container must be recreated after changing `.env` so it receives the current credential.
+- The model gateway now applies its documented default URL when only a credential is configured. Persisted non-completed investigations retry when the provider is configured; the running container must be recreated after changing `.env` so it receives the current credential. The worker has dedicated egress for configured external model calls.
 - External notification, ownership, and action-executor live calls remain environment-dependent until their URLs are configured; their adapters and contract tests are present.
+- Provider URL and response format are read from `MODEL_GATEWAY_URL` and `MODEL_GATEWAY_FORMAT`; the worker-backed live provider path is verified with the configured environment.
 
-Verification record:
+## Verification record:
 
-- `docker compose up -d --build` started all seven services with healthy Postgres.
+- `docker compose up -d --build` previously started the Compose services with healthy Postgres.
 - `curl http://localhost:8001/api/v1/readiness` returned `{"status":"ready","database":"ok"}`.
-- `docker compose run --rm api pytest -q tests` returned `31 passed, 1 warning` after the version-guard and migration changes.
+- The rebuilt Docker/PostgreSQL run returned `34 passed, 3 warnings`; the API and worker containers remained healthy after startup.
 - `npm test` returned 3 passing frontend selection checks, and `npm run build` passed.
 - The evidence review change passed the same frontend build, backend test, Docker/Postgres readiness, and frontend HTTP checks.
 - Live Feature 5–7 happy path persisted an acknowledged page, a verified action, and seven timeline events.
@@ -61,5 +85,7 @@ Verification record:
 - Frontend health check on port `8000` returned HTTP 200.
 - Boundary adapter tests cover opt-in configuration, bearer-token forwarding, response validation, and local fallback.
 - Dependency-aware incident correlation and stale human-decision version guards are covered in the current implementation and test suite.
-- Live provider verification reached the provider and returned HTTP 403 for the requested model while the authenticated model-list check returned HTTP 200; model access remains an environment configuration item. After fixing the PostgreSQL timeline row-shape mismatch found during the fresh investigation, the rebuilt Docker/Postgres suite returned 31 passing tests.
+- Live host verification accepted the exact application-generated Responses payload with HTTP 200, and the response parser produced all required structured fields. A fresh worker-backed investigation after the egress fix completed with `model_status=completed`, model analysis present, one finding, and four evidence groups.
 - The restart recovery audit found and fixed overdue-page row handling before the final handoff.
+- The current parity pass adds migration `003_action_attempts.sql`; the migration and separate attempt/verification records are covered by the rebuilt Docker/PostgreSQL suite.
+- A fresh live investigation request returned a queued response, and the worker completed it against PostgreSQL with persisted model analysis, one finding, and four evidence groups after the worker environment and egress wiring were corrected.

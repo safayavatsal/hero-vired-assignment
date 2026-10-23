@@ -17,7 +17,7 @@ class InvestigationRequest(BaseModel):
 @router.post("/incidents/{incident_id}/investigate")
 def investigate(incident_id: UUID, request: InvestigationRequest) -> dict[str, Any]:
     try:
-        return investigation_service.investigate(incident_id, request.scenario_id)
+        return investigation_service.enqueue(incident_id, request.scenario_id)
     except ValueError as error:
         status_code = 404 if str(error) == "incident not found" else 409
         raise HTTPException(status_code=status_code, detail=str(error)) from error
@@ -26,6 +26,6 @@ def investigate(incident_id: UUID, request: InvestigationRequest) -> dict[str, A
 @router.get("/incidents/{incident_id}/evidence")
 def get_investigation(incident_id: UUID) -> dict[str, Any]:
     try:
-        return investigation_service.get(incident_id)
+        return investigation_service.get_status(incident_id)
     except ValueError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error

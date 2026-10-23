@@ -35,8 +35,12 @@ Implemented:
 - Post-action verification and timeline audit events.
 - Workflow timeline writes serialize sequence allocation under concurrent requests.
 - Action proposals are blocked until investigation is in an allowed state and the selected scenario matches the incident service.
+- Approved execution is persisted as a durable action job with an idempotency key; the worker claims it under a lease and records completion or failure.
+- Each execution creates a separate durable action-attempt record, and verification creates a record linked to that attempt.
 
 Verified locally through Docker/Postgres on 2026-10-22: proposal, approval, simulator execution, and verification persisted as one action with the expected result and timeline events.
+
+Current verification note: the rebuilt Docker/PostgreSQL run passed 34 backend tests with migrations `002_jobs.sql` and `003_action_attempts.sql`; the worker-backed investigation path was also exercised live after the rebuild.
 
 Implemented:
 

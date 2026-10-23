@@ -46,4 +46,4 @@ Implemented in the current slice:
 Boundary verification:
 
 - The configured model adapter is ready for a live credential; deterministic fallback, response validation, and retry behavior are covered locally.
-- A live credential check reached the provider, but the requested model returned HTTP 403 while the model-list endpoint returned HTTP 200; this is a provider-side model permission state, not a missing application path. A fresh Docker investigation also verified that the PostgreSQL timeline append path is repaired and the full Docker/Postgres suite remains green at 31 passing tests.
+- Investigation requests now enqueue durable jobs and return a queued status; the worker performs evidence collection and persists the completed result. The gateway sends the exact Responses-compatible payload with the configured model and parses structured output. A fresh worker-backed live investigation completed with model analysis, one finding, and four evidence groups. Rebuilt Docker/PostgreSQL verification returned 34 passing backend tests.

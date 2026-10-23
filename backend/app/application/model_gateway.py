@@ -27,7 +27,7 @@ class UnavailableModelGateway:
 
 class HttpModelGateway:
     def __init__(self, url: str, token: str, timeout_seconds: float = 5.0, model: str | None = None,
-                 response_format: str = "structured") -> None:
+                 response_format: str = "openai_responses") -> None:
         self.url = url
         self.token = token
         self.timeout_seconds = timeout_seconds
@@ -61,15 +61,14 @@ class HttpModelGateway:
 
 
 def configured_model_gateway() -> ModelGateway:
-    url = os.getenv("MODEL_GATEWAY_URL") or DEFAULT_MODEL_GATEWAY_URL
     token = os.getenv("MODEL_GATEWAY_TOKEN")
-    if not url or not token:
+    if not token:
         return UnavailableModelGateway()
     return HttpModelGateway(
-        url,
+        os.getenv("MODEL_GATEWAY_URL", DEFAULT_MODEL_GATEWAY_URL),
         token,
         model=os.getenv("MODEL_GATEWAY_MODEL", "openai/gpt-oss-20b"),
-        response_format=os.getenv("MODEL_GATEWAY_FORMAT", "structured"),
+        response_format=os.getenv("MODEL_GATEWAY_FORMAT", "openai_responses"),
     )
 
 

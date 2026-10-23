@@ -36,4 +36,6 @@ The current slice establishes the API, worker, frontend, PostgreSQL services, de
 
 ## Model gateway configuration
 
-Copy `.env.example` to `.env` and set `MODEL_GATEWAY_TOKEN` locally. The default model URL is Groq's Responses endpoint, with `openai_responses` and `openai/gpt-oss-20b`; override `MODEL_GATEWAY_URL`, `MODEL_GATEWAY_FORMAT`, or `MODEL_GATEWAY_MODEL` when using another compatible provider. Optional notification, ownership, and action-executor URLs enable the corresponding external boundaries; when unset, the deterministic local workflow remains active. Docker Compose passes these settings only to the API container. `.env` is ignored by Git and real credentials must never be committed.
+Copy `.env.example` to `.env` and set `MODEL_GATEWAY_TOKEN` locally. `MODEL_GATEWAY_URL`, `MODEL_GATEWAY_FORMAT`, and `MODEL_GATEWAY_MODEL` select the provider endpoint, payload format, and model. Optional notification, ownership, and action-executor URLs enable the corresponding external boundaries; when unset, the deterministic local workflow remains active. Docker Compose passes these settings only to the API container. `.env` is ignored by Git and real credentials must never be committed.
+
+Database credentials and `DATABASE_URL` are also configured in `.env`. The API applies versioned SQL migrations from `backend/migrations/` before serving requests and records applied versions in `schema_migrations`.
