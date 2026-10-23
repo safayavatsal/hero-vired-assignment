@@ -90,5 +90,6 @@ The project owner identified these implementation issues during verification:
 - The parity review found that golden cases checked prompt version but not the structured prompt contract. The fix adds a stable contract fingerprint to results and evaluation assertions.
 - The parity review found that page delivery omitted the latest investigation context. The fix adds the finding summary and suggested next step to the notification payload when available, with focused regression coverage.
 - The function-level comparison against the supplied reference implementations found six broader capability gaps: dynamic tool registration, iterative investigation, streaming/follow-up interaction, operational telemetry, wider resource analysis, and broader analyzer fixtures. These are documented as additive work, not silently claimed as complete.
+- Final delivery verification confirmed that the earlier unavailable model result was a reused persisted investigation. A new incident completed through the live worker path with `model_status=completed`, structured analysis, four evidence groups, and the expected deterministic finding; no production credential was added to the repository.
 
 These contributions are recorded as detection, direction, and verification; implementation changes remain explicitly attributed as AI-assisted.
