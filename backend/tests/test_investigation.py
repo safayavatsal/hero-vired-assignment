@@ -1,3 +1,4 @@
+import time
 from uuid import uuid4
 
 from app.application.investigation import InvestigationService
@@ -116,6 +117,25 @@ def test_unavailable_evidence_is_visible_in_findings() -> None:
 
     assert result["evidence"][0]["availability"] == "unavailable"
     assert "logs" in result["findings"][0]["uncertainty"]
+
+
+def test_slow_evidence_source_is_bounded(monkeypatch) -> None:
+    class SlowEvidenceProvider(SimulatorService):
+        def query_evidence(self, source_type):
+            if source_type == "logs":
+                time.sleep(0.3)
+            return super().query_evidence(source_type)
+
+    monkeypatch.setenv("EVIDENCE_TIMEOUT_SECONDS", "0.1")
+    service = InvestigationService(ExistingIncident(), SlowEvidenceProvider(), MemoryInvestigationRepository())
+
+    result = service.investigate(uuid4(), "disk_pressure")
+
+    assert result["evidence"][0]["availability"] == "unavailable"
+    assert "timed out" in result["evidence"][0]["items"][0]["error"]
+    assert result["evidence"][0]["query"] == "simulator.evidence.logs"
+    assert result["evidence"][0]["parameters"] == {"source_type": "logs"}
+    assert result["evidence"][0]["error"] == "evidence provider timed out"
 
 
 def test_model_gateway_is_safe_when_unconfigured(monkeypatch) -> None:

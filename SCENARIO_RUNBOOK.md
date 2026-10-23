@@ -30,6 +30,20 @@ If the same incident and scenario are investigated after an API restart, the per
 
 For paging, call `POST /api/v1/incidents/<incident-id>/page`, then respond through `POST /api/v1/pages/<page-id>/respond`. Use `response_type=timeout` to exercise the fallback path; the primary page becomes `escalated` and one fallback page becomes `delivered`.
 
+If investigation has completed before paging, the delivered page includes the latest finding summary and suggested next step.
+
 For actions, call `POST /api/v1/incidents/<incident-id>/actions`, approve through `POST /api/v1/actions/<action-id>/decision`, then execute and verify through the corresponding action endpoints. Reusing an idempotency key returns the existing proposal.
 
 Verification evidence on 2026-10-22: the Docker/Postgres stack reached readiness, 24 backend tests passed, the frontend test/build checks passed, backend and frontend health checks returned HTTP 200, and the happy path produced one acknowledged page, one verified action, and persisted timeline events. The timeout path produced one escalated primary plus one delivered fallback with no duplicate on retry.
+
+Feature 8 resilience checks are included in the Docker test workflow. A slow evidence source becomes visible as unavailable within its configured deadline, model and external calls use bounded timeouts, prompts are size-limited after masking, and retryable durable jobs wait before another attempt.
+
+Feature 9 golden evaluation cases run with:
+
+```bash
+docker compose run --rm --user root api pytest -q tests/test_evaluation.py
+```
+
+They verify the expected category, safe next step, confidence bound, evidence sources, citations, and prompt version for each supported scenario.
+
+For the complete repeatable demo, run `./scripts/demo.sh` after Compose is up. It triggers all scenarios with duplicate, late, flapping, delayed, and out-of-order deliveries, then shows the degraded service-health evidence path. Run `./scripts/reset-demo.sh` before repeating the demo.

@@ -38,10 +38,11 @@ Implemented:
 
 - Optional ownership lookup resolves primary and fallback responders when page responders are omitted.
 - Optional notification delivery receives a page payload and records an external delivery identifier in the timeline.
+- Page delivery includes the latest finding's evidence summary and suggested next step when an investigation is available.
 - Missing external configuration keeps the deterministic local paging behavior.
 - Page delivery attempts are persisted for primary and fallback pages.
 - The worker checks overdue pages during polling and creates one fallback page without duplication.
 
 Boundary verification:
 
-- Configured notification and ownership calls are covered by adapter contract tests; live verification requires reachable service URLs.
+- Configured notification and ownership calls are covered by adapter contract tests and a real localhost HTTP integration test; hosted deployment verification is out of scope for this local test assignment.

@@ -4,6 +4,8 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from app.application.resilience import env_float
+
 
 class ExternalBoundaryError(ValueError):
     pass
@@ -15,7 +17,7 @@ def _request_json(url: str, token: str, payload: dict[str, Any]) -> dict[str, An
     if token:
         request.add_header("Authorization", f"Bearer {token}")
     try:
-        with urlopen(request, timeout=5) as response:
+        with urlopen(request, timeout=env_float("EXTERNAL_BOUNDARY_TIMEOUT_SECONDS", 5.0, 0.1, 30.0)) as response:
             body = json.loads(response.read().decode())
     except (HTTPError, URLError, TimeoutError, ValueError) as error:
         raise ExternalBoundaryError("external boundary request failed") from error

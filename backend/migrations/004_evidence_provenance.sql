@@ -1,0 +1,5 @@
+ALTER TABLE investigation_evidence ADD COLUMN IF NOT EXISTS query TEXT NOT NULL DEFAULT '';
+ALTER TABLE investigation_evidence ADD COLUMN IF NOT EXISTS parameters JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE investigation_evidence ADD COLUMN IF NOT EXISTS collected_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE investigation_evidence ADD COLUMN IF NOT EXISTS duration_ms INTEGER;
+ALTER TABLE investigation_evidence ADD COLUMN IF NOT EXISTS error TEXT;

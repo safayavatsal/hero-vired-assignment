@@ -80,9 +80,11 @@ class WorkflowService:
             if existing:
                 return {"duplicate": True, "page": self._page(existing)}
             page_id = uuid4()
+            page_context = self._investigation_page_context(incident_id)
             delivery = self.notification_gateway.deliver({
                 "page_id": str(page_id), "incident_id": str(incident_id), "responder": responder,
                 "fallback_responder": fallback, "summary": incident["summary"], "severity": incident["severity"],
+                **page_context,
             })
             connection.execute(
                 """INSERT INTO pages
@@ -101,6 +103,22 @@ class WorkflowService:
                 timeline["delivery_id"] = delivery["id"]
             self._timeline(connection, incident_id, "page_delivered", timeline)
             return {"duplicate": False, "page": self._get_page(connection, page_id)}
+
+    @staticmethod
+    def _investigation_page_context(incident_id: UUID) -> dict[str, Any]:
+        try:
+            from app.application.incident import investigation_service
+
+            investigation = investigation_service.get(incident_id)
+            finding = (investigation.get("findings") or [None])[0]
+            if finding:
+                return {
+                    "evidence_summary": finding.get("statement"),
+                    "suggested_next_step": finding.get("suggested_next_step"),
+                }
+        except ValueError:
+            pass
+        return {}
 
     def list_pages(self, incident_id: UUID) -> list[dict[str, Any]]:
         with psycopg.connect(self.database_url, row_factory=dict_row) as connection:

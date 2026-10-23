@@ -1,0 +1,26 @@
+# Plan Reference Parity Add-ons
+
+## Goal
+
+Close the six capability differences identified by the function-level comparison only when the project owner approves the corresponding product expansion.
+
+## Ordered work
+
+1. Define a small analyzer/tool registry contract with explicit enablement, failure state, and result normalization.
+2. Add an iterative investigation step model with bounded tool calls, cancellation, and durable intermediate state.
+3. Add provider-neutral conversation continuation and optional streamed progress events.
+4. Add operational telemetry for model latency, token/cost metadata, tool failures, and provider refresh state.
+5. Add one additional resource-family analyzer only after the registry and normalized failure contract are accepted.
+6. Add focused fixtures and evaluation cases for each approved analyzer and interaction path.
+
+## Acceptance checks
+
+- Every enabled analyzer has a typed contract, failure behavior, and focused test.
+- Investigation steps remain bounded, auditable, idempotent, and safe to retry.
+- Progress events never replace the durable final investigation result.
+- Provider and telemetry failures remain visible without fabricating findings.
+- New resource coverage does not change the existing scenario results.
+
+## Implementation status
+
+Analysis complete; implementation not started. The current assignment implementation remains the accepted baseline until the project owner approves one of these add-ons.

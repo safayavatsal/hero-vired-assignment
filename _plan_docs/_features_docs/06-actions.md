@@ -40,7 +40,7 @@ Implemented:
 
 Verified locally through Docker/Postgres on 2026-10-22: proposal, approval, simulator execution, and verification persisted as one action with the expected result and timeline events.
 
-Current verification note: the rebuilt Docker/PostgreSQL run passed 34 backend tests with migrations `002_jobs.sql` and `003_action_attempts.sql`; the worker-backed investigation path was also exercised live after the rebuild.
+Current verification note: the rebuilt Docker/PostgreSQL run passed 35 backend tests with no warnings, including migrations `002_jobs.sql` and `003_action_attempts.sql`; the worker-backed investigation path was also exercised live after the rebuild.
 
 Implemented:
 
@@ -50,4 +50,4 @@ Implemented:
 
 Boundary verification:
 
-- Configured action-executor reconciliation is covered by adapter contract tests; live verification requires a reachable executor URL.
+- Configured action-executor reconciliation is covered by adapter contract tests and a real localhost HTTP integration test; hosted deployment verification is out of scope for this local test assignment.

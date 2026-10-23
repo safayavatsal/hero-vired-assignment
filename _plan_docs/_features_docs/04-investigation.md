@@ -29,6 +29,7 @@ Implemented in the current slice:
 
 - Bounded collection of logs, metrics, deployment history, and service health.
 - Stable evidence identifiers for collected source results.
+- Persisted provenance for each source query, parameters, collection time, duration, and failure.
 - Deterministic analyzers for deployment regression, disk pressure, and dependency outage.
 - Structured findings with confidence, uncertainty, suggested next step, and evidence citations.
 - Investigation and evidence read APIs.
@@ -42,8 +43,9 @@ Implemented in the current slice:
 - Environment-configured structured-output adapter for a Responses-compatible model provider.
 - Received incidents are advanced to `investigating` with a durable `investigation_started` timeline event.
 - Scenario/service mismatches are rejected before evidence is accepted for an incident.
+- Prompt contract changes are tracked by a stable contract hash alongside the prompt version.
 
 Boundary verification:
 
 - The configured model adapter is ready for a live credential; deterministic fallback, response validation, and retry behavior are covered locally.
-- Investigation requests now enqueue durable jobs and return a queued status; the worker performs evidence collection and persists the completed result. The gateway sends the exact Responses-compatible payload with the configured model and parses structured output. A fresh worker-backed live investigation completed with model analysis, one finding, and four evidence groups. Rebuilt Docker/PostgreSQL verification returned 34 passing backend tests.
+- Investigation requests now enqueue durable jobs and return a queued status; the worker performs evidence collection and persists the completed result. The gateway sends the exact Responses-compatible payload with the configured model and parses structured output. A fresh worker-backed live investigation completed with model analysis, one finding, and four evidence groups. The latest rebuilt Docker/PostgreSQL verification returned 35 passing backend tests with no warnings.

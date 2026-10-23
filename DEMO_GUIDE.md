@@ -12,9 +12,26 @@ Optional model configuration:
 cp .env.example .env
 # Set MODEL_GATEWAY_TOKEN and database credentials in .env before starting Compose.
 # MODEL_GATEWAY_URL and MODEL_GATEWAY_FORMAT are optional provider overrides.
-# MODEL_GATEWAY_MODEL defaults to openai/gpt-oss-20b.
+# MODEL_GATEWAY_MODEL selects the configured provider model shown in `.env.example`.
 # The API applies backend migrations automatically during startup.
 ```
+
+Feature 8 runtime bounds can be tuned in `.env`: `EVIDENCE_TIMEOUT_SECONDS`, `EVIDENCE_CONCURRENCY`, `MODEL_GATEWAY_TIMEOUT_SECONDS`, `MODEL_MAX_EVIDENCE_ITEMS`, `MODEL_MAX_PROMPT_BYTES`, `EXTERNAL_BOUNDARY_TIMEOUT_SECONDS`, and `JOB_RETRY_BACKOFF_SECONDS`. The defaults keep local investigations bounded and do not require a hosted deployment.
+
+Run the deterministic evaluation cases:
+
+```bash
+docker compose run --rm --user root api pytest -q tests/test_evaluation.py
+```
+
+Run all scenarios and the degraded evidence path:
+
+```bash
+./scripts/demo.sh
+./scripts/reset-demo.sh
+```
+
+The scripts use `BASE_URL` when set; otherwise they use the backend on port `8001`.
 
 List scenarios:
 
@@ -90,3 +107,5 @@ curl http://localhost:8001/api/v1/incidents/<incident-id>/timeline
 ```
 
 The UI exposes the same page, investigation, evidence, and action controls after selecting an incident. Choose a scenario, select `Investigate`, then review the finding, confidence, uncertainty, citations, source availability, and masked evidence payloads. The live Docker verification covered acknowledgement, approval, simulator execution, verification, timeline persistence, fallback escalation, and retry safety.
+
+When an investigation is complete before paging, the delivered page also carries the finding summary and suggested next step to the notification boundary.

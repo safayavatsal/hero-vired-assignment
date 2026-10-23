@@ -7,6 +7,8 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
+from app.application.resilience import env_float
+
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/hero_vired")
 
@@ -36,8 +38,8 @@ class JobRepository:
         with psycopg.connect(self.database_url, row_factory=dict_row) as connection:
             with connection.transaction():
                 query = """SELECT * FROM jobs
-                    WHERE (status = 'queued' OR (status = 'leased' AND lease_until <= %s))"""
-                params: list[Any] = [now]
+                    WHERE ((status = 'queued' AND available_at <= %s) OR (status = 'leased' AND lease_until <= %s))"""
+                params: list[Any] = [now, now]
                 if job_type:
                     query += " AND job_type = %s"
                     params.append(job_type)
@@ -75,9 +77,12 @@ class JobRepository:
             if row is None:
                 return
             status = "dead_lettered" if row["attempts"] >= row["max_attempts"] else "queued"
+            available_at = datetime.now(timezone.utc) + timedelta(
+                seconds=env_float("JOB_RETRY_BACKOFF_SECONDS", 2.0, 0.1, 60.0) * (2 ** max(row["attempts"] - 1, 0))
+            )
             connection.execute(
-                "UPDATE jobs SET status = %s, last_error = %s, lease_until = NULL, updated_at = %s WHERE id = %s",
-                (status, error, datetime.now(timezone.utc), job_id),
+                "UPDATE jobs SET status = %s, last_error = %s, available_at = %s, lease_until = NULL, updated_at = %s WHERE id = %s",
+                (status, error, available_at, datetime.now(timezone.utc), job_id),
             )
 
     @staticmethod

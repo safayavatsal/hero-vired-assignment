@@ -34,8 +34,12 @@ docker compose up --build
 
 The current slice establishes the API, worker, frontend, PostgreSQL services, deterministic simulator scenarios, a PostgreSQL-backed alert-to-incident pipeline, bounded investigations, persisted paging and approval workflow, typed action execution, and an incident timeline UI.
 
+Run the deterministic evaluation cases with `docker compose run --rm --user root api pytest -q tests/test_evaluation.py`.
+
+Run the complete local demo with `./scripts/demo.sh`; reset the simulator state with `./scripts/reset-demo.sh`.
+
 ## Model gateway configuration
 
 Copy `.env.example` to `.env` and set `MODEL_GATEWAY_TOKEN` locally. `MODEL_GATEWAY_URL`, `MODEL_GATEWAY_FORMAT`, and `MODEL_GATEWAY_MODEL` select the provider endpoint, payload format, and model. Optional notification, ownership, and action-executor URLs enable the corresponding external boundaries; when unset, the deterministic local workflow remains active. Docker Compose passes these settings only to the API container. `.env` is ignored by Git and real credentials must never be committed.
 
-Database credentials and `DATABASE_URL` are also configured in `.env`. The API applies versioned SQL migrations from `backend/migrations/` before serving requests and records applied versions in `schema_migrations`.
+Database credentials and `DATABASE_URL` are also configured in `.env`. Docker Compose passes the model and runtime settings to both the API and worker. The API applies versioned SQL migrations from `backend/migrations/` before serving requests and records applied versions in `schema_migrations`.

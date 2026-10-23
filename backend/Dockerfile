@@ -27,6 +27,7 @@ COPY --from=builder /opt/venv /opt/venv
 COPY app ./app
 COPY migrations ./migrations
 COPY tests ./tests
+COPY evaluations ./evaluations
 
 USER app
 

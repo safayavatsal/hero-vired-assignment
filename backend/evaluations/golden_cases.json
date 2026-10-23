@@ -1,0 +1,35 @@
+[
+  {
+    "case_id": "deployment-regression",
+    "scenario_id": "deployment_regression",
+    "service": "payments-api",
+    "expected_category": "deployment_regression",
+    "expected_next_step": "rollback",
+    "minimum_confidence": 0.9,
+    "required_sources": ["logs", "metrics", "deploys"],
+    "prompt_version": "investigation-v1",
+    "prompt_contract_hash": "7fe1752bb7e9c29e"
+  },
+  {
+    "case_id": "disk-pressure",
+    "scenario_id": "disk_pressure",
+    "service": "orders-worker",
+    "expected_category": "disk_pressure",
+    "expected_next_step": "clear_disk",
+    "minimum_confidence": 0.9,
+    "required_sources": ["logs", "metrics"],
+    "prompt_version": "investigation-v1",
+    "prompt_contract_hash": "7fe1752bb7e9c29e"
+  },
+  {
+    "case_id": "third-party-outage",
+    "scenario_id": "third_party_outage",
+    "service": "checkout-api",
+    "expected_category": "third_party_outage",
+    "expected_next_step": "unfixable",
+    "minimum_confidence": 0.9,
+    "required_sources": ["logs", "metrics", "service_health"],
+    "prompt_version": "investigation-v1",
+    "prompt_contract_hash": "7fe1752bb7e9c29e"
+  }
+]

@@ -5,6 +5,8 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from typing import Any, Protocol
 
+from app.application.resilience import env_float
+
 DEFAULT_MODEL_GATEWAY_URL = "https://api.groq.com/openai/v1/responses"
 
 
@@ -50,6 +52,8 @@ class HttpModelGateway:
         except HTTPError as error:
             if error.code == 429:
                 raise ModelRateLimitError("model gateway rate limited the request") from error
+            if error.code >= 500:
+                raise ModelUnavailableError("model gateway is unavailable") from error
             raise ValueError(f"model gateway returned HTTP {error.code}") from error
         except URLError as error:
             raise ModelUnavailableError("model gateway is unavailable") from error
@@ -67,6 +71,7 @@ def configured_model_gateway() -> ModelGateway:
     return HttpModelGateway(
         os.getenv("MODEL_GATEWAY_URL", DEFAULT_MODEL_GATEWAY_URL),
         token,
+        timeout_seconds=env_float("MODEL_GATEWAY_TIMEOUT_SECONDS", 5.0, 0.1, 30.0),
         model=os.getenv("MODEL_GATEWAY_MODEL", "openai/gpt-oss-20b"),
         response_format=os.getenv("MODEL_GATEWAY_FORMAT", "openai_responses"),
     )

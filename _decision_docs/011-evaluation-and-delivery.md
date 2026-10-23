@@ -1,12 +1,12 @@
 # Evaluation And Delivery
 
-Status: Proposed
+Status: Adopted
 
 ## Decision
 
 Create deterministic scenario tests and prompt evaluation cases before add-ons. Evaluation checks diagnosis, evidence citations, uncertainty, suggested-action safety, and regression against the previous prompt version.
 
-The repository must start with one Compose command and include the required README, decision summary, AI usage record, tests, and preserved commit history.
+The repository must start with one Compose command and include the required README, decision summary, AI usage record, tests, golden evaluation cases, runnable demo/reset commands, and preserved commit history.
 
 ## Consequences
 

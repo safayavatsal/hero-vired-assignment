@@ -10,6 +10,10 @@ class Evidence:
     availability: str
     observed_at: datetime
     items: list[dict[str, Any]]
+    query: str = ""
+    parameters: dict[str, Any] | None = None
+    duration_ms: int | None = None
+    error: str | None = None
 
 
 @dataclass(frozen=True)

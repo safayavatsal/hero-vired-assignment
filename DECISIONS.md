@@ -18,3 +18,5 @@ This file is the index of the detailed decision records in [`_decision_docs/`](_
 | [012 — Technology Stack](_decision_docs/012-tech-stack.md) | Records the selected backend, frontend, persistence, worker, model, runtime, and test technologies. |
 | [013 — Architecture Documentation](_decision_docs/013-architecture-documentation.md) | Separates system architecture, runtime flow, domain model, and UI documentation. |
 | [014 — LLD Structure](_decision_docs/014-lld-structure.md) | Defines the superficial class-level LLD structure and final UML overview. |
+| [015 — Parity Closure](_decision_docs/015-parity-closure.md) | Aligns evidence provenance, UI context, evaluation contracts, schema, and API documentation with the executable product. |
+| [016 — Reference Parity Boundary](_decision_docs/016-reference-parity-boundary.md) | Records function-level alignment and the six broader capability gaps without changing the assignment boundary. |

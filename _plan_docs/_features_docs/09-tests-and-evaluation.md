@@ -13,7 +13,11 @@ Prove the high-risk behavior and detect investigation regressions.
 5. Add action tests for approval binding, duplicate requests, timeout-after-success, verification, and restart recovery.
 6. Add API and UI tests for incident listing, timeline rendering, and human decisions.
 7. Create golden investigation cases with expected causes, evidence IDs, confidence bounds, and safe next steps.
-8. Version prompts and compare evaluation results before accepting changes.
+8. Version prompts and compare evaluation results and the prompt contract fingerprint before accepting changes.
+
+## Implementation status
+
+Implemented locally. The existing focused suite covers alert, simulator, investigation, paging, action, worker, API-health, and UI-selection behavior. A committed golden evaluation set now checks all three scenarios for expected diagnosis, safe next step, confidence bounds, required evidence sources, valid citations, and prompt-version alignment.
 
 ## Acceptance checks
 
@@ -21,3 +25,9 @@ Prove the high-risk behavior and detect investigation regressions.
 - Failure-mode tests pass deterministically.
 - Prompt changes report accuracy, citation, and safety differences.
 - The test suite runs from the Compose environment.
+
+## Verification
+
+- The Docker/PostgreSQL backend suite returned 39 passing tests with no warnings.
+- Golden evaluation cases cover deployment regression, disk pressure, and third-party outage, including the active prompt contract fingerprint.
+- The frontend smoke suite remains green with 3 passing tests and the production build passes.

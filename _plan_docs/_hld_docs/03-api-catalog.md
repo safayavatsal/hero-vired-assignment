@@ -32,7 +32,6 @@ This document lists the major HTTP APIs in the product. Detailed request validat
 | `/api/v1/incidents/{incident_id}/pages` | Return page delivery and response state |
 | `/api/v1/incidents/{incident_id}/actions` | Return typed action proposal and execution state |
 | `/api/v1/incidents/{incident_id}/evidence` | Return collected evidence and availability states |
-| `/api/v1/incidents/{incident_id}/actions` | Return action requests, attempts, and verification |
 | `/api/v1/health` | Report API and dependency health |
 | `/api/v1/simulator/scenarios` | List available simulator scenarios without hidden causes |
 | `/api/v1/simulator/state` | Return selected scenario state and action records |

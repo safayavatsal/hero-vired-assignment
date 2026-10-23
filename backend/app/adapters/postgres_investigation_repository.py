@@ -48,12 +48,14 @@ class PostgresInvestigationRepository:
                 connection.execute(
                     """
                     INSERT INTO investigation_evidence
-                    (id, investigation_id, source_type, availability, observed_at, items)
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                    (id, investigation_id, source_type, query, parameters, availability, observed_at, collected_at, duration_ms, error, items)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         evidence["id"], investigation_id, evidence["source_type"],
+                        evidence.get("query", ""), Jsonb(_json_safe(evidence.get("parameters") or {})),
                         evidence["availability"], datetime.fromisoformat(evidence["observed_at"]),
+                        datetime.fromisoformat(result["generated_at"]), evidence.get("duration_ms"), evidence.get("error"),
                         Jsonb(_json_safe(evidence["items"])),
                     ),
                 )
@@ -97,10 +99,13 @@ class PostgresInvestigationRepository:
                 "model_error": investigation["model_error"],
                 "model_analysis": investigation["model_analysis"],
                 "prompt_version": investigation["prompt_version"],
+                "prompt_contract_hash": prompt_contract_hash(),
                 "evidence": [{
                     "id": row["id"], "source_type": row["source_type"],
+                    "query": row["query"], "parameters": row["parameters"],
                     "availability": row["availability"], "observed_at": row["observed_at"].isoformat(),
-                    "items": row["items"],
+                    "collected_at": row["collected_at"].isoformat(), "duration_ms": row["duration_ms"],
+                    "error": row["error"], "items": row["items"],
                 } for row in evidence],
                 "findings": [{
                     "id": row["id"], "category": row["category"], "statement": row["statement"],
@@ -112,3 +117,9 @@ class PostgresInvestigationRepository:
 
 def _json_safe(value: Any) -> Any:
     return json.loads(json.dumps(value, default=lambda item: item.isoformat() if isinstance(item, datetime) else str(item)))
+
+
+def prompt_contract_hash() -> str:
+    from app.application.investigation import InvestigationService
+
+    return InvestigationService.PROMPT_CONTRACT_HASH

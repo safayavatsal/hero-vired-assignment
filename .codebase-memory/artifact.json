@@ -1,11 +1,11 @@
 {
     "schema_version": 2,
-    "commit": "f76dab8c657fb754b9a48c802e31f0564d6e1c2c",
-    "indexed_at": "2026-10-23T08:30:41Z",
+    "commit": "3fe8a23545a31b4456c758e043ff8c2667edc73b",
+    "indexed_at": "2026-10-23T15:38:00Z",
     "project": "hero-vired-assignment",
-    "nodes": 776,
-    "edges": 2236,
-    "original_size": 3538944,
-    "compressed_size": 465243,
+    "nodes": 841,
+    "edges": 2432,
+    "original_size": 3866624,
+    "compressed_size": 516826,
     "compression_level": 9
 }

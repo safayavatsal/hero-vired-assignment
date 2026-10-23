@@ -12,6 +12,10 @@
 | 0.5 | Paging, replies, ownership, and escalation | Implemented; rebuilt Docker/PostgreSQL suite passed with the worker running |
 | 0.6 | Approval, durable execution, attempts, and verification | Implemented; rebuilt Docker/PostgreSQL suite passed with migrations `002_jobs.sql` and `003_action_attempts.sql` |
 | 0.7 | Incident UI and selection safety | Implemented; frontend smoke tests, build, and port `8000` health pass |
+| 0.8 | Resilience, security, and cost bounds | Implemented; Docker/PostgreSQL backend suite returned 37 passing tests with no warnings |
+| 0.9 | Tests and deterministic evaluation | Implemented; golden cases cover all three scenarios and the Docker suite returned 39 passing tests with no warnings |
+| 1.0 | Compose, documentation, and demo delivery | Implemented; clean-checkout defaults, runnable demo/reset scripts, and live-change coverage are present |
+| parity | Cross-document and executable-contract closure | Complete for the local assignment boundary; evidence provenance, page context, prompt contract, schema/API catalog, UI context, static checks, frontend build, graph refresh, and Docker/Postgres verification are aligned. Reference parity add-ons are documented separately and not implemented |
 
 The approved HLD and LLD remain the authority for boundaries and relationships. The current implementation includes durable investigation and action jobs, action-attempt, verification, delivery-attempt, and worker-startup pieces required by those documents.
 
@@ -65,27 +69,35 @@ Implemented:
 - Page delivery attempts are persisted, including fallback delivery records.
 - Action attempts and post-action verifications are persisted separately from the action proposal.
 - Worker startup waits for API migration readiness and retries transient database-startup failures.
+- Feature 8 bounds evidence collection with concurrent per-source deadlines, caps model evidence and prompt size, applies configurable model and external-boundary deadlines, version-stamps investigation cache keys, and delays durable retries with capped exponential backoff.
+- Feature 9 adds committed golden investigation cases with expected categories, safe next steps, confidence bounds, citation checks, required evidence sources, and prompt-version alignment.
+- Feature 10 adds clean-checkout Compose defaults, repeatable all-scenario demo/reset scripts, and a focused live-change analyzer path.
 - The UI refreshes the selected incident while polling, supports free-form page replies, and displays queued and running action states.
 
 ## Environment-dependent verification:
 
 - The model gateway now applies its documented default URL when only a credential is configured. Persisted non-completed investigations retry when the provider is configured; the running container must be recreated after changing `.env` so it receives the current credential. The worker has dedicated egress for configured external model calls.
-- External notification, ownership, and action-executor live calls remain environment-dependent until their URLs are configured; their adapters and contract tests are present.
+- External notification, ownership, and action-executor calls are environment-configured. Their real HTTP adapter paths are verified against a local HTTP boundary with bearer headers, bounded payloads, response validation, and fallback behavior. Hosted deployment verification is intentionally out of scope for this local test assignment.
 - Provider URL and response format are read from `MODEL_GATEWAY_URL` and `MODEL_GATEWAY_FORMAT`; the worker-backed live provider path is verified with the configured environment.
 
 ## Verification record:
 
 - `docker compose up -d --build` previously started the Compose services with healthy Postgres.
 - `curl http://localhost:8001/api/v1/readiness` returned `{"status":"ready","database":"ok"}`.
-- The rebuilt Docker/PostgreSQL run returned `34 passed, 3 warnings`; the API and worker containers remained healthy after startup.
+- The latest rebuilt Docker/PostgreSQL run returned `35 passed in 19.81s` with no warnings; this includes the localhost HTTP boundary integration test. The API and worker containers remained healthy after startup.
 - `npm test` returned 3 passing frontend selection checks, and `npm run build` passed.
 - The evidence review change passed the same frontend build, backend test, Docker/Postgres readiness, and frontend HTTP checks.
 - Live Feature 5–7 happy path persisted an acknowledged page, a verified action, and seven timeline events.
 - Live timeout retry path persisted one escalated primary page and one delivered fallback page without duplication.
 - Frontend health check on port `8000` returned HTTP 200.
 - Boundary adapter tests cover opt-in configuration, bearer-token forwarding, response validation, and local fallback.
+- The external-boundary integration test exercised real localhost HTTP requests for ownership lookup, notification delivery, and action reconciliation, including bearer headers and exact bounded payloads.
 - Dependency-aware incident correlation and stale human-decision version guards are covered in the current implementation and test suite.
 - Live host verification accepted the exact application-generated Responses payload with HTTP 200, and the response parser produced all required structured fields. A fresh worker-backed investigation after the egress fix completed with `model_status=completed`, model analysis present, one finding, and four evidence groups.
 - The restart recovery audit found and fixed overdue-page row handling before the final handoff.
 - The current parity pass adds migration `003_action_attempts.sql`; the migration and separate attempt/verification records are covered by the rebuilt Docker/PostgreSQL suite.
 - A fresh live investigation request returned a queued response, and the worker completed it against PostgreSQL with persisted model analysis, one finding, and four evidence groups after the worker environment and egress wiring were corrected.
+- The latest rebuilt Docker/PostgreSQL run returned `37 passed in 20.00s` with no warnings, including slow-evidence degradation and configurable external-boundary timeout coverage.
+- The Feature 9 Docker/PostgreSQL run returned `39 passed` with no warnings; the frontend smoke suite remains at 3 passing tests and the frontend build passes.
+- Feature 10 verification includes Compose config validation, the full Docker backend suite, frontend tests/build, and documentation checks. The demo scripts are ready for local runtime execution after `docker compose up --build`.
+- The parity closure verification added page context to delivery, refreshed the code graph, passed the restricted-reference scan, and completed the frontend build plus a 40-test Docker/Postgres suite.

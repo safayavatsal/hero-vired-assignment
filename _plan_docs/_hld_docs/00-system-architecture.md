@@ -1,222 +1,58 @@
 # System Architecture
 
-This is the product's high-level system architecture. It defines the runtime boundaries, durable responsibilities, and relational tables required by the incident workflow. Detailed sequence flow, domain relationships, and UI structure are documented separately.
+This high-level architecture describes the runtime boundaries and the executable PostgreSQL schema used by the product.
 
 ## 1. Runtime architecture
 
 ```mermaid
 flowchart LR
-    Responder[On-call engineer]
-    UI[React + TypeScript incident console]
-    API[FastAPI API]
-    Jobs[(PostgreSQL durable jobs)]
-    Worker[Python worker]
-    Store[(PostgreSQL system of record)]
-    Model[Provider-neutral model adapter]
-    Simulator[Production simulator]
-    Pager[Paging boundary]
-
-    Responder --> UI
-    UI -->|REST and polling| API
-    API -->|validate and transition state| Store
-    API -->|enqueue durable work| Jobs
-    Worker -->|claim, lease, retry| Jobs
-    Worker -->|persist findings and outcomes| Store
-    Worker --> Simulator
-    Worker --> Model
-    Worker --> Pager
-    Simulator -->|alerts, logs, metrics, deploy history| API
-    Pager -->|pages, acknowledgements, replies| API
+    Responder[On-call engineer] --> UI[React + TypeScript incident console]
+    UI -->|REST and polling| API[FastAPI API]
+    API --> Store[(PostgreSQL system of record)]
+    API --> Jobs[(PostgreSQL durable jobs)]
+    Worker[Python worker] --> Jobs
+    Worker --> Store
+    Worker --> Simulator[Production simulator]
+    Worker --> Model[Provider-neutral model adapter]
+    Worker --> Pager[Paging and executor boundaries]
 ```
 
 ## 2. Responsibility boundaries
 
 | Component | Owns | Does not own |
 | --- | --- | --- |
-| React + TypeScript UI | Incident list, incident detail, timeline rendering, human decision forms | State transitions, action execution, inferred completion |
-| FastAPI API | Validation, authorization, idempotency, state transitions, read models, audit events | Long-running investigation or direct model execution |
-| Python worker | Investigation, paging, action execution, verification, retries, leases | Browser presentation or unvalidated human intent |
-| PostgreSQL | Incidents, evidence, decisions, jobs, actions, verification, audit history | External alert generation or model reasoning |
-| Production simulator | Deterministic alerts, logs, metrics, deploy history, typed operational actions | Production credentials or arbitrary command execution |
-| Model adapter | Structured findings and action recommendations from supplied evidence | Direct database writes or action execution |
-| Paging boundary | Page delivery and responder inputs | Incident truth or action authorization |
+| React + TypeScript UI | Incident list, detail, timeline, evidence review, and human decision forms | State transitions, action execution, inferred completion |
+| FastAPI API | Validation, idempotency, state transitions, read models, and audit events | Long-running investigation or direct model execution |
+| Python worker | Investigation jobs, action execution, verification, retries, leases, and overdue-page recovery | Browser presentation or unvalidated human intent |
+| PostgreSQL | Incidents, alerts, evidence, findings, pages, actions, jobs, attempts, verifications, and timeline history | External alert generation or model reasoning |
+| Production simulator | Deterministic alerts, evidence sources, typed actions, and failure controls | Production credentials or arbitrary command execution |
+| Model and delivery boundaries | Structured analysis, optional delivery, ownership, and reconciliation | Direct authorization or incident truth |
 
 ## 3. Relational schema catalog
 
-All tables use UUID primary keys unless stated otherwise. `created_at` and `updated_at` are UTC timestamps. Foreign keys are enforced by PostgreSQL. JSON fields contain validated objects rather than free-form executable instructions.
+All identifiers are UUIDs unless stated otherwise. JSON fields contain validated data and never executable instructions.
 
-### 3.1 incidents
-
-| Field | Type | Key / constraint | Purpose |
-| --- | --- | --- | --- |
-| id | uuid | PK | Stable incident identifier |
-| fingerprint | text | UNIQUE | Correlation key for duplicate and related alerts |
-| service | text | NOT NULL | Affected service |
-| environment | text | NOT NULL | Simulated environment |
-| severity | text | NOT NULL | Incident severity |
-| status | text | NOT NULL | Lifecycle state |
-| summary | text |  | Current human-readable condition |
-| version | integer | NOT NULL | Optimistic concurrency version |
-| opened_at | timestamptz | NOT NULL | First observed incident time |
-| resolved_at | timestamptz |  | Resolution time |
-| created_at | timestamptz | NOT NULL | Record creation time |
-| updated_at | timestamptz | NOT NULL | Last record update time |
-
-### 3.2 alerts
-
-| Field | Type | Key / constraint | Purpose |
-| --- | --- | --- | --- |
-| id | uuid | PK | Alert identifier |
-| incident_id | uuid | FK -> incidents.id, NOT NULL | Correlated incident |
-| source_event_id | text | UNIQUE | Source idempotency key |
-| fingerprint | text | NOT NULL | Alert correlation fingerprint |
-| alert_type | text | NOT NULL | Alert category |
-| payload | jsonb | NOT NULL | Original validated alert payload |
-| source_time | timestamptz | NOT NULL | Time reported by source |
-| received_at | timestamptz | NOT NULL | Time accepted by API |
-| lifecycle | text | NOT NULL | Open, duplicate, late, or closed handling |
-
-### 3.3 evidence
-
-| Field | Type | Key / constraint | Purpose |
-| --- | --- | --- | --- |
-| id | uuid | PK | Evidence record identifier |
-| incident_id | uuid | FK -> incidents.id, NOT NULL | Related incident |
-| source_type | text | NOT NULL | Logs, metrics, deploys, or alert source |
-| query | text | NOT NULL | Read-only simulator query |
-| result | jsonb | NOT NULL | Returned evidence |
-| availability | text | NOT NULL | Available, slow, unavailable, or partial |
-| observed_at | timestamptz | NOT NULL | Evidence observation time |
-| collected_at | timestamptz | NOT NULL | Collection time |
-
-### 3.4 findings
-
-| Field | Type | Key / constraint | Purpose |
-| --- | --- | --- | --- |
-| id | uuid | PK | Finding identifier |
-| incident_id | uuid | FK -> incidents.id, NOT NULL | Related incident |
-| kind | text | NOT NULL | Cause, impact, next step, or uncertainty |
-| statement | text | NOT NULL | Structured finding text |
-| confidence | numeric | NOT NULL | Bounded confidence value |
-| uncertainty | text |  | Known uncertainty |
-| model_run_id | uuid | FK -> model_runs.id | Producing model run |
-| created_at | timestamptz | NOT NULL | Finding creation time |
-
-### 3.5 model_runs
-
-| Field | Type | Key / constraint | Purpose |
-| --- | --- | --- | --- |
-| id | uuid | PK | Model invocation identifier |
-| incident_id | uuid | FK -> incidents.id, NOT NULL | Related incident |
-| provider | text | NOT NULL | Adapter provider label |
-| model_name | text | NOT NULL | Model label |
-| input_tokens | integer |  | Usage accounting |
-| output_tokens | integer |  | Usage accounting |
-| latency_ms | integer |  | Model latency |
-| status | text | NOT NULL | Succeeded, rejected, timed out, or failed |
-| created_at | timestamptz | NOT NULL | Invocation time |
-
-### 3.6 pages
-
-| Field | Type | Key / constraint | Purpose |
-| --- | --- | --- | --- |
-| id | uuid | PK | Page identifier |
-| incident_id | uuid | FK -> incidents.id, NOT NULL | Related incident |
-| responder | text | NOT NULL | Current responder |
-| escalation_level | integer | NOT NULL | Escalation stage |
-| status | text | NOT NULL | Pending, acknowledged, expired, or replied |
-| sent_at | timestamptz | NOT NULL | Delivery time |
-| deadline | timestamptz |  | Response deadline |
-| acknowledged_at | timestamptz |  | Acknowledgement time |
-| replied_at | timestamptz |  | Reply time |
-
-### 3.7 decisions
-
-| Field | Type | Key / constraint | Purpose |
-| --- | --- | --- | --- |
-| id | uuid | PK | Human decision identifier |
-| incident_id | uuid | FK -> incidents.id, NOT NULL | Related incident |
-| responder | text | NOT NULL | Decision maker |
-| decision_type | text | NOT NULL | Acknowledge, reply, approve, or reject |
-| decision_text | text |  | Human response |
-| target_id | uuid |  | Action or page affected by the decision |
-| created_at | timestamptz | NOT NULL | Decision time |
-| expires_at | timestamptz |  | Approval expiry |
-
-### 3.8 action_requests
-
-| Field | Type | Key / constraint | Purpose |
-| --- | --- | --- | --- |
-| id | uuid | PK | Requested action identifier |
-| incident_id | uuid | FK -> incidents.id, NOT NULL | Related incident |
-| requested_by | text | NOT NULL | System or responder |
-| action_type | text | NOT NULL | Restart, rollback, scale, or clear disk |
-| target | text | NOT NULL | Typed simulator target |
-| parameters | jsonb | NOT NULL | Validated action parameters |
-| approval_state | text | NOT NULL | Pending, approved, rejected, or expired |
-| idempotency_key | text | UNIQUE, NOT NULL | Duplicate action protection |
-| created_at | timestamptz | NOT NULL | Request time |
-
-### 3.9 action_attempts
-
-| Field | Type | Key / constraint | Purpose |
-| --- | --- | --- | --- |
-| id | uuid | PK | Execution attempt identifier |
-| action_request_id | uuid | FK -> action_requests.id, NOT NULL | Requested action |
-| attempt_number | integer | NOT NULL | Retry sequence |
-| status | text | NOT NULL | Running, succeeded, failed, timed out, or unknown |
-| simulator_operation_id | text |  | Simulator operation identity |
-| started_at | timestamptz | NOT NULL | Execution start |
-| completed_at | timestamptz |  | Execution completion |
-| outcome | jsonb |  | Returned operation outcome |
-
-### 3.10 verifications
-
-| Field | Type | Key / constraint | Purpose |
-| --- | --- | --- | --- |
-| id | uuid | PK | Verification identifier |
-| action_attempt_id | uuid | FK -> action_attempts.id, NOT NULL | Attempt being verified |
-| check_type | text | NOT NULL | Health, metric, log, or state check |
-| observed_state | jsonb | NOT NULL | State observed after action |
-| successful | boolean | NOT NULL | Whether the desired state is confirmed |
-| checked_at | timestamptz | NOT NULL | Verification time |
-
-### 3.11 jobs
-
-| Field | Type | Key / constraint | Purpose |
-| --- | --- | --- | --- |
-| id | uuid | PK | Durable job identifier |
-| incident_id | uuid | FK -> incidents.id | Related incident |
-| job_type | text | NOT NULL | Investigation, page, action, or verification |
-| status | text | NOT NULL | Queued, leased, succeeded, failed, or dead-lettered |
-| payload | jsonb | NOT NULL | Validated job input |
-| idempotency_key | text | UNIQUE, NOT NULL | Duplicate job protection |
-| attempts | integer | NOT NULL | Retry count |
-| lease_until | timestamptz |  | Lease expiry |
-| available_at | timestamptz | NOT NULL | Earliest execution time |
-| last_error | text |  | Safe error summary |
-| created_at | timestamptz | NOT NULL | Enqueue time |
-| completed_at | timestamptz |  | Completion time |
-
-### 3.12 timeline_events
-
-| Field | Type | Key / constraint | Purpose |
-| --- | --- | --- | --- |
-| id | uuid | PK | Timeline event identifier |
-| incident_id | uuid | FK -> incidents.id, NOT NULL | Related incident |
-| event_type | text | NOT NULL | Alert, evidence, page, decision, action, or verification |
-| actor_type | text | NOT NULL | System, worker, model, simulator, or human |
-| actor_id | text |  | Actor identity |
-| payload | jsonb | NOT NULL | Display-safe event data |
-| event_time | timestamptz | NOT NULL | Logical event time |
-| sequence_number | bigint | NOT NULL | Stable incident-local ordering |
-| created_at | timestamptz | NOT NULL | Persistence time |
+| Table | Fields and constraints |
+| --- | --- |
+| `incidents` | `id` PK, `fingerprint` UNIQUE NOT NULL, `service`, `severity`, `status`, `summary` NOT NULL, `version` NOT NULL, `created_at`, `updated_at` |
+| `alerts` | `id` PK, `incident_id` FK, `source_event_id` UNIQUE NOT NULL, `fingerprint`, `source`, `service`, `severity`, `alert_type`, `labels` JSONB, `description`, `lifecycle`, `source_time`, `received_time`, `raw_payload` JSONB |
+| `investigations` | `id` PK, `incident_id` FK UNIQUE, `scenario_id`, `generated_at`, `model_status`, `model_error`, `model_analysis` JSONB, `prompt_version` |
+| `investigation_evidence` | `(investigation_id, id)` PK/FK, `source_type`, `query`, `parameters` JSONB, `availability`, `observed_at`, `collected_at`, `duration_ms`, `error`, `items` JSONB |
+| `investigation_findings` | `(investigation_id, id)` PK/FK, `category`, `statement`, `confidence`, `suggested_next_step`, `evidence_ids` JSONB, `uncertainty` |
+| `pages` | `id` PK, `incident_id` FK, `(incident_id, level)` UNIQUE, `responder`, `fallback_responder`, `status`, `deadline_at`, `response_type`, `response_text`, `incident_version`, `created_at`, `updated_at` |
+| `action_proposals` | `id` PK, `incident_id` FK, `scenario_id`, `action_type`, `target`, `parameters` JSONB, `status`, `approval_expires_at`, `approved_by`, `idempotency_key` UNIQUE, `simulator_action_id`, `result` JSONB, `incident_version`, `created_at`, `updated_at` |
+| `action_attempts` | `id` PK, `action_proposal_id` FK, `(action_proposal_id, attempt_number)` UNIQUE, `status`, `simulator_action_id`, `result` JSONB, `started_at`, `completed_at` |
+| `verifications` | `id` PK, `action_attempt_id` FK, `status`, `observed_state` JSONB, `verified_at` |
+| `jobs` | `id` PK, `incident_id` FK nullable, `job_type`, `status`, `payload` JSONB, `idempotency_key` UNIQUE, `attempts`, `max_attempts`, `available_at`, `lease_until`, `last_error`, `created_at`, `updated_at` |
+| `page_delivery_attempts` | `id` PK, `page_id` FK, `(page_id, attempt_number)` UNIQUE, `status`, `external_id`, `created_at` |
+| `timeline_events` | `id` PK, `incident_id` FK, `event_type`, `event_time`, `received_time`, `(incident_id, sequence_number)` UNIQUE, `payload` JSONB |
 
 ## 4. Integrity rules
 
-- Every externally received alert has a source idempotency key and a preserved validated payload.
-- Every action request is typed, linked to an incident, and blocked until an explicit approval exists.
+- Every alert has a source idempotency key and preserved validated payload.
+- Every evidence item retains its query, parameters, result, availability, timing, and failure state.
+- Every action is typed, linked to an incident, and blocked until explicit approval exists.
 - Every action attempt has an outcome and a separate verification record; a timeout never implies success.
-- Every durable job has a lease, retry count, and idempotency key so a worker restart cannot silently lose work.
-- Every user-visible state change emits a timeline event with an incident-local sequence number.
-- Model output is stored as a validated model run and finding set; it cannot directly mutate incident state or execute an action.
+- Every durable job has a lease, retry count, and idempotency key.
+- Every user-visible state change emits an incident-local timeline event.
+- Validated model output cannot execute an action or mutate incident state directly.
