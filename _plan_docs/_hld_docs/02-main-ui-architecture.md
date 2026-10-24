@@ -12,7 +12,9 @@ flowchart TB
     Timeline[Ordered incident timeline]
     Decisions[Human decisions]
     Actions[Approved actions and verification]
+    Store[Separate demo store frontend]
 
+    Store -->|payment failure alert| App
     App --> List
     App --> Detail
     Detail --> Summary
@@ -34,6 +36,7 @@ flowchart TB
 | Incident detail | Summary, evidence, findings, pages, decisions, actions, timeline | Acknowledge, reply, approve, reject |
 | Timeline | Ordered display-safe timeline events | None |
 | Action panel | Typed action request, approval state, attempts, verification | Approval or rejection only |
+| Demo store | Catalog, cart, synthetic payment fields, payment result | Store payment API only |
 
 ## UI rules
 
@@ -42,3 +45,4 @@ flowchart TB
 - Approval controls show the exact action type, target, parameters, and expiry before submission.
 - Action completion is shown only after simulator verification is persisted.
 - Polling refreshes the incident detail and timeline without reordering already persisted events.
+- A failed synthetic checkout links directly to its accepted incident; the separate store backend strips payment fields before emitting the operational alert.

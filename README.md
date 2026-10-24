@@ -16,6 +16,7 @@ The product accepts normalized alerts, groups repeat deliveries, collects bounde
 - Worker-backed investigation and action execution with retry, lease, timeout, and recovery handling.
 - Human paging, acknowledgement, free-form reply, fallback escalation, approval, rejection, execution, and verification.
 - React incident console with stable selection, investigation controls, evidence review, action state, and timeline context.
+- Browser-based demo store with catalog, cart, synthetic checkout, controlled payment failure, direct incident handoff, and a captured responder inbox.
 - Local HTTP boundary tests for model, notification, ownership, and action reconciliation integrations.
 
 ## Repository map
@@ -29,6 +30,8 @@ The product accepts normalized alerts, groups repeat deliveries, collects bounde
 - `frontend/src/domain/` — shared frontend data types
 - `frontend/src/lib/` — small reusable workflow helpers
 - `frontend/src/styles/` — frontend presentation styles
+- `demo-store/backend/` — synthetic catalog, payment router, and bounded alert adapter
+- `demo-store/frontend/` — standalone customer-facing store and checkout
 - `demo-output/` — local browser-only Kubernetes demo recordings
 
 ## Run locally
@@ -39,8 +42,11 @@ docker compose up --build
 ```
 
 - Frontend: `http://localhost:8000`
+- Demo store: `http://localhost:8003`
+- Demo store API: `http://localhost:8004/api/store/health`
 - Backend liveness: `http://localhost:8001/api/v1/health`
 - Backend readiness: `http://localhost:8001/api/v1/readiness`
+- Responder inbox: `http://localhost:8002`
 
 The API applies migrations before serving traffic. Credentials remain in the ignored `.env` file.
 
@@ -50,11 +56,16 @@ The API applies migrations before serving traffic. Credentials remain in the ign
 docker compose config -q
 docker compose run --rm --user root api pytest -q tests
 (cd frontend && npm test && npm run build)
+(cd demo-store/frontend && npm run build)
+docker compose run --rm --user root store-backend pytest -q tests
 ./scripts/reset-demo.sh
 ./scripts/demo.sh
+./scripts/verify-commerce-demo.sh
 ```
 
 The demo exercises all scenarios with duplicate, late, flapping, delayed, and out-of-order deliveries, then shows degraded dependency evidence.
+
+`verify-commerce-demo.sh` proves the approved checkout, declined checkout, incident creation, completed investigation, responder page, and captured inbox message against the running stack.
 
 To create a fresh incident from the simulator, select a scenario and trigger its alert delivery:
 
@@ -69,6 +80,8 @@ curl -sS -X POST http://localhost:8001/api/v1/simulator/alerts \
 
 The response contains both the generated deliveries and the incidents accepted by the webhook pipeline. Refresh the UI on port `8000` to continue the investigation workflow.
 
+For the presenter-facing commerce flow, open port `8003`, add a product, and use the displayed declined test card. The separate store backend validates the synthetic payment, strips payment fields, sends only operational metadata to the normal alert endpoint, and returns the incident link. Run the investigation, page the service owner, and open the responder inbox on port `8002` to show the captured notification. The approved test card completes without creating an incident.
+
 The investigation view uses realistic e-commerce signals rather than a single generic fixture message. It records named bounded evidence queries and safe model telemetry, then shows the structured model readout separately from the deterministic finding. A configured model gateway can supply the structured analysis; without one, the deterministic finding remains visible with an explicit degraded model status.
 
 ## Verify on local Kubernetes
@@ -76,12 +89,14 @@ The investigation view uses realistic e-commerce signals rather than a single ge
 OrbStack Kubernetes can run the same images without a hosted deployment:
 
 ```bash
-docker compose build api worker frontend
+docker compose build api worker frontend store-backend store-frontend
 kubectl apply -f k8s/local.yaml
 kubectl -n hero-vired rollout status deployment/db --timeout=120s
 kubectl -n hero-vired rollout status deployment/api --timeout=120s
 kubectl -n hero-vired rollout status deployment/worker --timeout=120s
 kubectl -n hero-vired rollout status deployment/frontend --timeout=120s
+kubectl -n hero-vired rollout status deployment/store-backend --timeout=120s
+kubectl -n hero-vired rollout status deployment/store-frontend --timeout=120s
 kubectl -n hero-vired port-forward service/frontend 8000:8080
 ```
 
@@ -90,6 +105,14 @@ The Kubernetes UI uses the same frontend port (`8000`), and the frontend proxies
 ```bash
 kubectl -n hero-vired port-forward service/api 8001:8000
 curl -sS http://localhost:8001/api/v1/readiness
+```
+
+For the store, forward its two services in separate terminals:
+
+```bash
+kubectl -n hero-vired port-forward service/store-frontend 8003:8080
+kubectl -n hero-vired port-forward service/store-backend 8004:8000
+kubectl -n hero-vired port-forward service/mailpit 8002:8025
 ```
 
 ## Start with the design

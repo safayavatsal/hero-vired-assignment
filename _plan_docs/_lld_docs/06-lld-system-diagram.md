@@ -273,6 +273,21 @@ classDiagram
         -SimulatorClient client
         +execute(action: ActionRequest) ActionOutcome
     }
+    class StorePaymentRequest {
+        +str attempt_id
+        +list~str~ product_ids
+        -str cardholder
+        -str card_number
+        -str expiry
+        -str security_code
+    }
+    class StorePaymentService {
+        -StoreAlertGateway alert_gateway
+        +pay(payment: StorePaymentRequest) PaymentResult
+    }
+    class StoreAlertGateway {
+        +create_incident(payload: dict) UUID
+    }
 
     Incident "1" o-- "many" Alert : contains
     Incident "1" o-- "many" Evidence : gathers
@@ -320,4 +335,7 @@ classDiagram
     SimulatorEvidenceProvider ..|> EvidenceProvider
     ProviderModelGateway ..|> ModelGateway
     SimulatorActionExecutor ..|> ActionExecutor
+    StorePaymentService --> StorePaymentRequest : validates
+    StorePaymentService --> StoreAlertGateway : reports decline
+    StoreAlertGateway --> IncidentController : sends alert
 ```

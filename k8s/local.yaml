@@ -14,6 +14,49 @@ data:
   MODEL_GATEWAY_MODEL: openai/gpt-oss-20b
   MODEL_GATEWAY_TIMEOUT_SECONDS: "5"
   SIMULATOR_STATE_PATH: /tmp/hero-vired-simulator-state.json
+  NOTIFICATION_SMTP_HOST: mailpit
+  NOTIFICATION_SMTP_PORT: "1025"
+  NOTIFICATION_EMAIL_FROM: assistant@demo.local
+  NOTIFICATION_EMAIL_TO: oncall@demo.local
+  ON_CALL_API_URL: http://api:8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mailpit
+  namespace: hero-vired
+spec:
+  selector:
+    app: mailpit
+  ports:
+    - name: smtp
+      port: 1025
+      targetPort: 1025
+    - name: http
+      port: 8025
+      targetPort: 8025
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailpit
+  namespace: hero-vired
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailpit
+  template:
+    metadata:
+      labels:
+        app: mailpit
+    spec:
+      containers:
+        - name: mailpit
+          image: axllent/mailpit:v1.32.0
+          ports:
+            - containerPort: 1025
+            - containerPort: 8025
 ---
 apiVersion: v1
 kind: Service
@@ -174,6 +217,89 @@ spec:
       containers:
         - name: frontend
           image: hero-vired-frontend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: store-backend
+  namespace: hero-vired
+spec:
+  selector:
+    app: store-backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: store-backend
+  namespace: hero-vired
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: store-backend
+  template:
+    metadata:
+      labels:
+        app: store-backend
+    spec:
+      containers:
+        - name: store-backend
+          image: hero-vired-store-backend:latest
+          imagePullPolicy: Never
+          envFrom:
+            - configMapRef:
+                name: hero-vired-config
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /api/store/health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: store-frontend
+  namespace: hero-vired
+spec:
+  selector:
+    app: store-frontend
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: store-frontend
+  namespace: hero-vired
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: store-frontend
+  template:
+    metadata:
+      labels:
+        app: store-frontend
+    spec:
+      containers:
+        - name: store-frontend
+          image: hero-vired-store-frontend:latest
           imagePullPolicy: Never
           ports:
             - containerPort: 8080

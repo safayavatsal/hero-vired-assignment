@@ -83,7 +83,8 @@ class WorkflowService:
             page_context = self._investigation_page_context(incident_id)
             delivery = self.notification_gateway.deliver({
                 "page_id": str(page_id), "incident_id": str(incident_id), "responder": responder,
-                "fallback_responder": fallback, "summary": incident["summary"], "severity": incident["severity"],
+                  "fallback_responder": fallback, "service": incident["service"],
+                  "summary": incident["summary"], "severity": incident["severity"],
                 **page_context,
             })
             connection.execute(

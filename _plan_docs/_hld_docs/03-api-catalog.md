@@ -21,6 +21,7 @@ This document lists the major HTTP APIs in the product. Detailed request validat
 | `/api/v1/simulator/reset` | Reset the selected simulator scenario |
 | `/api/v1/simulator/actions` | Execute a permitted typed simulator action |
 | `/api/v1/simulator/actions/{action_id}/verify` | Verify a simulator action outcome |
+| `/api/store/payments` | Process a synthetic store payment and emit an operational alert for a controlled decline |
 
 ## GET APIs
 
@@ -36,6 +37,8 @@ This document lists the major HTTP APIs in the product. Detailed request validat
 | `/api/v1/simulator/scenarios` | List available simulator scenarios without hidden causes |
 | `/api/v1/simulator/state` | Return selected scenario state and action records |
 | `/api/v1/simulator/evidence` | Query logs, metrics, deploys, or service health |
+| `/api/store/health` | Report demo-store backend health |
+| `/api/store/products` | Return the deterministic demo product catalog |
 
 
 ## API rules

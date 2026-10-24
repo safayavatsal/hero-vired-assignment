@@ -115,3 +115,28 @@ def test_incident_transition_is_delegated_to_repository() -> None:
     transitioned = service.transition(UUID(result["incident"]["id"]), "investigating", None)
 
     assert transitioned["status"] == "investigating"
+
+
+def test_storefront_payment_failure_uses_canonical_deduplication() -> None:
+    repository = FakeIncidentRepository()
+    service = AlertPipelineService(repository)
+    payment_failure = {
+        "source_event_id": "payment-demo-1",
+        "source": "demo-storefront",
+        "service": "checkout-api",
+        "severity": "critical",
+        "alert_type": "payment_authorization_failed",
+        "source_time": datetime.now(timezone.utc),
+        "labels": {"failure_category": "authorization_unavailable", "product_ids": "desk-lamp"},
+        "description": "Checkout payment authorization is unavailable for a synthetic order.",
+        "lifecycle": "firing",
+        "correlation_key": "checkout-authorization-provider-payment-demo-1",
+    }
+
+    first = service.accept(payment_failure)
+    duplicate = service.accept(payment_failure)
+
+    assert first["duplicate"] is False
+    assert duplicate["duplicate"] is True
+    assert first["incident"]["service"] == "checkout-api"
+    assert repository.alerts["payment-demo-1"].raw_payload == payment_failure

@@ -12,6 +12,8 @@ This LLD describes the main classes, their responsibilities, method signatures, 
 | `adapters` | PostgreSQL, simulator, paging, model, and HTTP implementations |
 | `execution` | Durable jobs, worker handlers, leases, retries, and verification |
 | `api` | Request validation, authorization, and response mapping |
+| `demo-store/backend` | Product catalog, synthetic payment validation, deterministic routing, and failure-alert delivery |
+| `demo-store/frontend` | Customer-facing catalog, cart, checkout, and incident handoff |
 
 ## Connection rules
 
@@ -22,3 +24,4 @@ This LLD describes the main classes, their responsibilities, method signatures, 
 - Repositories persist domain state and timeline events.
 - The runtime sequence in `05-runtime-sequence-flow.md` shows the interaction order.
 - The final Mermaid diagram in `06-lld-system-diagram.md` shows all class connections together.
+- The store-specific classes and request flow are summarized in `07-demo-store.md`.

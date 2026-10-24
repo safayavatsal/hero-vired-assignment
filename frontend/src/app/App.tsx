@@ -35,9 +35,10 @@ function eventSummary(event: TimelineEvent) {
 }
 
 export function App() {
+  const incidentFromUrl = new URLSearchParams(window.location.search).get("incident");
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [selected, setSelected] = useState<IncidentDetail | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(incidentFromUrl);
   const [pages, setPages] = useState<Page[]>([]);
   const [actions, setActions] = useState<Action[]>([]);
   const [investigation, setInvestigation] = useState<Investigation | null>(null);
@@ -153,7 +154,7 @@ export function App() {
 
   return (
     <main>
-      <header className="page-header"><div><p className="product-name">Incident console</p><h1>On-call assistant</h1><p className="muted">Find the cause, decide the next safe action, and keep the audit trail.</p></div><span className="status-dot">Live workspace</span></header>
+      <header className="page-header"><div><p className="product-name">Incident console</p><h1>On-call assistant</h1><p className="muted">Find the cause, decide the next safe action, and keep the audit trail.</p></div><div className="header-actions"><a href="http://localhost:8003">Open demo store</a><span className="status-dot">Live workspace</span></div></header>
       {(error || feedback) && <div className="toast-region" aria-live="polite" aria-atomic="true">{error ? <div className="toast" role="alert"><span>{error}</span><button type="button" className="toast-dismiss" onClick={() => setError(null)}>Dismiss</button></div> : <div className="toast success-toast" role="status"><span>{feedback}</span><button type="button" className="toast-dismiss" onClick={() => setFeedback(null)}>Dismiss</button></div>}</div>}
       <section className="layout" aria-label="Incidents">
         <aside className="panel incident-panel"><div className="section-heading"><h2>Incidents</h2><span className="count">{incidents.length}</span></div>{incidents.length === 0 ? <p className="muted">No incidents yet.</p> : <div className="incident-list">{incidents.map((incident) => <button type="button" className={`incident ${selectedId === incident.id ? "selected" : ""}`} key={incident.id} onClick={() => loadIncident(incident.id)}><span><strong>{incident.service}</strong><small>{incident.summary}</small><small>{incident.alert_count} alerts · Updated {new Date(incident.updated_at).toLocaleString()}</small></span><span className="badge">{incident.status}</span></button>)}</div>}</aside>

@@ -9,4 +9,6 @@ __pycache__/
 .pytest_cache/
 node_modules/
 frontend/dist/
+demo-store/frontend/dist/
+demo-store/frontend/*.tsbuildinfo
 AGENTS.md

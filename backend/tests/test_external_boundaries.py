@@ -30,6 +30,41 @@ def test_notification_gateway_uses_bearer_token_without_exposing_it(monkeypatch)
     assert captured == {"url": "http://notify.test/page", "token": "secret", "payload": {"page_id": "page-1"}}
 
 
+def test_notification_gateway_delivers_local_email(monkeypatch) -> None:
+    monkeypatch.delenv("NOTIFICATION_GATEWAY_URL", raising=False)
+    monkeypatch.setenv("NOTIFICATION_SMTP_HOST", "mail.test")
+    monkeypatch.setenv("NOTIFICATION_EMAIL_TO", "oncall@demo.local")
+    captured = {}
+
+    class SMTP:
+        def __init__(self, host, port, timeout):
+            captured.update(host=host, port=port, timeout=timeout)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def send_message(self, message):
+            captured["message"] = message
+
+    monkeypatch.setattr(external_boundaries.smtplib, "SMTP", SMTP)
+    result = external_boundaries.NotificationGateway().deliver({
+        "incident_id": "incident-1",
+        "service": "checkout-api",
+        "severity": "critical",
+        "summary": "Payment authorization failed",
+        "evidence_summary": "The provider is unavailable.",
+        "suggested_next_step": "failover",
+    })
+
+    assert result["status"] == "delivered"
+    assert captured["host"] == "mail.test"
+    assert captured["message"]["To"] == "oncall@demo.local"
+    assert "The provider is unavailable." in captured["message"].get_content()
+
+
 def test_action_executor_is_noop_when_not_configured(monkeypatch) -> None:
     monkeypatch.delenv("ACTION_EXECUTOR_URL", raising=False)
 

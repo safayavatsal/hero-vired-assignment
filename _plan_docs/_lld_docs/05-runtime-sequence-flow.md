@@ -43,6 +43,7 @@ sequenceDiagram
 ## Runtime guarantees
 
 - Duplicate, late, and out-of-order alerts are accepted safely through source keys, fingerprints, and event ordering.
+- A synthetic checkout failure uses the same alert webhook and keeps payment fields outside the incident boundary.
 - A slow or unavailable evidence source produces a bounded evidence state rather than an invented result.
 - A human approval is checked again when the worker claims the action job.
 - An action timeout leads to verification before any success or resolution state is recorded.

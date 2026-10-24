@@ -6,6 +6,9 @@ This high-level architecture describes the runtime boundaries and the executable
 
 ```mermaid
 flowchart LR
+    Shopper[Demo shopper] --> Storefront[Demo store frontend]
+    Storefront -->|catalog and payment API| StoreAPI[Demo store backend]
+    StoreAPI -->|failed payment alert| API
     Responder[On-call engineer] --> UI[React + TypeScript incident console]
     UI -->|REST and polling| API[FastAPI API]
     API --> Store[(PostgreSQL system of record)]
@@ -15,18 +18,21 @@ flowchart LR
     Worker --> Simulator[Production simulator]
     Worker --> Model[Provider-neutral model adapter]
     Worker --> Pager[Paging and executor boundaries]
+    API --> Inbox[Local captured responder inbox]
 ```
 
 ## 2. Responsibility boundaries
 
 | Component | Owns | Does not own |
 | --- | --- | --- |
-| React + TypeScript UI | Incident list, detail, timeline, evidence review, and human decision forms | State transitions, action execution, inferred completion |
+| React + TypeScript incident UI | Incident list, detail, timeline, evidence review, and human decision forms | State transitions, action execution, inferred completion, or payment processing |
+| Demo store frontend | Product selection, cart, synthetic checkout form, and payment result | Incident creation, payment processing, or durable state |
+| Demo store backend | Product catalog, synthetic payment validation, deterministic outcome, and bounded failure alert | Real payments, card persistence, or incident investigation |
 | FastAPI API | Validation, idempotency, state transitions, read models, and audit events | Long-running investigation or direct model execution |
 | Python worker | Investigation jobs, action execution, verification, retries, leases, and overdue-page recovery | Browser presentation or unvalidated human intent |
 | PostgreSQL | Incidents, alerts, evidence, findings, pages, actions, jobs, attempts, verifications, and timeline history | External alert generation or model reasoning |
 | Production simulator | Deterministic alerts, evidence sources, typed actions, and failure controls | Production credentials or arbitrary command execution |
-| Model and delivery boundaries | Structured analysis, optional delivery, ownership, and reconciliation | Direct authorization or incident truth |
+| Model and delivery boundaries | Structured analysis, optional delivery, ownership, local captured email, and reconciliation | Direct authorization or incident truth |
 
 ## 3. Relational schema catalog
 

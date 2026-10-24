@@ -5,7 +5,7 @@
 | Class | Responsibility | Main methods |
 | --- | --- | --- |
 | `PagingService` | Send pages, track escalation, and record responses | `page()`, `acknowledge()`, `reply()`, `escalate()` |
-| `PagingGateway` | Interface for page delivery | `send_page()` |
+| `PagingGateway` | Interface for HTTP or SMTP page delivery | `send_page()` |
 | `DecisionService` | Validate and persist human decisions | `acknowledge()`, `approve()`, `reject()` |
 | `ActionRequest` | Represent a typed requested operation and approval state | `approve()`, `reject()`, `expire()` |
 | `ActionService` | Create approved work and expose action state | `request()`, `approve()`, `reject()`, `get_status()` |

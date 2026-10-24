@@ -43,6 +43,7 @@ Implemented:
 - Missing external configuration keeps the deterministic local paging behavior.
 - Page delivery attempts are persisted for primary and fallback pages.
 - The worker checks overdue pages during polling and creates one fallback page without duplication.
+- Local demonstrations can deliver the same page payload through SMTP to the captured responder inbox on host port `8002`.
 
 Boundary verification:
 

@@ -35,15 +35,28 @@
 | Missing model configuration | Deterministic finding remains available with explicit degraded model status |
 | Verified local action | Incident transitions to `resolved` and the timeline records verification and resolution |
 | External dependency finding | Incident transitions to `unfixable` and no local action is proposed |
+| Approved synthetic checkout | Order succeeds and no incident is created |
+| Declined synthetic checkout | One `checkout-api` incident is created without payment credentials in its payload |
+
+## Commerce failure walkthrough
+
+1. Open `http://localhost:8003`, add one product, and proceed to checkout.
+2. Select the declined test card and submit the payment through the store backend on port `8004`.
+3. Follow the returned incident link and confirm `checkout-api` selected the third-party-outage scenario.
+4. Run the investigation and confirm the finding cites dependency and service-health evidence.
+5. Page the owner and verify the captured message in `http://localhost:8002` contains the finding and suggested next step.
+
+No local remediation is offered for this scenario. The console preserves the incident as an external-dependency case for human follow-up.
 
 ## Repeatable demo
 
 ```bash
 ./scripts/reset-demo.sh
 ./scripts/demo.sh
+./scripts/verify-commerce-demo.sh
 ```
 
-The script covers all three scenarios, duplicate/late/flapping/out-of-order delivery, and the degraded service-health path. It is safe to repeat against the local Compose stack.
+The scripts cover all three scenarios, duplicate/late/flapping/out-of-order delivery, the degraded service-health path, and the complete store-payment-to-responder-inbox path. They are safe to repeat against the local Compose stack.
 
 ## Verification record
 

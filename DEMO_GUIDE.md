@@ -6,18 +6,41 @@ Run `docker compose up --build`, open `http://localhost:8000`, and confirm that 
 
 The API endpoints are available at `http://localhost:8001/api/v1/health` and `http://localhost:8001/api/v1/readiness`.
 
+## Commerce-to-incident browser demo
+
+1. Open `http://localhost:8003` and add any product to the cart.
+2. Select `Checkout`, choose `Use declined card`, and submit the synthetic payment.
+3. Confirm the declined result displays an incident ID, then select `Open on-call console`.
+4. Start the preselected third-party-outage investigation and wait for the finding to appear.
+5. Select `Page service owner`, then open `http://localhost:8002` to show the captured email with the incident, finding, and next step.
+
+The checkout form talks to the separate demo-store backend on port `8004`. Cardholder, card number, expiry, and security code are validated there but never persisted or copied into the alert payload. Use `Use approved card` to demonstrate the non-incident path.
+
+Before presenting, run the repeatable API-level proof:
+
+```bash
+./scripts/verify-commerce-demo.sh
+```
+
+It prints one compact JSON result containing the approved outcome, fresh incident identifier, completed investigation, delivered page, and captured-message count.
+
 ## Local Kubernetes browser verification
 
 OrbStack runs the same workflow with the local Kubernetes manifest:
 
 ```bash
-docker compose build api worker frontend
+docker compose build api worker frontend store-backend store-frontend
 kubectl apply -f k8s/local.yaml
 kubectl -n hero-vired rollout status deployment/db --timeout=120s
 kubectl -n hero-vired rollout status deployment/api --timeout=120s
 kubectl -n hero-vired rollout status deployment/worker --timeout=120s
 kubectl -n hero-vired rollout status deployment/frontend --timeout=120s
+kubectl -n hero-vired rollout status deployment/store-backend --timeout=120s
+kubectl -n hero-vired rollout status deployment/store-frontend --timeout=120s
 kubectl -n hero-vired port-forward service/frontend 8000:8080
+kubectl -n hero-vired port-forward service/store-frontend 8003:8080
+kubectl -n hero-vired port-forward service/store-backend 8004:8000
+kubectl -n hero-vired port-forward service/mailpit 8002:8025
 ```
 
 Open `http://localhost:8000` and run the same guided path: select an incident, start or repeat the matching investigation, page the owner, acknowledge, reply, propose the safe action, approve it, queue it, and verify the service state. The local browser pass confirmed the success toast after each transition and the worker result appearing in the selected incident.

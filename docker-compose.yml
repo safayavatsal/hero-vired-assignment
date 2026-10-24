@@ -38,10 +38,17 @@ services:
         required: false
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:change-me@db:5432/hero_vired}
+      NOTIFICATION_GATEWAY_URL: ${NOTIFICATION_GATEWAY_URL:-}
+      NOTIFICATION_SMTP_HOST: ${NOTIFICATION_SMTP_HOST:-mailpit}
+      NOTIFICATION_SMTP_PORT: ${NOTIFICATION_SMTP_PORT:-1025}
+      NOTIFICATION_EMAIL_FROM: ${NOTIFICATION_EMAIL_FROM:-assistant@demo.local}
+      NOTIFICATION_EMAIL_TO: ${NOTIFICATION_EMAIL_TO:-oncall@demo.local}
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     depends_on:
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     ports:
       - "8001:8000"
     healthcheck:
@@ -52,6 +59,17 @@ services:
       start_period: 15s
     networks:
       - backend
+      - frontend
+    logging: *default-logging
+
+  mailpit:
+    image: axllent/mailpit:v1.32.0
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.25
+    ports:
+      - "8002:8025"
+    networks:
       - frontend
     logging: *default-logging
 
@@ -66,6 +84,11 @@ services:
         required: false
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:change-me@db:5432/hero_vired}
+      NOTIFICATION_GATEWAY_URL: ${NOTIFICATION_GATEWAY_URL:-}
+      NOTIFICATION_SMTP_HOST: ${NOTIFICATION_SMTP_HOST:-mailpit}
+      NOTIFICATION_SMTP_PORT: ${NOTIFICATION_SMTP_PORT:-1025}
+      NOTIFICATION_EMAIL_FROM: ${NOTIFICATION_EMAIL_FROM:-assistant@demo.local}
+      NOTIFICATION_EMAIL_TO: ${NOTIFICATION_EMAIL_TO:-oncall@demo.local}
     command: python -m app.execution.worker
     depends_on:
       db:
@@ -75,6 +98,7 @@ services:
     networks:
       - backend
       - egress
+      - frontend
     logging: *default-logging
 
   frontend:
@@ -88,6 +112,50 @@ services:
         condition: service_healthy
     ports:
       - "8000:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - frontend
+    logging: *default-logging
+
+  store-backend:
+    build: ./demo-store/backend
+    restart: unless-stopped
+    init: true
+    mem_limit: 256m
+    cpus: 0.25
+    environment:
+      ON_CALL_API_URL: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8004:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/store/health', timeout=2)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - frontend
+    logging: *default-logging
+
+  store-frontend:
+    build: ./demo-store/frontend
+    restart: unless-stopped
+    init: true
+    mem_limit: 256m
+    cpus: 0.25
+    depends_on:
+      store-backend:
+        condition: service_healthy
+    ports:
+      - "8003:8080"
     healthcheck:
       test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:8080/"]
       interval: 10s
