@@ -39,10 +39,10 @@ def scenario_definitions() -> dict[str, ScenarioDefinition]:
             alert_type="p99_latency_high",
             hidden_cause="release-2026.10.22 introduced a slow payment query",
             evidence={
-                "logs": [{"message": "payment query exceeded 3 seconds", "level": "error"}],
-                "metrics": [{"name": "p99_latency_ms", "value": 3210, "threshold": 2000}],
-                "deploys": [{"version": "2026.10.22", "previous_version": "2026.10.21"}],
-                "service_health": [{"service": "payments-api", "healthy": False}],
+                "logs": [{"timestamp": "2026-10-22T12:00:04Z", "trace_id": "pay-7f31", "route": "POST /v1/payments/authorize", "message": "payment query exceeded 3 seconds", "level": "error"}],
+                "metrics": [{"name": "p99_latency_ms", "value": 3210, "threshold": 2000, "route": "/v1/payments/authorize", "window": "5m"}],
+                "deploys": [{"version": "2026.10.22", "previous_version": "2026.10.21", "commit": "8f2c1de", "changed": ["payment repository query"]}],
+                "service_health": [{"service": "payments-api", "healthy": False, "dependency": "orders-db", "region": "primary"}],
             },
             allowed_actions=("rollback", "restart"),
             controls={
@@ -61,10 +61,10 @@ def scenario_definitions() -> dict[str, ScenarioDefinition]:
             alert_type="disk_usage_high",
             hidden_cause="worker artifacts were not cleaned after repeated jobs",
             evidence={
-                "logs": [{"message": "artifact cleanup skipped", "level": "warn"}],
-                "metrics": [{"name": "disk_usage_percent", "value": 96, "threshold": 85}],
-                "deploys": [{"version": "2026.10.20", "previous_version": "2026.10.19"}],
-                "service_health": [{"service": "orders-worker", "healthy": True}],
+                "logs": [{"timestamp": "2026-10-22T12:00:03Z", "trace_id": "ord-4c92", "job": "fulfillment-export", "message": "artifact cleanup skipped after batch completion", "level": "warn"}],
+                "metrics": [{"name": "disk_usage_percent", "value": 96, "threshold": 85, "mount": "/var/lib/orders", "window": "10m"}],
+                "deploys": [{"version": "2026.10.20", "previous_version": "2026.10.19", "commit": "1ab93e4", "changed": ["worker artifact retention"]}],
+                "service_health": [{"service": "orders-worker", "healthy": True, "queue": "fulfillment", "region": "primary"}],
             },
             allowed_actions=("clear_disk", "restart", "scale"),
             controls={
@@ -83,10 +83,10 @@ def scenario_definitions() -> dict[str, ScenarioDefinition]:
             alert_type="dependency_errors_high",
             hidden_cause="external payment provider is unavailable",
             evidence={
-                "logs": [{"message": "upstream provider returned 503", "level": "error"}],
-                "metrics": [{"name": "provider_error_rate", "value": 100, "threshold": 5}],
-                "deploys": [{"version": "2026.10.18", "previous_version": "2026.10.17"}],
-                "service_health": [{"service": "checkout-api", "healthy": True}],
+                "logs": [{"timestamp": "2026-10-22T12:00:02Z", "trace_id": "chk-a118", "route": "POST /v1/checkout", "provider": "card-authorizer", "message": "upstream provider returned 503", "level": "error"}],
+                "metrics": [{"name": "provider_error_rate", "value": 100, "threshold": 5, "provider": "card-authorizer", "window": "5m"}],
+                "deploys": [{"version": "2026.10.18", "previous_version": "2026.10.17", "commit": "d301fca", "changed": ["checkout copy"]}],
+                "service_health": [{"service": "checkout-api", "healthy": True, "dependency": "card-authorizer", "dependency_healthy": False}],
             },
             allowed_actions=(),
             controls={
@@ -164,13 +164,13 @@ class SimulatorService:
         if duplicate_count < 1 or duplicate_count > 5:
             raise ValueError("duplicate_count must be between 1 and 5")
 
-        source_event_id = str(uuid4())
         source_time = datetime.now(timezone.utc)
         if late:
             source_time -= timedelta(hours=1)
         lifecycles = ["firing", "resolved"] if flapping else ["firing"]
         deliveries = []
-        for lifecycle in lifecycles:
+        for lifecycle_index, lifecycle in enumerate(lifecycles):
+            source_event_id = str(uuid4())
             for delivery_index in range(duplicate_count):
                 alert = {
                     "id": str(uuid4()),
@@ -181,7 +181,11 @@ class SimulatorService:
                     "severity": definition.severity,
                     "alert_type": definition.alert_type,
                     "lifecycle": lifecycle,
-                    "source_time": source_time.isoformat(),
+                    "source": "simulator",
+                    "labels": {"scenario": definition.id},
+                    "description": f"{definition.name} alert triggered",
+                    "correlation_key": definition.id,
+                    "source_time": (source_time + timedelta(seconds=lifecycle_index)).isoformat(),
                     "received_time": (datetime.now(timezone.utc) + timedelta(seconds=delayed_seconds)).isoformat(),
                 }
                 self._state.alerts.append(alert)

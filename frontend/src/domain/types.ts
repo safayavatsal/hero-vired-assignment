@@ -1,0 +1,10 @@
+export type Incident = { id: string; service: string; severity: string; status: string; summary: string; alert_count: number; version: number; updated_at: string };
+export type TimelineEvent = { id: string; event_type: string; event_time: string; payload: Record<string, unknown> };
+export type IncidentDetail = Incident & { timeline: TimelineEvent[] };
+export type Page = { id: string; status: string; responder: string; level: string; response_type: string | null; incident_version: number };
+export type Action = { id: string; status: string; action_type: string; target: string; scenario_id: string; incident_version: number };
+export type Evidence = { id: string; source_type: string; availability: string; observed_at: string; query: string; parameters: Record<string, unknown>; duration_ms: number | null; error: string | null; items: unknown[] };
+export type Finding = { id: string; category: string; statement: string; confidence: number; suggested_next_step: string; evidence_ids: string[]; uncertainty: string | null };
+export type ModelAnalysis = { current_condition: string; likely_cause: string; confidence: number; suggested_next_step: string; evidence_ids: string[]; uncertainty: string | null };
+export type ToolTrace = { tool: string; source_type: string; parameters: Record<string, unknown>; status: string; evidence_id: string; duration_ms: number | null; error: string | null };
+export type Investigation = { status?: string; model_status: string; model_error?: string; model_analysis?: ModelAnalysis; model_telemetry?: { status: string; duration_ms: number; model?: string | null; response_format?: string | null }; tool_trace?: ToolTrace[]; findings: Finding[]; evidence: Evidence[] };

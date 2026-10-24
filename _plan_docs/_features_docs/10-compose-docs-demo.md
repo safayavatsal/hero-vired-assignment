@@ -15,10 +15,11 @@ Make the complete baseline easy to run, inspect, and demonstrate.
 7. Preserve meaningful commits as the implementation progresses.
 8. Add a demo script or command sequence covering all scenarios and one failure-mode path.
 9. Verify the live-change path by adding a small scenario or analyzer without restructuring the system.
+10. Provide a local Kubernetes manifest for OrbStack so the same API, worker, database, and frontend flow can be checked outside Compose without introducing hosted deployment scope.
 
 ## Implementation status
 
-Implemented locally. Compose now has safe defaults for a clean checkout when `.env` is absent, while preserving `.env` overrides. `scripts/demo.sh` exercises all three scenarios and a degraded evidence path, `scripts/reset-demo.sh` restores the demo state, and a focused queue-pressure analyzer test verifies the small live-change workflow without changing the architecture.
+Implemented locally. Compose now has safe defaults for a clean checkout when `.env` is absent, while preserving `.env` overrides. Simulator alert deliveries now enter the canonical incident intake path, so the documented demo can create incidents without a hand-written webhook request. `scripts/demo.sh` exercises all three scenarios and a degraded evidence path, `scripts/reset-demo.sh` restores the demo state, and a focused queue-pressure analyzer test verifies the small live-change workflow without changing the architecture.
 
 ## Acceptance checks
 
@@ -33,3 +34,7 @@ Implemented locally. Compose now has safe defaults for a clean checkout when `.e
 - The backend Docker suite covers the demo and live-change regression path.
 - Frontend smoke tests and the production build pass.
 - Documentation describes setup, environment variables, scenario triggers, human responses, expected outcomes, and reset/demo commands.
+- The OrbStack Kubernetes manifest mirrors the Compose services with local images, readiness probes, in-cluster API proxying, and port-forward instructions.
+- OrbStack verification passed after the API and worker waited for Postgres and the worker used its explicit job-consumer command. Two repeated investigation runs completed with one finding and four evidence groups each; the worker remained healthy with zero restarts.
+- The Kubernetes API pod suite passed with `42 passed` and no warnings when pytest cache collection was disabled for the non-root container. Browser verification completed investigation, page delivery, acknowledgement, reply, action proposal, approval, queueing, worker completion, and service verification through the Kubernetes frontend.
+- The current Docker verification rebuild passed `45 passed` with no warnings; the frontend smoke suite passed `5` tests and the production build passed. The terminal workflow now closes local-remediation scenarios as `resolved` and external-dependency scenarios as `unfixable`.

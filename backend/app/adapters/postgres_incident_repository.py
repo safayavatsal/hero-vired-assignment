@@ -100,19 +100,6 @@ class PostgresIncidentRepository:
                     """,
                     incident,
                 )
-            else:
-                status = "resolved" if alert.lifecycle == "resolved" else incident["status"]
-                if status == "resolved" and alert.lifecycle != "resolved":
-                    status = "received"
-                connection.execute(
-                    """
-                    UPDATE incidents
-                    SET status = %s, updated_at = %s, version = version + 1
-                    WHERE id = %s
-                    """,
-                    (status, alert.received_time, incident["id"]),
-                )
-
             alert.incident_id = incident["id"]
             connection.execute(
                 """
@@ -127,6 +114,29 @@ class PostgresIncidentRepository:
                     Jsonb(alert.labels), alert.description, alert.lifecycle,
                     alert.source_time, alert.received_time, Jsonb(_json_safe(alert.raw_payload)),
                 ),
+            )
+            latest_alert = connection.execute(
+                """
+                SELECT lifecycle
+                FROM alerts
+                WHERE incident_id = %s
+                ORDER BY source_time DESC, received_time DESC, id DESC
+                LIMIT 1
+                """,
+                (alert.incident_id,),
+            ).fetchone()
+            status = incident["status"]
+            if latest_alert and latest_alert["lifecycle"] == "resolved":
+                status = "resolved"
+            elif status == "resolved":
+                status = "received"
+            connection.execute(
+                """
+                UPDATE incidents
+                SET status = %s, updated_at = %s, version = version + 1
+                WHERE id = %s
+                """,
+                (status, alert.received_time, incident["id"]),
             )
             sequence = connection.execute(
                 "SELECT id FROM incidents WHERE id = %s FOR UPDATE",

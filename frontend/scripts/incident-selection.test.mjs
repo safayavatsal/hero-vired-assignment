@@ -1,9 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { activeAction, activePage } from "../src/incidentSelection.js";
+import { activeAction, activePage, workflowStates } from "../src/lib/incidentSelection.js";
 
 test("selects the page that still needs a response", () => {
   assert.equal(activePage([{ id: "old", status: "acknowledged" }, { id: "current", status: "delivered" }]).id, "current");
+});
+
+test("keeps the newest page after acknowledgement", () => {
+  assert.equal(activePage([{ id: "old", status: "delivered" }, { id: "current", status: "acknowledged" }]).id, "current");
 });
 
 test("selects the latest action proposal", () => {
@@ -15,4 +19,19 @@ test("ignores action proposals for another scenario or service", () => {
     { id: "stale", scenario_id: "deployment_regression", target: "payments-api" },
     { id: "current", scenario_id: "disk_pressure", target: "orders-worker" },
   ], { scenarioId: "disk_pressure", target: "orders-worker" }).id, "current");
+});
+
+test("keeps the workflow sequential until each operator decision is complete", () => {
+  assert.deepEqual(workflowStates(null, null, null), {
+    investigation: "current",
+    response: "locked",
+    action: "locked",
+  });
+  assert.deepEqual(workflowStates({ status: "completed", findings: [{}] }, { status: "acknowledged" }, { status: "pending_approval" }), {
+    investigation: "done",
+    response: "done",
+    action: "current",
+  });
+  assert.deepEqual(workflowStates({ status: "completed", findings: [{}] }, { status: "replied" }, { status: "verified" }).action, "done");
+  assert.equal(workflowStates({ status: "completed", findings: [{}] }, { status: "acknowledged" }, undefined, true).action, "done");
 });

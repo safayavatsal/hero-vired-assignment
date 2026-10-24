@@ -36,5 +36,7 @@ Implemented in the baseline simulator slice:
 - Explicit delayed and out-of-order delivery controls.
 - Action idempotency keys prevent a repeated request from running twice.
 - Explicit responder availability and third-party dependency controls are exposed in simulator state.
+- Triggered simulator deliveries include a webhook-ready envelope and are forwarded through the canonical alert intake route, creating real incidents for a clean demo.
+- Flapping cycles use separate source event identities and ordered source timestamps so duplicate delivery and lifecycle ordering can be tested independently.
 
 The external notification and ownership workflow is covered by Feature 5; this simulator supplies its deterministic responder and dependency controls.

@@ -32,6 +32,8 @@ Implemented:
 - Simulator action requests can be made idempotent with a caller-supplied key.
 - Startup recovery marks interrupted actions as unknown and escalates overdue pages once.
 - Investigation of a received incident transitions it to `investigating` and records an `investigation_started` timeline event.
+- Completed investigations record an `investigation_completed` event; findings that have no local remediation transition the incident to `unfixable` and record `incident_unfixable`.
+- A verified simulator result transitions the incident to `resolved` and records `incident_resolved`.
 - Action proposals require an investigating/awaiting-human incident and a scenario matching the incident service.
 - Page responses and action decisions accept an optional incident version token and reject stale decisions.
 

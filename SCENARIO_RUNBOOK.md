@@ -1,49 +1,52 @@
 # Scenario Runbook
 
-## Available scenarios
+## Scenario matrix
 
-| Scenario | Service | Hidden cause exposed through |
-| --- | --- | --- |
-| `deployment_regression` | `payments-api` | Logs, metrics, and deployment history |
-| `disk_pressure` | `orders-worker` | Logs, metrics, and service health |
-| `third_party_outage` | `checkout-api` | Logs, metrics, and service health |
+| Scenario | Service | Expected finding | Safe next step |
+| --- | --- | --- | --- |
+| `deployment_regression` | `payments-api` | Latency regression after a version change | `rollback` |
+| `disk_pressure` | `orders-worker` | Disk usage is high and cleanup is degraded | `clear_disk` |
+| `third_party_outage` | `checkout-api` | Dependency failures with degraded health evidence | `failover` |
 
-Select a scenario with:
+## Tester workflow
 
-```bash
-curl -X POST http://localhost:8001/api/v1/simulator/scenarios \
-  -H 'Content-Type: application/json' \
-  -d '{"scenario_id":"deployment_regression"}'
-```
+1. Start Compose and confirm `/api/v1/readiness` returns `{"status":"ready","database":"ok"}`.
+2. Select one scenario with `POST /api/v1/simulator/scenarios`.
+3. Generate deliveries with `POST /api/v1/simulator/alerts`.
+4. Confirm duplicate deliveries do not create duplicate incidents or timeline events.
+5. Investigate the matching incident and check evidence, finding, confidence, uncertainty, citations, and model status.
+   For the e-commerce proof, confirm the evidence includes a request or trace identifier, route or provider, a time window, and deployment or dependency context where relevant.
+6. Page and acknowledge a responder, or send `response_type=timeout` to verify fallback escalation.
+7. For a local-remediation scenario, propose, approve, execute, and verify the allowed action; the incident ends as `resolved`. For the external-dependency scenario, confirm the incident ends as `unfixable` without a local action.
+8. Read the incident timeline and confirm the workflow events remain ordered.
+9. In the UI, confirm the selected incident keeps its own scenario, responder controls target the newest page, queued investigations disable duplicate starts, and failures appear in the toast region rather than in the page layout.
 
-The incident workflow now supports investigation, human paging, fallback escalation, typed action approval, simulator execution, verification, and timeline audit events.
+## Failure-mode checks
 
-For local restart checks, Compose stores simulator state at `/tmp/hero-vired-simulator-state.json` inside the API container. Alert simulation supports duplicate, late, flapping, delayed, and out-of-order deliveries. Action requests may include an `idempotency_key` so a repeated request returns the original action record.
+| Check | Expected result |
+| --- | --- |
+| Repeated `source_event_id` | Existing alert returned with `duplicate: true` |
+| Wrong scenario for an incident service | `409` and no investigation or action created |
+| Slow evidence source | Source is marked degraded/unavailable within its deadline |
+| Responder timeout | Primary page escalates once and fallback page is delivered once |
+| Repeated action idempotency key | Original action record is returned |
+| Stale page/action version | Decision is rejected without changing the newer state |
+| Restart during durable work | Worker recovery resumes or safely retries leased work |
+| Missing model configuration | Deterministic finding remains available with explicit degraded model status |
+| Verified local action | Incident transitions to `resolved` and the timeline records verification and resolution |
+| External dependency finding | Incident transitions to `unfixable` and no local action is proposed |
 
-The alert pipeline now accepts canonical webhook payloads at `POST /api/v1/alerts` and exposes incidents through `GET /api/v1/incidents`.
-
-Incident and timeline records are persisted in PostgreSQL. Repeating an alert with the same `source_event_id` returns the existing record without adding a second alert or timeline event.
-
-After creating an incident, run `POST /api/v1/incidents/<incident-id>/investigate` with a `scenario_id` whose service matches the incident. The request advances a received incident to `investigating`, records an `investigation_started` timeline event, and returns bounded evidence with a finding containing confidence, uncertainty, suggested next step, and cited evidence identifiers.
-
-If the same incident and scenario are investigated after an API restart, the persisted investigation is returned instead of collecting and storing a second result.
-
-For paging, call `POST /api/v1/incidents/<incident-id>/page`, then respond through `POST /api/v1/pages/<page-id>/respond`. Use `response_type=timeout` to exercise the fallback path; the primary page becomes `escalated` and one fallback page becomes `delivered`.
-
-If investigation has completed before paging, the delivered page includes the latest finding summary and suggested next step.
-
-For actions, call `POST /api/v1/incidents/<incident-id>/actions`, approve through `POST /api/v1/actions/<action-id>/decision`, then execute and verify through the corresponding action endpoints. Reusing an idempotency key returns the existing proposal.
-
-Verification evidence on 2026-10-22: the Docker/Postgres stack reached readiness, 24 backend tests passed, the frontend test/build checks passed, backend and frontend health checks returned HTTP 200, and the happy path produced one acknowledged page, one verified action, and persisted timeline events. The timeout path produced one escalated primary plus one delivered fallback with no duplicate on retry.
-
-Feature 8 resilience checks are included in the Docker test workflow. A slow evidence source becomes visible as unavailable within its configured deadline, model and external calls use bounded timeouts, prompts are size-limited after masking, and retryable durable jobs wait before another attempt.
-
-Feature 9 golden evaluation cases run with:
+## Repeatable demo
 
 ```bash
-docker compose run --rm --user root api pytest -q tests/test_evaluation.py
+./scripts/reset-demo.sh
+./scripts/demo.sh
 ```
 
-They verify the expected category, safe next step, confidence bound, evidence sources, citations, and prompt version for each supported scenario.
+The script covers all three scenarios, duplicate/late/flapping/out-of-order delivery, and the degraded service-health path. It is safe to repeat against the local Compose stack.
 
-For the complete repeatable demo, run `./scripts/demo.sh` after Compose is up. It triggers all scenarios with duplicate, late, flapping, delayed, and out-of-order deliveries, then shows the degraded service-health evidence path. Run `./scripts/reset-demo.sh` before repeating the demo.
+## Verification record
+
+The current local verification includes the Docker/PostgreSQL backend suite, frontend smoke tests and production build, liveness/readiness checks, live scenario delivery, persisted workflow checks, and frontend HTTP serving on port `8000`. Hosted deployment is outside this local assignment boundary.
+
+The frontend interaction pass also includes a newest-page regression test, server-detail error handling, toast dismissal/timeout behavior, primary-action hierarchy, removal of decorative step labels, a single responder section, and structured model-readout rendering.

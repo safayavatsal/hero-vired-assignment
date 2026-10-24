@@ -20,3 +20,5 @@ This file is the index of the detailed decision records in [`_decision_docs/`](_
 | [014 — LLD Structure](_decision_docs/014-lld-structure.md) | Defines the superficial class-level LLD structure and final UML overview. |
 | [015 — Parity Closure](_decision_docs/015-parity-closure.md) | Aligns evidence provenance, UI context, evaluation contracts, schema, and API documentation with the executable product. |
 | [016 — Reference Parity Boundary](_decision_docs/016-reference-parity-boundary.md) | Records function-level alignment and the six broader capability gaps without changing the assignment boundary. |
+| [017 — Assignment Flow Parity Closure](_decision_docs/017-assignment-flow-parity-closure.md) | Defines explicit resolved/unfixable outcomes, usable human follow-up, and the evidence required for assignment-flow closure. |
+| [018 — Simulator Alert Intake](_decision_docs/018-simulator-alert-intake.md) | Routes simulator deliveries through canonical alert intake and preserves lifecycle ordering. |

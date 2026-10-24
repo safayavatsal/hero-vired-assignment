@@ -28,6 +28,7 @@ Implemented locally. The existing focused suite covers alert, simulator, investi
 
 ## Verification
 
-- The Docker/PostgreSQL backend suite returned 39 passing tests with no warnings.
+- The Docker/PostgreSQL backend suite returned 49 passing tests with no warnings.
 - Golden evaluation cases cover deployment regression, disk pressure, and third-party outage, including the active prompt contract fingerprint.
-- The frontend smoke suite remains green with 3 passing tests and the production build passes.
+- The frontend smoke suite remains green with 5 passing tests and the production build passes.
+- The suite also checks realistic e-commerce evidence fields, tool trace metadata, persisted model telemetry, and structured model analysis.

@@ -31,8 +31,8 @@ class PostgresInvestigationRepository:
             connection.execute(
                 """
                 INSERT INTO investigations
-                (id, incident_id, scenario_id, generated_at, model_status, model_error, model_analysis, prompt_version)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                (id, incident_id, scenario_id, generated_at, model_status, model_error, model_analysis, prompt_version, tool_trace, model_telemetry)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     investigation_id,
@@ -42,6 +42,8 @@ class PostgresInvestigationRepository:
                     result["model_status"], result.get("model_error"),
                     Jsonb(_json_safe(result["model_analysis"])) if result.get("model_analysis") else None,
                     result.get("prompt_version", "investigation-v1"),
+                    Jsonb(_json_safe(result.get("tool_trace", []))),
+                    Jsonb(_json_safe(result.get("model_telemetry", {}))),
                 ),
             )
             for evidence in result["evidence"]:
@@ -98,6 +100,8 @@ class PostgresInvestigationRepository:
                 "model_status": investigation["model_status"],
                 "model_error": investigation["model_error"],
                 "model_analysis": investigation["model_analysis"],
+                "tool_trace": investigation["tool_trace"],
+                "model_telemetry": investigation["model_telemetry"],
                 "prompt_version": investigation["prompt_version"],
                 "prompt_contract_hash": prompt_contract_hash(),
                 "evidence": [{

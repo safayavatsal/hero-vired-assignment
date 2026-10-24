@@ -44,6 +44,9 @@ Implemented in the current slice:
 - Received incidents are advanced to `investigating` with a durable `investigation_started` timeline event.
 - Scenario/service mismatches are rejected before evidence is accepted for an incident.
 - Prompt contract changes are tracked by a stable contract hash alongside the prompt version.
+- The three scenarios now expose concrete e-commerce signals such as payment routes, trace IDs, queue state, deployment commits, provider names, and time windows.
+- Evidence collection uses a small named tool registry, and each result carries a bounded tool trace with availability and duration metadata.
+- Investigation persistence records safe model telemetry without credentials or raw provider responses; the UI displays structured model analysis separately from deterministic findings.
 
 Boundary verification:
 

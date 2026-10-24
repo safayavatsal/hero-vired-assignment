@@ -37,3 +37,4 @@ Implemented in the current slice:
 - Shared service/correlation-key alerts within a 15-minute source-time window are grouped into one incident.
 - Alerts for the same service within the source-time window are correlated when no explicit key is available.
 - Alerts carrying a dependency label are correlated with the related service within the same source-time window.
+- Lifecycle status is derived from the newest source event, so an older out-of-order resolution cannot overwrite a newer firing state.

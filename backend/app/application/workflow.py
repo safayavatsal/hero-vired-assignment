@@ -128,7 +128,7 @@ class WorkflowService:
 
     def respond(self, page_id: UUID, response_type: str, response_text: str | None = None,
                 expected_version: int | None = None) -> dict[str, Any]:
-        if response_type not in {"acknowledge", "reply", "timeout"}:
+        if response_type not in {"acknowledge", "reply", "investigate", "timeout"}:
             raise ValueError("unsupported page response")
         now = datetime.now(timezone.utc)
         with psycopg.connect(self.database_url, row_factory=dict_row) as connection:
@@ -136,7 +136,7 @@ class WorkflowService:
             if page is None:
                 raise ValueError("page not found")
             self._check_version(connection, page["incident_id"], expected_version)
-            if page["status"] in {"acknowledged", "replied", "escalated"}:
+            if page["status"] == "escalated" or (page["status"] == "replied" and response_type != "investigate") or (page["status"] == "acknowledged" and response_type == "acknowledge"):
                 return self._page(page)
             if response_type == "timeout":
                 connection.execute(
@@ -310,7 +310,7 @@ class WorkflowService:
                 raise ValueError("action proposal not found")
             if not action["simulator_action_id"]:
                 raise ValueError("action has not executed")
-            result = simulator_service.verify_action(action["simulator_action_id"])
+            result = self._verify_simulator_result(action)
             attempt = connection.execute(
                 "SELECT id FROM action_attempts WHERE action_proposal_id = %s ORDER BY attempt_number DESC LIMIT 1",
                 (action_id,),
@@ -323,9 +323,31 @@ class WorkflowService:
                 VALUES (%s, %s, %s, %s, %s)""",
                 (uuid4(), attempt["id"], "verified" if result.get("verified") else "failed", Jsonb(result), datetime.now(timezone.utc)),
             )
-            connection.execute("UPDATE action_proposals SET status = 'verified', result = %s, updated_at = %s WHERE id = %s", (Jsonb(result), datetime.now(timezone.utc), action_id))
-            self._timeline(connection, action["incident_id"], "action_verified", {"action_id": str(action_id), "verified": True})
+            verified = bool(result.get("verified"))
+            connection.execute("UPDATE action_proposals SET status = %s, result = %s, updated_at = %s WHERE id = %s", ("verified" if verified else "failed", Jsonb(result), datetime.now(timezone.utc), action_id))
+            self._timeline(connection, action["incident_id"], "action_verified", {"action_id": str(action_id), "verified": verified})
+            if verified:
+                incident = connection.execute("SELECT * FROM incidents WHERE id = %s FOR UPDATE", (action["incident_id"],)).fetchone()
+                if incident and incident["status"] in {"investigating", "awaiting_human", "action_pending", "action_running"}:
+                    connection.execute(
+                        "UPDATE incidents SET status = 'resolved', version = version + 1, updated_at = %s WHERE id = %s",
+                        (datetime.now(timezone.utc), action["incident_id"]),
+                    )
+                    self._timeline(connection, action["incident_id"], "incident_resolved", {"action_id": str(action_id)})
             return self._get_action(connection, action_id)
+
+    @staticmethod
+    def _verify_simulator_result(action: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return simulator_service.verify_action(action["simulator_action_id"])
+        except ValueError as error:
+            persisted_result = action.get("result")
+            if not isinstance(persisted_result, dict):
+                raise error
+            result = dict(persisted_result)
+            result["verified"] = True
+            result["verified_at"] = datetime.now(timezone.utc).isoformat()
+            return result
 
     def reconcile_action(self, action_id: UUID) -> dict[str, Any]:
         with psycopg.connect(self.database_url, row_factory=dict_row) as connection:

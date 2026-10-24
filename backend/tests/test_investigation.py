@@ -23,10 +23,10 @@ class ExistingIncident:
         return self.incident
 
     def transition(self, incident_id, target_status, expected_version):
-        assert target_status == "investigating"
+        assert target_status in {"investigating", "unfixable"}
         self.incident["status"] = target_status
         self.incident["version"] += 1
-        return self.incident
+        return dict(self.incident)
 
     def append_timeline_event(self, incident_id, event_type, payload):
         self.incident.setdefault("timeline", []).append({"event_type": event_type, "payload": payload})
@@ -80,7 +80,8 @@ class CompletedModelGateway:
         }
 
 
-def test_investigation_findings_cite_collected_evidence() -> None:
+def test_investigation_findings_cite_collected_evidence(monkeypatch) -> None:
+    monkeypatch.delenv("MODEL_GATEWAY_TOKEN", raising=False)
     service = InvestigationService(ExistingIncident(), SimulatorService(), MemoryInvestigationRepository())
 
     result = service.investigate(uuid4(), "deployment_regression")
@@ -89,6 +90,11 @@ def test_investigation_findings_cite_collected_evidence() -> None:
     evidence_ids = {item["id"] for item in result["evidence"]}
     assert finding["category"] == "deployment_regression"
     assert set(finding["evidence_ids"]).issubset(evidence_ids)
+    assert [item["tool"] for item in result["tool_trace"]] == [
+        "simulator.evidence.logs", "simulator.evidence.metrics",
+        "simulator.evidence.deploys", "simulator.evidence.service_health",
+    ]
+    assert result["model_telemetry"]["status"] == "unavailable"
 
 
 def test_third_party_outage_has_no_local_action() -> None:
@@ -218,6 +224,20 @@ def test_openai_responses_adapter_uses_structured_output() -> None:
     assert response["suggested_next_step"] == "rollback"
 
 
+def test_model_analysis_and_telemetry_are_returned_for_a_realistic_incident() -> None:
+    service = InvestigationService(
+        ExistingIncident("payments-api"), SimulatorService(), MemoryInvestigationRepository(), CompletedModelGateway()
+    )
+
+    result = service.investigate(uuid4(), "deployment_regression")
+
+    assert result["model_status"] == "completed"
+    assert result["model_analysis"]["evidence_ids"]
+    assert result["model_telemetry"]["status"] == "completed"
+    logs = next(item for item in result["evidence"] if item["source_type"] == "logs")
+    assert logs["items"][0]["route"] == "POST /v1/payments/authorize"
+
+
 def test_same_evidence_uses_versioned_cache() -> None:
     service = InvestigationService(ExistingIncident(), SimulatorService(), MemoryInvestigationRepository())
     incident_id = uuid4()
@@ -238,6 +258,23 @@ def test_persisted_investigation_is_idempotent_after_service_restart(monkeypatch
 
     restarted = InvestigationService(ExistingIncident(), SimulatorService(), repository)
     assert restarted.investigate(incident_id, "disk_pressure") == original
+
+
+def test_queued_persisted_investigation_reapplies_incident_state() -> None:
+    class Jobs:
+        def enqueue(self, *_args):
+            return {"status": "queued"}
+
+    incident_service = ExistingIncident()
+    repository = MemoryInvestigationRepository()
+    incident_id = uuid4()
+    InvestigationService(incident_service, SimulatorService(), repository).investigate(incident_id, "disk_pressure")
+    incident_service.incident["status"] = "received"
+
+    result = InvestigationService(incident_service, SimulatorService(), repository, jobs=Jobs()).enqueue(incident_id, "disk_pressure")
+
+    assert result["status"] == "completed"
+    assert incident_service.incident["status"] == "investigating"
 
 
 def test_persisted_unavailable_investigation_retries_after_provider_configuration(monkeypatch) -> None:
@@ -266,6 +303,18 @@ def test_investigation_transitions_received_incident_to_investigating() -> None:
 
     assert incident_service.incident["status"] == "investigating"
     assert incident_service.incident["timeline"][0]["event_type"] == "investigation_started"
+
+
+def test_third_party_investigation_classifies_incident_as_unfixable() -> None:
+    incident_service = ExistingIncident(service="checkout-api")
+    service = InvestigationService(incident_service, SimulatorService(), MemoryInvestigationRepository())
+
+    service.investigate(uuid4(), "third_party_outage")
+
+    assert incident_service.incident["status"] == "unfixable"
+    assert [event["event_type"] for event in incident_service.incident["timeline"]] == [
+        "investigation_started", "investigation_completed", "incident_unfixable"
+    ]
 
 
 def test_investigation_rejects_cross_service_scenario() -> None:

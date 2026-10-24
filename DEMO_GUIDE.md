@@ -6,6 +6,35 @@ Run `docker compose up --build`, open `http://localhost:8000`, and confirm that 
 
 The API endpoints are available at `http://localhost:8001/api/v1/health` and `http://localhost:8001/api/v1/readiness`.
 
+## Local Kubernetes browser verification
+
+OrbStack runs the same workflow with the local Kubernetes manifest:
+
+```bash
+docker compose build api worker frontend
+kubectl apply -f k8s/local.yaml
+kubectl -n hero-vired rollout status deployment/db --timeout=120s
+kubectl -n hero-vired rollout status deployment/api --timeout=120s
+kubectl -n hero-vired rollout status deployment/worker --timeout=120s
+kubectl -n hero-vired rollout status deployment/frontend --timeout=120s
+kubectl -n hero-vired port-forward service/frontend 8000:8080
+```
+
+Open `http://localhost:8000` and run the same guided path: select an incident, start or repeat the matching investigation, page the owner, acknowledge, reply, propose the safe action, approve it, queue it, and verify the service state. The local browser pass confirmed the success toast after each transition and the worker result appearing in the selected incident.
+
+The browser-only Kubernetes recordings are stored locally in `demo-output/`:
+
+- `kubernetes-demo-workflow.mov` shows the incident console and live investigation feedback.
+- `kubernetes-demo.mov` shows the completed guided workflow state.
+
+The workflow strip is sequential: investigation comes first, responder work unlocks after a finding, and action controls unlock after acknowledgement. `Verified` appears only after service-state verification succeeds.
+
+For an in-cluster backend suite without pytest cache permission warnings:
+
+```bash
+kubectl -n hero-vired exec deployment/api -- env PYTEST_ADDOPTS='-p no:cacheprovider' pytest -q tests
+```
+
 Optional model configuration:
 
 ```bash
@@ -108,4 +137,24 @@ curl http://localhost:8001/api/v1/incidents/<incident-id>/timeline
 
 The UI exposes the same page, investigation, evidence, and action controls after selecting an incident. Choose a scenario, select `Investigate`, then review the finding, confidence, uncertainty, citations, source availability, and masked evidence payloads. The live Docker verification covered acknowledgement, approval, simulator execution, verification, timeline persistence, fallback escalation, and retry safety.
 
+For the UI walkthrough, select an incident and use the matching scenario. Click `Start investigation` or `Run again`; the UI immediately confirms that the request was accepted, shows background progress, and keeps the investigation result tied to the selected incident while the worker refreshes it. The responder step appears only after the finding is ready, and the safety-action step appears only after acknowledgement. Failures appear in the top-right toast and can be dismissed; the selected incident remains the source of truth for all controls.
+
+### Five-minute live walkthrough
+
+1. Open `http://localhost:8000` and select the first incident.
+2. Read the `What happens next` strip aloud: investigate, respond, then act safely.
+3. Select the scenario that matches the service, then click `Start investigation` or `Run again`. Point out the success toast and the background progress message; wait for the finding to appear.
+4. Show the finding card: cause, confidence, recommended next step, and named evidence sources.
+5. Click `Page service owner`, then `Acknowledge`, and send a short reply.
+6. After acknowledgement, propose the safe action, approve it, queue it, and click `Verify service state` after the worker updates the result. The incident then becomes `Resolved`.
+7. Open `Evidence used` or `Audit trail` only when the audience wants the supporting detail; raw payloads remain opt-in.
+
+For `third_party_outage`, complete investigation and paging but do not propose a local action. The UI marks the third step `No local fix`, and the incident becomes `Unfixable` with the reason preserved in the timeline.
+
+For a failure demonstration, choose a mismatched scenario or reject an action. The UI keeps the normal page intact and shows the backend reason in a dismissible toast.
+
 When an investigation is complete before paging, the delivered page also carries the finding summary and suggested next step to the notification boundary.
+
+## Realistic e-commerce proof
+
+Use the three built-in scenarios as a small e-commerce system: payment authorization latency, worker disk pressure, and checkout dependency failure. During the demo, point out the route, trace or provider, deployment, queue, and time-window fields in `Evidence used`; then open `Model readout` to show the structured condition, likely cause, next step, confidence, uncertainty, and citations. Keep raw payloads closed unless the audience asks for implementation detail.

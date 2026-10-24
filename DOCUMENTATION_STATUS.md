@@ -9,11 +9,11 @@
 | 0.2 | Alert normalization, deduplication, correlation, and timeline | Implemented; live duplicate delivery returned `duplicate: true` |
 | 0.3 | Durable incident state and recovery guards | Implemented; PostgreSQL persistence and version checks are present |
 | 0.4 | Evidence-first investigation and model boundary | Implemented with durable investigation jobs; fresh worker-backed live investigation completed with model analysis |
-| 0.5 | Paging, replies, ownership, and escalation | Implemented; rebuilt Docker/PostgreSQL suite passed with the worker running |
+| 0.5 | Paging, replies, ownership, and escalation | Implemented; replies and follow-up investigation requests remain usable after acknowledgement |
 | 0.6 | Approval, durable execution, attempts, and verification | Implemented; rebuilt Docker/PostgreSQL suite passed with migrations `002_jobs.sql` and `003_action_attempts.sql` |
 | 0.7 | Incident UI and selection safety | Implemented; frontend smoke tests, build, and port `8000` health pass |
 | 0.8 | Resilience, security, and cost bounds | Implemented; Docker/PostgreSQL backend suite returned 37 passing tests with no warnings |
-| 0.9 | Tests and deterministic evaluation | Implemented; golden cases cover all three scenarios and the Docker suite returned 39 passing tests with no warnings |
+| 0.9 | Tests and deterministic evaluation | Implemented; golden cases cover all three scenarios and the Docker suite returned 45 passing tests with no warnings |
 | 1.0 | Compose, documentation, and demo delivery | Implemented; clean-checkout defaults, runnable demo/reset scripts, and live-change coverage are present |
 | parity | Cross-document and executable-contract closure | Complete for the local assignment boundary; evidence provenance, page context, prompt contract, schema/API catalog, UI context, static checks, frontend build, graph refresh, and Docker/Postgres verification are aligned. Reference parity add-ons are documented separately and not implemented |
 
@@ -73,6 +73,7 @@ Implemented:
 - Feature 9 adds committed golden investigation cases with expected categories, safe next steps, confidence bounds, citation checks, required evidence sources, and prompt-version alignment.
 - Feature 10 adds clean-checkout Compose defaults, repeatable all-scenario demo/reset scripts, and a focused live-change analyzer path.
 - The UI refreshes the selected incident while polling, supports free-form page replies, and displays queued and running action states.
+- Investigation completion, no-local-fix classification, and verified remediation are visible as explicit terminal timeline states; verified local actions resolve the incident.
 
 ## Environment-dependent verification:
 
@@ -84,7 +85,7 @@ Implemented:
 
 - `docker compose up -d --build` previously started the Compose services with healthy Postgres.
 - `curl http://localhost:8001/api/v1/readiness` returned `{"status":"ready","database":"ok"}`.
-- The latest rebuilt Docker/PostgreSQL run returned `35 passed in 19.81s` with no warnings; this includes the localhost HTTP boundary integration test. The API and worker containers remained healthy after startup.
+- Earlier rebuilt Docker/PostgreSQL runs returned `35 passed in 19.81s` with no warnings; this includes the localhost HTTP boundary integration test. The API and worker containers remained healthy after startup.
 - `npm test` returned 3 passing frontend selection checks, and `npm run build` passed.
 - The evidence review change passed the same frontend build, backend test, Docker/Postgres readiness, and frontend HTTP checks.
 - Live Feature 5–7 happy path persisted an acknowledged page, a verified action, and seven timeline events.
@@ -97,8 +98,22 @@ Implemented:
 - The restart recovery audit found and fixed overdue-page row handling before the final handoff.
 - The current parity pass adds migration `003_action_attempts.sql`; the migration and separate attempt/verification records are covered by the rebuilt Docker/PostgreSQL suite.
 - A fresh live investigation request returned a queued response, and the worker completed it against PostgreSQL with persisted model analysis, one finding, and four evidence groups after the worker environment and egress wiring were corrected.
-- The latest rebuilt Docker/PostgreSQL run returned `37 passed in 20.00s` with no warnings, including slow-evidence degradation and configurable external-boundary timeout coverage.
-- The Feature 9 Docker/PostgreSQL run returned `39 passed` with no warnings; the frontend smoke suite remains at 3 passing tests and the frontend build passes.
+- Earlier rebuilt Docker/PostgreSQL runs returned `37 passed in 20.00s` and the Feature 9 run returned `39 passed`, with no warnings; these include slow-evidence degradation, configurable external-boundary timeout coverage, and golden evaluation cases.
+- The current backend suite contains 45 tests; the frontend smoke suite contains 5 tests and the production build passes.
 - Feature 10 verification includes Compose config validation, the full Docker backend suite, frontend tests/build, and documentation checks. The demo scripts are ready for local runtime execution after `docker compose up --build`.
+- Latest flow-parity verification rebuilt the API image and returned `47 passed in 24.82s` with no pytest warnings; simulator deliveries now enter incident intake directly.
 - The parity closure verification added page context to delivery, refreshed the code graph, passed the restricted-reference scan, and completed the frontend build plus a 40-test Docker/Postgres suite.
 - Final delivery verification recreated the Docker stack, passed the 41-test backend suite, passed frontend tests and the production build, returned healthy liveness/readiness responses, served the UI on port `8000`, and completed a fresh worker-backed model investigation with persisted structured analysis.
+- The repeatable demo was executed against the running Compose stack on 2026-10-23. All three scenarios produced duplicate, late, flapping, delayed, and out-of-order deliveries; the dependency failure-mode check returned `availability: unavailable`.
+- The frontend production build passes, and interactive browser verification on port `8000` confirmed the rebuilt UI renders the selected incident, guided workflow, readable finding, collapsed evidence/audit sections, responder state, action state, timeline summaries, and opt-in raw payload disclosures.
+- The frontend workflow review covers scenario auto-selection, sequential investigation/response/action gating, visible background progress, responder reply state, duplicate-click prevention, grouped controls, responsive layout, keyboard focus states, and toast error handling. The selected incident remains the source of truth for all controls.
+- The latest live browser walkthrough created a fresh disk-pressure incident and completed the UI path through investigation, finding, page, acknowledgement, proposal, approval, queue, worker completion, and service verification. The process-boundary verification defect was fixed by using the persisted worker result when the API-local simulator cannot see the worker-local action.
+- The latest UI pass removes decorative step labels, keeps workflow controls grouped, fixes newest-page selection after acknowledgement, confirms accepted actions in a success toast without waiting for a worker refresh, and displays action failures as an auto-clearing toast with server detail. Frontend tests, production build, diff checks, taste lint, the rebuilt Docker/PostgreSQL suite (`42 passed in 19.31s`), and live browser rendering pass.
+- The frontend workflow strip now derives each step from its actual state: response is locked before a finding, action is locked before acknowledgement, and completion is reserved for a verified action. Five frontend smoke tests and the production build pass after this change.
+- Simulator-triggered alert deliveries now flow through canonical incident intake, and lifecycle state follows the newest source event for out-of-order delivery handling.
+- A local OrbStack Kubernetes manifest now mirrors the Compose services with `imagePullPolicy: Never`, in-cluster API proxying, readiness probes, and port-forward instructions for the same host ports.
+- OrbStack Kubernetes verification passed after adding database startup gates and an explicit worker command: API, worker, database, and frontend rolled out with zero restarts; readiness returned `{"status":"ready","database":"ok"}`; two repeated worker-backed investigations completed with one finding and four evidence groups each.
+- The Kubernetes browser pass completed the guided incident workflow end to end: investigation, responder page, acknowledgement, reply, action proposal, approval, queueing, worker completion, and service verification. The in-cluster API suite returned `42 passed` with pytest cache collection disabled to avoid non-root cache warnings.
+- Docker/PostgreSQL verification was repeated twice after the Kubernetes changes; both runs returned `42 passed` with no pytest warning output. Frontend smoke tests returned 4 passing tests and the production build passed.
+- Browser-only Kubernetes demo recordings were created under `demo-output/` and checked as valid QuickTime/H.264 files; the workflow recording includes live investigation feedback.
+- The realistic-investigation quality plan completed on 2026-10-24: Docker/PostgreSQL returned 49 passing tests with no warnings, frontend smoke tests and production build passed, Compose validation passed, the restricted-reference scan was empty, and browser verification confirmed the refreshed guided UI, model readout, labeled evidence, and investigation toast.

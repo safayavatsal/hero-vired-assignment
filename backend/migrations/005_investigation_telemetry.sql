@@ -1,0 +1,2 @@
+ALTER TABLE investigations ADD COLUMN IF NOT EXISTS tool_trace JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE investigations ADD COLUMN IF NOT EXISTS model_telemetry JSONB NOT NULL DEFAULT '{}';
