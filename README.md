@@ -190,6 +190,7 @@ Use the port-forward commands printed by Helm, or run the same forwards above. T
 
 - [Feature baseline](_plan_docs/_features_docs/00-feature-baseline.md)
 - [System architecture](_plan_docs/_hld_docs/00-system-architecture.md)
+- [Explorable main-product architecture](_plan_docs/_hld_docs/08-main-product-architecture.html)
 - [API catalog](_plan_docs/_hld_docs/03-api-catalog.md)
 - [LLD overview](_plan_docs/_lld_docs/00-lld-overview.md)
 - [UML class diagram](_plan_docs/_lld_docs/06-lld-system-diagram.md)
