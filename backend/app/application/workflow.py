@@ -85,6 +85,7 @@ class WorkflowService:
                 "page_id": str(page_id), "incident_id": str(incident_id), "responder": responder,
                   "fallback_responder": fallback, "service": incident["service"],
                   "summary": incident["summary"], "severity": incident["severity"],
+                  "responder_email": (ownership or {}).get("responder_email"),
                 **page_context,
             })
             connection.execute(
@@ -113,9 +114,16 @@ class WorkflowService:
             investigation = investigation_service.get(incident_id)
             finding = (investigation.get("findings") or [None])[0]
             if finding:
+                evidence = [
+                    {"source_type": item.get("source_type"), "availability": item.get("availability"), "items": item.get("items", [])}
+                    for item in investigation.get("evidence", [])
+                ]
+                model_analysis = investigation.get("model_analysis") or {}
                 return {
                     "evidence_summary": finding.get("statement"),
                     "suggested_next_step": finding.get("suggested_next_step"),
+                    "likely_cause": model_analysis.get("likely_cause"),
+                    "evidence": evidence,
                 }
         except ValueError:
             pass
@@ -137,7 +145,7 @@ class WorkflowService:
             if page is None:
                 raise ValueError("page not found")
             self._check_version(connection, page["incident_id"], expected_version)
-            if page["status"] == "escalated" or (page["status"] == "replied" and response_type != "investigate") or (page["status"] == "acknowledged" and response_type == "acknowledge"):
+            if page["status"] == "escalated" or (page["status"] == "replied" and response_type not in {"acknowledge"}) or (page["status"] == "acknowledged" and response_type == "acknowledge"):
                 return self._page(page)
             if response_type == "timeout":
                 connection.execute(
@@ -180,7 +188,9 @@ class WorkflowService:
         incident = self._incident(incident_id)
         if incident["status"] not in {"investigating", "awaiting_human"}:
             raise ValueError("investigation is required before proposing an action")
-        scenario = simulator_service.select_scenario(scenario_id)["scenario"]
+        scenario = next((item for item in simulator_service.list_scenarios() if item["id"] == scenario_id), None)
+        if scenario is None:
+            raise ValueError("unknown scenario")
         if scenario["service"] != incident["service"]:
             raise ValueError("selected scenario does not match the incident service")
         simulator_service.validate_action(scenario_id, action_type, target, parameters)
@@ -200,6 +210,18 @@ class WorkflowService:
             )
             self._timeline(connection, incident_id, "action_proposed", {"action_id": str(action_id), "action_type": action_type, "target": target})
             return self._get_action(connection, action_id)
+
+    def preview_action(self, incident_id: UUID, scenario_id: str, action_type: str, target: str,
+                       parameters: dict[str, Any]) -> dict[str, Any]:
+        incident = self._incident(incident_id)
+        if incident["status"] not in {"investigating", "awaiting_human"}:
+            raise ValueError("investigation is required before previewing an action")
+        scenario = next((item for item in simulator_service.list_scenarios() if item["id"] == scenario_id), None)
+        if scenario is None:
+            raise ValueError("unknown scenario")
+        if scenario["service"] != incident["service"]:
+            raise ValueError("selected scenario does not match the incident service")
+        return simulator_service.preview_action(scenario_id, action_type, target, parameters)
 
     def _incident(self, incident_id: UUID) -> dict[str, Any]:
         from app.application.incident import alert_pipeline_service

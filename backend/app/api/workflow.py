@@ -32,6 +32,13 @@ class ActionRequest(BaseModel):
     approval_seconds: int = Field(default=300, ge=1, le=3600)
 
 
+class ActionPreviewRequest(BaseModel):
+    scenario_id: str = Field(min_length=1)
+    action_type: str = Field(min_length=1)
+    target: str = Field(min_length=1)
+    parameters: dict[str, Any] = Field(default_factory=dict)
+
+
 class ActionDecision(BaseModel):
     approved: bool
     responder: str = Field(min_length=1)
@@ -64,6 +71,14 @@ def propose_action(incident_id: UUID, request: ActionRequest) -> dict[str, Any]:
     try:
         return workflow_service.propose_action(incident_id, request.scenario_id, request.action_type, request.target,
                                                request.parameters, request.idempotency_key, request.approval_seconds)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@router.post("/incidents/{incident_id}/actions/preview")
+def preview_action(incident_id: UUID, request: ActionPreviewRequest) -> dict[str, Any]:
+    try:
+        return workflow_service.preview_action(incident_id, request.scenario_id, request.action_type, request.target, request.parameters)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 

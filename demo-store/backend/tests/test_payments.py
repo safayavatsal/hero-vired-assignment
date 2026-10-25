@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app import main
-from app.main import PaymentRequest, PaymentService
+from app.main import CustomerScenarioRequest, PaymentRequest, PaymentService
 from app.observer import CheckoutObserver
 
 
@@ -105,3 +105,41 @@ def test_payment_stays_failed_when_observation_delivery_is_unavailable() -> None
     assert result["status"] == "declined"
     assert result["incident_id"] is None
     assert result["observation_status"] == "unavailable"
+
+
+@pytest.mark.parametrize(
+    ("scenario_id", "expected_status", "expected_service", "expected_alert_type"),
+    [
+        ("deployment_regression", "degraded", "payments-api", "p99_latency_high"),
+        ("disk_pressure", "delayed", "orders-worker", "disk_usage_high"),
+        ("third_party_outage", "declined", "checkout-api", "dependency_errors_high"),
+    ],
+)
+def test_customer_scenario_emits_canonical_alert_without_card_data(
+    scenario_id: str, expected_status: str, expected_service: str, expected_alert_type: str
+) -> None:
+    gateway = AlertGateway()
+
+    result = PaymentService(CheckoutObserver(gateway)).trigger_customer_scenario(
+        scenario_id, CustomerScenarioRequest(attempt_id="scenario-1234", product_ids=["desk-lamp"])
+    )
+
+    assert result["status"] == expected_status
+    assert result["incident_id"] == "incident-1"
+    assert gateway.payload["service"] == expected_service
+    assert gateway.payload["alert_type"] == expected_alert_type
+    assert gateway.payload["labels"]["scenario"] == scenario_id
+    assert "card_number" not in json.dumps(gateway.payload)
+
+
+def test_customer_scenario_endpoint_rejects_unknown_scenario(monkeypatch) -> None:
+    gateway = AlertGateway()
+    monkeypatch.setattr(main, "payment_service", PaymentService(CheckoutObserver(gateway)))
+
+    response = TestClient(main.app).post(
+        "/api/store/scenarios/not-a-scenario",
+        json={"attempt_id": "scenario-1234", "product_ids": ["desk-lamp"]},
+    )
+
+    assert response.status_code == 422
+    assert gateway.payload is None

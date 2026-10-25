@@ -42,7 +42,10 @@ services:
       NOTIFICATION_SMTP_HOST: ${NOTIFICATION_SMTP_HOST:-mailpit}
       NOTIFICATION_SMTP_PORT: ${NOTIFICATION_SMTP_PORT:-1025}
       NOTIFICATION_EMAIL_FROM: ${NOTIFICATION_EMAIL_FROM:-assistant@demo.local}
-      NOTIFICATION_EMAIL_TO: ${NOTIFICATION_EMAIL_TO:-oncall@demo.local}
+      NOTIFICATION_EMAIL_TO: ${NOTIFICATION_EMAIL_TO:-primary-oncall@demo.local}
+      NOTIFICATION_EMAIL_DOMAIN: ${NOTIFICATION_EMAIL_DOMAIN:-demo.local}
+      INCIDENT_CONSOLE_URL: ${INCIDENT_CONSOLE_URL:-http://localhost:8000/?incident={incident_id}}
+      RESPONSE_CHANNEL_URL: ${RESPONSE_CHANNEL_URL:-http://localhost:8002}
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     depends_on:
       db:
@@ -88,7 +91,10 @@ services:
       NOTIFICATION_SMTP_HOST: ${NOTIFICATION_SMTP_HOST:-mailpit}
       NOTIFICATION_SMTP_PORT: ${NOTIFICATION_SMTP_PORT:-1025}
       NOTIFICATION_EMAIL_FROM: ${NOTIFICATION_EMAIL_FROM:-assistant@demo.local}
-      NOTIFICATION_EMAIL_TO: ${NOTIFICATION_EMAIL_TO:-oncall@demo.local}
+      NOTIFICATION_EMAIL_TO: ${NOTIFICATION_EMAIL_TO:-primary-oncall@demo.local}
+      NOTIFICATION_EMAIL_DOMAIN: ${NOTIFICATION_EMAIL_DOMAIN:-demo.local}
+      INCIDENT_CONSOLE_URL: ${INCIDENT_CONSOLE_URL:-http://localhost:8000/?incident={incident_id}}
+      RESPONSE_CHANNEL_URL: ${RESPONSE_CHANNEL_URL:-http://localhost:8002}
     command: python -m app.execution.worker
     depends_on:
       db:
@@ -157,7 +163,7 @@ services:
     ports:
       - "8003:8080"
     healthcheck:
-      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:8080/"]
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:8080/api/store/health"]
       interval: 10s
       timeout: 5s
       retries: 5

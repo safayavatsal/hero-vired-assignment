@@ -4,6 +4,7 @@ export type TimelineEvent = { id: string; event_type: string; event_time: string
 export type IncidentDetail = Incident & { timeline: TimelineEvent[] };
 export type Page = { id: string; status: string; responder: string; level: string; response_type: string | null; incident_version: number };
 export type Action = { id: string; status: string; action_type: string; target: string; scenario_id: string; incident_version: number };
+export type ActionPreview = { sandboxed: boolean; scenario_id: string; action_type: string; target: string; state_before: Record<string, unknown>; state_after: Record<string, unknown>; changes: Record<string, { before: unknown; after: unknown }> };
 export type Evidence = { id: string; source_type: string; availability: string; observed_at: string; query: string; parameters: Record<string, unknown>; duration_ms: number | null; error: string | null; items: unknown[] };
 export type Finding = { id: string; category: string; statement: string; confidence: number; suggested_next_step: string; evidence_ids: string[]; uncertainty: string | null };
 export type ModelAnalysis = { current_condition: string; likely_cause: string; confidence: number; suggested_next_step: string; evidence_ids: string[]; uncertainty: string | null };

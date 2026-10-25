@@ -291,6 +291,31 @@ def test_queued_persisted_investigation_reapplies_incident_state() -> None:
     assert incident_service.incident["status"] == "investigating"
 
 
+def test_deeper_investigation_bypasses_completed_result() -> None:
+    class Jobs:
+        def __init__(self):
+            self.calls = []
+
+        def enqueue(self, *args):
+            self.calls.append(args)
+            return {"id": str(uuid4()), "status": "queued", "payload": args[2]}
+
+    incident_id = uuid4()
+    incident_service = ExistingIncident(service="orders-worker", status="investigating")
+    repository = MemoryInvestigationRepository()
+    service = InvestigationService(incident_service, SimulatorService(), repository)
+    service.investigate(incident_id, "disk_pressure")
+    jobs = Jobs()
+
+    result = InvestigationService(incident_service, SimulatorService(), repository, jobs=jobs).enqueue(
+        incident_id, "disk_pressure", "deeper"
+    )
+
+    assert result["status"] == "queued"
+    assert jobs.calls[0][2]["mode"] == "deeper"
+    assert jobs.calls[0][3].endswith(":deeper")
+
+
 def test_persisted_unavailable_investigation_retries_after_provider_configuration(monkeypatch) -> None:
     monkeypatch.delenv("MODEL_GATEWAY_TOKEN", raising=False)
     repository = MemoryInvestigationRepository()

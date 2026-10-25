@@ -8,6 +8,18 @@
 | `disk_pressure` | `orders-worker` | Disk usage is high and cleanup is degraded | `clear_disk` |
 | `third_party_outage` | `checkout-api` | Dependency failures with degraded health evidence | `failover` |
 
+## Customer-facing triggers
+
+The standalone store at `http://localhost:8003` reproduces the same three scenarios without exposing operator controls:
+
+| Store journey | Incident scenario | Customer-visible result |
+| --- | --- | --- |
+| `Try slow checkout` | `deployment_regression` | Checkout is taking longer than usual |
+| `Try delayed fulfillment` | `disk_pressure` | Order accepted, fulfillment delayed |
+| `Open failed checkout` with the declined test card | `third_party_outage` | Payment cannot be completed |
+
+Each journey sends bounded operational metadata through the normal alert intake. The customer sees a safe reference; investigation, paging, and any approved action still happen in the separate operator console.
+
 ## Tester workflow
 
 1. Start Compose and confirm `/api/v1/readiness` returns `{"status":"ready","database":"ok"}`.
@@ -19,7 +31,7 @@
 6. Page and acknowledge a responder, or send `response_type=timeout` to verify fallback escalation.
 7. For a local-remediation scenario, propose, approve, execute, and verify the allowed action; the incident ends as `resolved`. For the external-dependency scenario, confirm the incident ends as `unfixable` without a local action.
 8. Read the incident timeline and confirm the workflow events remain ordered.
-9. In the UI, confirm the selected incident keeps its own scenario, responder controls target the newest page, queued investigations disable duplicate starts, and failures appear in the toast region rather than in the page layout.
+9. In the UI, confirm the selected incident auto-selects its investigation context, a completed result offers only an explicit deeper-investigation option, responder controls target the newest page, acknowledgement closes ownership, remediation controls explain their evidence before approval, and failures appear in the toast region rather than in the page layout.
 
 ## Failure-mode checks
 
@@ -39,14 +51,16 @@
 | External dependency finding | Incident transitions to `unfixable` and no local action is proposed |
 | Approved synthetic checkout | Order succeeds and no incident is created |
 | Declined synthetic checkout | One `checkout-api` incident is created without payment credentials in its payload |
+| Slow checkout journey | One `payments-api` incident is created with a latency-regression alert |
+| Delayed fulfillment journey | One `orders-worker` incident is created with a disk-pressure alert |
 
 ## Commerce failure walkthrough
 
-1. Open `http://localhost:8003`, add one product, and proceed to checkout.
-2. Select the declined test card and submit the payment through the store backend on port `8004`.
-3. In a separate operator-console tab, locate the new `checkout-api` incident and confirm it selected the third-party-outage scenario.
-4. Run the investigation and confirm the finding cites dependency and service-health evidence.
-5. Page the owner and verify the captured message in `http://localhost:8002` contains the finding and suggested next step.
+1. Open `http://localhost:8003` and add one product.
+2. Run `Try slow checkout` and `Try delayed fulfillment` to create the two operational incidents from the store.
+3. Run `Open failed checkout`, choose the declined test card, and submit the payment through the store backend on port `8004`.
+4. In a separate operator-console tab, locate each incident and confirm its investigation context is auto-selected.
+5. Run the investigations, notify and acknowledge the owners, and verify the captured messages in `http://localhost:8002` contain the finding and suggested next step.
 
 No local remediation is offered for this scenario. The console preserves the incident as an external-dependency case for human follow-up.
 

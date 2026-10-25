@@ -49,10 +49,9 @@ def test_page_context_uses_latest_finding(monkeypatch) -> None:
 
     monkeypatch.setattr("app.application.incident.investigation_service", Investigation())
 
-    assert WorkflowService._investigation_page_context(uuid4()) == {
-        "evidence_summary": "latency is high",
-        "suggested_next_step": "rollback",
-    }
+    context = WorkflowService._investigation_page_context(uuid4())
+    assert context["evidence_summary"] == "latency is high"
+    assert context["suggested_next_step"] == "rollback"
 
 
 def test_verification_uses_persisted_worker_result_when_simulator_state_is_local(monkeypatch) -> None:
@@ -88,3 +87,23 @@ def test_page_response_allows_reply_after_acknowledgement(monkeypatch) -> None:
     result = WorkflowService("postgresql://test").respond(page_id, "reply", "Investigating")
 
     assert result == {"id": str(page_id), "status": "replied"}
+
+
+def test_page_response_allows_acknowledgement_after_owner_note(monkeypatch) -> None:
+    page_id = uuid4()
+    incident_id = uuid4()
+
+    class _Connection:
+        def execute(self, query, _params):
+            if "SELECT * FROM pages" in query:
+                return _Result({"id": page_id, "incident_id": incident_id, "status": "replied"})
+            return _Result(None)
+
+    monkeypatch.setattr(workflow_module.psycopg, "connect", lambda *args, **kwargs: _Context(_Connection()))
+    monkeypatch.setattr(WorkflowService, "_check_version", staticmethod(lambda *_args: None))
+    monkeypatch.setattr(WorkflowService, "_timeline", staticmethod(lambda *_args: None))
+    monkeypatch.setattr(WorkflowService, "_get_page", staticmethod(lambda _connection, page_id: {"id": str(page_id), "status": "acknowledged"}))
+
+    result = WorkflowService("postgresql://test").respond(page_id, "acknowledge", "Taking ownership")
+
+    assert result == {"id": str(page_id), "status": "acknowledged"}

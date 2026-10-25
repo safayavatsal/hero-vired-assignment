@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 type Product = { id: string; name: string; description: string; price_cents: number; tone: string };
 type PaymentResponse = { status: "approved" | "declined"; order_id?: string; payment_reference?: string };
+type CustomerScenario = "deployment_regression" | "disk_pressure" | "third_party_outage";
+type ScenarioResponse = { status: "degraded" | "delayed" | "declined"; customer_message: string; reference: string; incident_id?: string | null };
 const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
 export function App() {
@@ -14,6 +16,7 @@ export function App() {
   const [securityCode, setSecurityCode] = useState("123");
   const [pending, setPending] = useState(false);
   const [result, setResult] = useState<{ kind: "approved" | "declined"; reference?: string } | null>(null);
+  const [scenarioResult, setScenarioResult] = useState<ScenarioResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const total = useMemo(() => cart.reduce((sum, product) => sum + product.price_cents, 0), [cart]);
 
@@ -30,6 +33,37 @@ export function App() {
   const removeProduct = (index: number) => setCart((items) => items.filter((_item, itemIndex) => itemIndex !== index));
   const useDeclineCard = () => setCardNumber("4111111111110002");
   const useApprovedCard = () => setCardNumber("4242424242424242");
+
+  const beginProviderFailure = () => {
+    if (!products.length) return setError("The product catalog is unavailable.");
+    if (!cart.length) setCart([products[0]]);
+    setScenarioResult(null);
+    useDeclineCard();
+    setCheckout(true);
+  };
+
+  const triggerScenario = async (scenario: CustomerScenario) => {
+    if (!products.length) return setError("The product catalog is unavailable.");
+    const productIds = cart.length ? cart.map((product) => product.id) : [products[0].id];
+    if (!cart.length) setCart([products[0]]);
+    setError(null);
+    setScenarioResult(null);
+    setPending(true);
+    try {
+      const response = await fetch(`/api/store/scenarios/${scenario}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attempt_id: crypto.randomUUID(), product_ids: productIds }),
+      });
+      const body = await response.json().catch(() => ({})) as ScenarioResponse & { detail?: string };
+      if (!response.ok) throw new Error(body.detail ?? "The store scenario could not be started.");
+      setScenarioResult(body);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "The store scenario could not be started.");
+    } finally {
+      setPending(false);
+    }
+  };
 
   const pay = async (event: FormEvent) => {
     event.preventDefault();
@@ -71,6 +105,7 @@ export function App() {
     setCart([]);
     setCheckout(false);
     setResult(null);
+    setScenarioResult(null);
     setError(null);
     useApprovedCard();
   };
@@ -86,6 +121,8 @@ export function App() {
       {!checkout && !result && <>
         <section className="store-hero"><p className="product-name">Northstar Supply</p><h1>Useful things for focused work.</h1><p>Thoughtful essentials for a calmer desk, commute, and daily routine.</p></section>
         <section className="catalog" aria-label="Product catalog">{products.map((product) => <article className="product-card" key={product.id}><div className={`product-art ${product.tone}`} aria-hidden="true"><span>{product.name.slice(0, 1)}</span></div><div><h2>{product.name}</h2><p>{product.description}</p><div className="product-footer"><strong>{money(product.price_cents)}</strong><button type="button" onClick={() => addProduct(product)}>Add to cart</button></div></div></article>)}</section>
+        <section className="demo-panel" aria-labelledby="demo-heading"><p className="product-name">Demo journeys</p><h2 id="demo-heading">See how the store handles a problem</h2><p className="muted">These controlled customer journeys create real incidents for the operations console while keeping internal tools out of the store.</p><div className="demo-grid"><article><span className="journey-label">Checkout</span><h3>Slow payment release</h3><p>Checkout becomes unusually slow after a release.</p><button type="button" disabled={pending} onClick={() => triggerScenario("deployment_regression")}>{pending ? "Starting…" : "Try slow checkout"}</button></article><article><span className="journey-label">Fulfillment</span><h3>Warehouse storage full</h3><p>Your order is accepted, but fulfillment is delayed by a worker issue.</p><button type="button" disabled={pending} onClick={() => triggerScenario("disk_pressure")}>{pending ? "Starting…" : "Try delayed fulfillment"}</button></article><article><span className="journey-label">Payment</span><h3>Card provider unavailable</h3><p>Continue through checkout and see a safe customer-facing decline.</p><button type="button" disabled={pending} onClick={beginProviderFailure}>Open failed checkout</button></article></div></section>
+        {scenarioResult && <section className={`scenario-result ${scenarioResult.status}`} aria-live="polite"><p className="product-name">Store update</p><h2>{scenarioResult.status === "delayed" ? "Order fulfillment is delayed" : scenarioResult.status === "degraded" ? "Checkout needs attention" : "Payment could not be completed"}</h2><p>{scenarioResult.customer_message}</p><div className="incident-reference"><span>Customer reference</span><code>{scenarioResult.reference}</code></div></section>}
         <section className="cart-panel" aria-labelledby="cart-heading"><div><p className="product-name">Your cart</p><h2 id="cart-heading">Ready to check out</h2></div>{cart.length ? <div className="cart-items">{cart.map((product, index) => <div className="cart-line" key={`${product.id}-${index}`}><span>{product.name}</span><strong>{money(product.price_cents)}</strong><button type="button" onClick={() => removeProduct(index)}>Remove</button></div>)}</div> : <p className="muted">Add one product to begin the demo.</p>}<div className="cart-total"><span>Total</span><strong>{money(total)}</strong><button className="store-primary" type="button" disabled={!cart.length || !products.length} onClick={() => setCheckout(true)}>Checkout</button></div></section>
       </>}
 

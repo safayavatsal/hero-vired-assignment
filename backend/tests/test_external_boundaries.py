@@ -14,6 +14,19 @@ def test_ownership_gateway_is_opt_in_and_validates_response(monkeypatch) -> None
     assert result == {"responder": "oncall-a", "fallback_responder": "oncall-b"}
 
 
+def test_ownership_gateway_preserves_owner_addresses(monkeypatch) -> None:
+    monkeypatch.setenv("OWNERSHIP_GATEWAY_URL", "http://ownership.test/resolve")
+    monkeypatch.setattr(external_boundaries, "_request_json", lambda *_args: {
+        "primary_responder": "oncall-a", "fallback_responder": "oncall-b",
+        "responder_email": "a@example.test", "fallback_email": "b@example.test",
+    })
+
+    assert external_boundaries.OwnershipGateway().resolve("payments-api", "critical") == {
+        "responder": "oncall-a", "fallback_responder": "oncall-b",
+        "responder_email": "a@example.test", "fallback_email": "b@example.test",
+    }
+
+
 def test_notification_gateway_uses_bearer_token_without_exposing_it(monkeypatch) -> None:
     monkeypatch.setenv("NOTIFICATION_GATEWAY_URL", "http://notify.test/page")
     monkeypatch.setenv("NOTIFICATION_GATEWAY_TOKEN", "secret")
@@ -62,7 +75,10 @@ def test_notification_gateway_delivers_local_email(monkeypatch) -> None:
     assert result["status"] == "delivered"
     assert captured["host"] == "mail.test"
     assert captured["message"]["To"] == "oncall@demo.local"
-    assert "The provider is unavailable." in captured["message"].get_content()
+    body = captured["message"].get_content()
+    assert "Incident ID: incident-1" in body
+    assert "The provider is unavailable." in body
+    assert "Open incident console:" in body
 
 
 def test_action_executor_is_noop_when_not_configured(monkeypatch) -> None:

@@ -35,6 +35,11 @@ class PaymentRequest(BaseModel):
     security_code: str = Field(pattern=r"^\d{3,4}$")
 
 
+class CustomerScenarioRequest(BaseModel):
+    attempt_id: str = Field(min_length=8, max_length=100, pattern=r"^[A-Za-z0-9-]+$")
+    product_ids: list[str] = Field(min_length=1, max_length=20)
+
+
 class PaymentService:
     def __init__(self, observer: CheckoutObserver | None = None) -> None:
         self.observer = observer or CheckoutObserver()
@@ -52,6 +57,31 @@ class PaymentService:
         return {
             "status": "declined",
             "payment_reference": f"payment-{payment.attempt_id}",
+            "incident_id": incident_id,
+            "observation_status": "delivered" if incident_id else "unavailable",
+            "total_cents": total_cents,
+        }
+
+    def trigger_customer_scenario(self, scenario_id: str, request: CustomerScenarioRequest) -> dict[str, Any]:
+        products = [PRODUCTS.get(product_id) for product_id in request.product_ids]
+        if any(product is None for product in products):
+            raise ValueError("the cart contains an unknown product")
+        total_cents = sum(product.price_cents for product in products if product)
+        incident_id = self.observer.record_customer_scenario(
+            scenario_id, request.attempt_id, request.product_ids, total_cents
+        )
+        messages = {
+            "deployment_regression": ("degraded", "Checkout is taking longer than usual. Please try again shortly."),
+            "disk_pressure": ("delayed", "Your order is accepted, but fulfillment is temporarily delayed."),
+            "third_party_outage": ("declined", "Your card provider is temporarily unavailable. Please try again shortly."),
+        }
+        if scenario_id not in messages:
+            raise ValueError("unknown customer scenario")
+        status, customer_message = messages[scenario_id]
+        return {
+            "status": status,
+            "customer_message": customer_message,
+            "reference": f"demo-{scenario_id}-{request.attempt_id}",
             "incident_id": incident_id,
             "observation_status": "delivered" if incident_id else "unavailable",
             "total_cents": total_cents,
@@ -76,5 +106,13 @@ def list_products() -> list[dict[str, Any]]:
 def create_payment(payment: PaymentRequest) -> dict[str, Any]:
     try:
         return payment_service.pay(payment)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@app.post("/api/store/scenarios/{scenario_id}")
+def trigger_customer_scenario(scenario_id: str, request: CustomerScenarioRequest) -> dict[str, Any]:
+    try:
+        return payment_service.trigger_customer_scenario(scenario_id, request)
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error

@@ -342,6 +342,27 @@ class SimulatorService:
         self._save()
         return record
 
+    def preview_action(self, scenario_id: str, action_type: str, target: str,
+                       parameters: dict[str, Any]) -> dict[str, Any]:
+        self.validate_action(scenario_id, action_type, target, parameters)
+        definition = self._definition(scenario_id)
+        state_before = dict(self._state.service_state) if self._state.scenario_id == scenario_id else dict(definition.initial_state)
+        state_after = self._project_action(action_type, dict(state_before), parameters)
+        changes = {
+            key: {"before": state_before.get(key), "after": value}
+            for key, value in state_after.items()
+            if state_before.get(key) != value
+        }
+        return {
+            "sandboxed": True,
+            "scenario_id": scenario_id,
+            "action_type": action_type,
+            "target": target,
+            "state_before": state_before,
+            "state_after": state_after,
+            "changes": changes,
+        }
+
     def validate_action(self, scenario_id: str, action_type: str, target: str,
                         parameters: dict[str, Any]) -> None:
         definition = self._definition(scenario_id)
@@ -365,6 +386,11 @@ class SimulatorService:
 
     def _apply_action(self, action_type: str, parameters: dict[str, Any]) -> dict[str, Any]:
         state = dict(self._state.service_state)
+        state = self._project_action(action_type, state, parameters)
+        self._state.service_state = state
+        return state
+
+    def _project_action(self, action_type: str, state: dict[str, Any], parameters: dict[str, Any]) -> dict[str, Any]:
         if action_type == "rollback":
             state["version"] = "2026.10.21"
             state["healthy"] = True
@@ -378,7 +404,6 @@ class SimulatorService:
             if not isinstance(replicas, int) or replicas < 1:
                 raise ValueError("scale requires a positive integer replicas parameter")
             state["replicas"] = replicas
-        self._state.service_state = state
         return state
 
     def _require_selected(self) -> ScenarioDefinition:

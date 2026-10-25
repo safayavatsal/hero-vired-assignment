@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
@@ -12,12 +12,13 @@ router = APIRouter(prefix="/api/v1", tags=["investigations"])
 
 class InvestigationRequest(BaseModel):
     scenario_id: str = Field(min_length=1)
+    mode: Literal["standard", "deeper"] = "standard"
 
 
 @router.post("/incidents/{incident_id}/investigate")
 def investigate(incident_id: UUID, request: InvestigationRequest) -> dict[str, Any]:
     try:
-        return investigation_service.enqueue(incident_id, request.scenario_id)
+        return investigation_service.enqueue(incident_id, request.scenario_id, request.mode)
     except ValueError as error:
         status_code = 404 if str(error) == "incident not found" else 409
         raise HTTPException(status_code=status_code, detail=str(error)) from error

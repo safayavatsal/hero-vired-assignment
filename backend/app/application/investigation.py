@@ -124,7 +124,9 @@ class InvestigationService:
         self._finalize_incident(incident, incident_id, scenario_id, result["findings"], record_timeline=True)
         return result
 
-    def enqueue(self, incident_id: UUID, scenario_id: str) -> dict[str, Any]:
+    def enqueue(self, incident_id: UUID, scenario_id: str, mode: str = "standard") -> dict[str, Any]:
+        if mode not in {"standard", "deeper"}:
+            raise ValueError("unsupported investigation mode")
         incident = self.incident_service.get_incident(incident_id)
         scenario_state = self.evidence_provider.select_scenario(scenario_id)
         scenario_service = (scenario_state.get("scenario") or {}).get("service")
@@ -133,7 +135,7 @@ class InvestigationService:
         if self.jobs is None:
             return self.investigate(incident_id, scenario_id)
         persisted = self.repository.get(incident_id) if self.repository is not None else None
-        if persisted is not None and persisted["scenario_id"] == scenario_id:
+        if mode == "standard" and persisted is not None and persisted["scenario_id"] == scenario_id:
             self._finalize_incident(incident, incident_id, scenario_id, persisted["findings"], record_timeline=False)
             return persisted
         if incident["status"] == "received":
@@ -141,8 +143,8 @@ class InvestigationService:
         job = self.jobs.enqueue(
             "investigation",
             incident_id,
-            {"incident_id": str(incident_id), "scenario_id": scenario_id},
-            f"investigation:{incident_id}:{scenario_id}",
+            {"incident_id": str(incident_id), "scenario_id": scenario_id, "mode": mode},
+            f"investigation:{incident_id}:{scenario_id}:{mode}",
         )
         return {
             "incident_id": str(incident_id),
@@ -155,6 +157,29 @@ class InvestigationService:
         }
 
     def get_status(self, incident_id: UUID) -> dict[str, Any]:
+        if self.jobs is not None:
+            job = self.jobs.latest_for_incident(incident_id, "investigation")
+            if job is not None and job["status"] in {"queued", "leased"}:
+                return {
+                    "incident_id": str(incident_id),
+                    "scenario_id": job["payload"]["scenario_id"],
+                    "status": "running" if job["status"] == "leased" else job["status"],
+                    "job_id": job["id"],
+                    "model_status": "pending",
+                    "findings": [],
+                    "evidence": [],
+                }
+            if job is not None and job["status"] in {"failed", "dead_lettered"}:
+                return {
+                    "incident_id": str(incident_id),
+                    "scenario_id": job["payload"]["scenario_id"],
+                    "status": "failed",
+                    "job_id": job["id"],
+                    "model_status": "failed",
+                    "model_error": job.get("last_error"),
+                    "findings": [],
+                    "evidence": [],
+                }
         try:
             return self.get(incident_id)
         except ValueError:

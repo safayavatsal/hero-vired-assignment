@@ -59,7 +59,23 @@ for _ in {1..10}; do
 done
 test "$after" -gt "$before"
 
-python3 - "$incident_id" "$approved_status" "$incident_alert_count" "$investigation_status" "$page_status" "$after" <<'PY'
+deployment=$(request -X POST "$STORE_URL/api/store/scenarios/deployment_regression" \
+  -H 'content-type: application/json' \
+  -d "{\"attempt_id\":\"$ATTEMPT_ID-deployment\",\"product_ids\":[\"desk-lamp\"]}")
+deployment_status=$(printf '%s' "$deployment" | json_value 'value["status"]')
+deployment_incident_id=$(printf '%s' "$deployment" | json_value 'value["incident_id"]')
+test "$deployment_status" = "degraded"
+test -n "$deployment_incident_id"
+
+disk=$(request -X POST "$STORE_URL/api/store/scenarios/disk_pressure" \
+  -H 'content-type: application/json' \
+  -d "{\"attempt_id\":\"$ATTEMPT_ID-disk\",\"product_ids\":[\"desk-lamp\"]}")
+disk_status=$(printf '%s' "$disk" | json_value 'value["status"]')
+disk_incident_id=$(printf '%s' "$disk" | json_value 'value["incident_id"]')
+test "$disk_status" = "delayed"
+test -n "$disk_incident_id"
+
+python3 - "$incident_id" "$approved_status" "$incident_alert_count" "$investigation_status" "$page_status" "$after" "$deployment_incident_id" "$disk_incident_id" <<'PY'
 import json
 import sys
 
@@ -70,5 +86,7 @@ print(json.dumps({
     "investigation": sys.argv[4],
     "page": sys.argv[5],
     "captured_messages": int(sys.argv[6]),
+    "deployment_regression_incident_id": sys.argv[7],
+    "disk_pressure_incident_id": sys.argv[8],
 }, separators=(",", ":")))
 PY

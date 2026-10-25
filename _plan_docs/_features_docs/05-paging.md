@@ -28,7 +28,7 @@ Implemented:
 
 - Durable primary and fallback page records.
 - Acknowledgement and reply responses.
-- A responder can request more investigation after acknowledgement or reply, with the request recorded in the page response and incident timeline.
+- A responder can add an owner note before acknowledgement; a deeper investigation is requested from the completed finding so it is a new analysis run rather than an ambiguous page reply.
 - One-time timeout escalation to a fallback responder.
 - Page delivery, response, timeout, and escalation timeline events.
 - Timeline writes lock the incident row before allocating the next sequence number.

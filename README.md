@@ -16,7 +16,7 @@ The product accepts normalized alerts, groups repeat deliveries, collects bounde
 - Worker-backed investigation and action execution with retry, lease, timeout, and recovery handling.
 - Human paging, acknowledgement, free-form reply, fallback escalation, approval, rejection, execution, and verification.
 - React incident console with stable selection, investigation controls, evidence review, action state, and timeline context.
-- Browser-based demo store with catalog, cart, synthetic checkout, a controlled payment failure, an embedded observer, and a captured responder inbox.
+- Browser-based demo store with catalog, cart, synthetic checkout, customer-facing slow-checkout and delayed-fulfillment journeys, a controlled payment failure, an embedded observer, and a captured responder inbox.
 - Local HTTP boundary tests for model, notification, ownership, and action reconciliation integrations.
 
 ## Repository map
@@ -66,11 +66,11 @@ docker compose run --rm --user root store-backend pytest -q tests
 
 The demo exercises all scenarios with duplicate, late, flapping, delayed, and out-of-order deliveries, then shows degraded dependency evidence.
 
-`verify-submission.sh` is the final local preflight. Run it after the Compose stack is up; it checks configuration, readiness, both served frontends, backend tests, both frontend builds, the commerce workflow, and the working-tree diff.
+`verify-submission.sh` is the final local preflight. Run it after the Compose stack is up; it checks configuration, readiness, both served frontends, the demo-store proxy, both backend test suites, both frontend builds, the commerce workflow, and the working-tree diff.
 
 `verify-commerce-demo.sh` proves the approved checkout, declined checkout, incident creation, completed investigation, responder page, and captured inbox message against the running stack.
 
-To create a fresh incident from the simulator, select a scenario and trigger its alert delivery:
+To create a fresh incident from the simulator, select a scenario for the synthetic alert delivery:
 
 ```bash
 curl -sS -X POST http://localhost:8001/api/v1/simulator/scenarios \
@@ -81,7 +81,7 @@ curl -sS -X POST http://localhost:8001/api/v1/simulator/alerts \
   -d '{"scenario_id":"disk_pressure"}'
 ```
 
-The response contains both the generated deliveries and the incidents accepted by the webhook pipeline. Refresh the UI on port `8000` to continue the investigation workflow.
+The response contains both the generated deliveries and the incidents accepted by the webhook pipeline. Refresh the UI on port `8000`; the matching investigation context is selected automatically from the incident service.
 
 ### Add a new scenario live
 
@@ -120,7 +120,7 @@ curl -sS -X POST http://localhost:8001/api/v1/simulator/scenarios \
 
 Trigger its alerts with `{"scenario_id":"cache_stampede"}` against `/api/v1/simulator/alerts`, then investigate the new incident from the console.
 
-For the presenter-facing commerce flow, open port `8003`, add a product, and use the displayed declined test card. The separate store backend validates the synthetic payment and its embedded observer sends only operational metadata to the normal alert endpoint. The customer sees a payment reference, not an internal incident link. In a separate operator-console tab, locate the new checkout incident, run the investigation, page the service owner, and open the responder inbox on port `8002` to show the captured notification. The approved test card completes without creating an incident.
+For the presenter-facing commerce flow, open port `8003`, add a product, and use the `Demo journeys` section to try slow checkout, delayed fulfillment, and provider-unavailable checkout. The separate store backend sends only bounded operational metadata to the normal alert endpoint. The customer sees a safe reference, not an internal incident link. In a separate operator-console tab, locate each resulting incident, confirm its automatically selected investigation context, run the investigation, notify the service owner, and open the responder inbox on port `8002` to show the captured notification. The approved test card completes without creating an incident.
 
 The investigation view uses realistic e-commerce signals rather than a single generic fixture message. It records named bounded evidence queries and safe model telemetry, then shows the structured model readout separately from the deterministic finding. A configured model gateway can supply the structured analysis; without one, the deterministic finding remains visible with an explicit degraded model status.
 

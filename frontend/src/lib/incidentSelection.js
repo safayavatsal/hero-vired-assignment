@@ -15,7 +15,7 @@ export function activeAction(actions, match) {
 
 export function workflowStates(investigation, page, action, noLocalAction = false) {
   const findingReady = Boolean(investigation && (investigation.status === "completed" || investigation.findings?.length));
-  const responderAcknowledged = page?.status === "acknowledged" || page?.status === "replied";
+  const responderAcknowledged = page?.status === "acknowledged";
   const actionVerified = action?.status === "verified" || (noLocalAction && responderAcknowledged);
 
   return {

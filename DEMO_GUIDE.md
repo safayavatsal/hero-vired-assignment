@@ -9,10 +9,12 @@ The API endpoints are available at `http://localhost:8001/api/v1/health` and `ht
 ## Commerce-to-incident browser demo
 
 1. Open `http://localhost:8003` and add any product to the cart.
-2. Select `Checkout`, choose `Use declined card`, and submit the synthetic payment.
-3. Confirm the customer-safe failed payment result and its payment reference.
-4. In a separate operator-console tab, locate the new checkout incident and start the preselected third-party-outage investigation.
-5. Select `Page service owner`, then open `http://localhost:8002` to show the captured email with the incident, finding, and next step.
+2. Use `Try slow checkout` to create a customer-visible latency symptom and a `payments-api` incident.
+3. Use `Try delayed fulfillment` to create a customer-visible fulfillment delay and an `orders-worker` incident.
+4. Select `Open failed checkout`, choose `Use declined card`, and submit the synthetic payment.
+5. Confirm the customer-safe failed payment result and its payment reference.
+6. In a separate operator-console tab, locate any resulting incident and start the matching investigation.
+7. Select `Page service owner`, then open `http://localhost:8002` to show the captured email with the incident, finding, and next step.
 
 The checkout form talks to the separate demo-store backend on port `8004`. Its embedded observer emits bounded operational metadata only after the simulated provider becomes unavailable. Cardholder, card number, expiry, and security code are validated there but never persisted or copied into the event payload. Use `Use approved card` to demonstrate the non-incident path.
 
@@ -22,9 +24,9 @@ Before presenting, run the repeatable API-level proof:
 ./scripts/verify-commerce-demo.sh
 ```
 
-It prints one compact JSON result containing the approved outcome, fresh incident identifier, `incident_alert_count: 1`, completed investigation, delivered page, and captured-message count.
+It prints one compact JSON result containing the approved outcome, provider-failure investigation, delivered page, captured-message count, and fresh incident identifiers for the latency and fulfillment journeys.
 
-For the final local submission check, run `./scripts/verify-submission.sh` after the stack is running. It combines the backend suite, served-frontend checks, frontend builds, health checks, commerce proof, and diff validation.
+For the final local submission check, run `./scripts/verify-submission.sh` after the stack is running. It combines both backend suites, served-frontend and demo-store proxy checks, frontend builds, health checks, commerce proof, and diff validation.
 
 ## Live scenario addition demo
 
@@ -170,19 +172,20 @@ curl http://localhost:8001/api/v1/incidents/<incident-id>/actions
 curl http://localhost:8001/api/v1/incidents/<incident-id>/timeline
 ```
 
-The UI exposes the same page, investigation, evidence, and action controls after selecting an incident. Choose a scenario, select `Investigate`, then review the finding, confidence, uncertainty, citations, source availability, and masked evidence payloads. The live Docker verification covered acknowledgement, approval, simulator execution, verification, timeline persistence, fallback escalation, and retry safety.
+The UI exposes the same page, investigation, evidence, and action controls after selecting an incident. Confirm the automatically selected investigation context, start the investigation, then review the finding, confidence, uncertainty, citations, source availability, and masked evidence payloads. The `Change context` option is reserved for controlled demo runs. The live Docker verification covered acknowledgement, approval, simulator execution, verification, timeline persistence, fallback escalation, and retry safety.
 
-For the UI walkthrough, select an incident and use the matching scenario. Click `Start investigation` or `Run again`; the UI immediately confirms that the request was accepted, shows background progress, and keeps the investigation result tied to the selected incident while the worker refreshes it. The responder step appears only after the finding is ready, and the safety-action step appears only after acknowledgement. Failures appear in the top-right toast and can be dismissed; the selected incident remains the source of truth for all controls.
+For the UI walkthrough, select an incident and confirm its investigation context. Click `Start investigation`; the UI immediately confirms that the request was accepted and shows background progress. After the finding appears, use `Request deeper investigation` only when the result needs another evidence pass. The owner-notification step appears only after the finding is ready, closes after acknowledgement, and the remediation step then explains its evidence-backed recommendation before approval. Failures appear in the top-right toast and can be dismissed; the selected incident remains the source of truth for all controls.
 
 ### Five-minute live walkthrough
 
 1. Open `http://localhost:8000` and select the first incident.
-2. Read the `What happens next` strip aloud: investigate, respond, then act safely.
-3. Select the scenario that matches the service, then click `Start investigation` or `Run again`. Point out the success toast and the background progress message; wait for the finding to appear.
+2. Read the `What happens next` strip aloud: find the cause, notify the owner, then approve and verify remediation.
+3. Confirm the automatically selected investigation context, then click `Start investigation` or `Re-run investigation`. Point out the success toast and the background progress message; wait for the finding to appear.
 4. Show the finding card: cause, confidence, recommended next step, and named evidence sources.
-5. Click `Page service owner`, then `Acknowledge`, and send a short reply.
-6. After acknowledgement, propose the safe action, approve it, queue it, and click `Verify service state` after the worker updates the result. The incident then becomes `Resolved`.
-7. Open `Evidence used` or `Audit trail` only when the audience wants the supporting detail; raw payloads remain opt-in.
+5. Open `Model readout` to show the three-part investigation brief, provider status, and response time. Open `Evidence used` only when you want to show the bounded tool trace and query timings.
+6. Click `Notify service owner`, optionally send an owner note before acknowledgement, then click `Acknowledge ownership`. Explain that acknowledgement records human ownership; it does not resolve the incident.
+7. After acknowledgement, review the recommended action, approve it, queue it, and click `Verify service state` after the worker updates the result. The incident then becomes `Resolved`.
+8. Open `Audit trail` only when the audience wants the supporting detail; raw payloads remain opt-in.
 
 For `third_party_outage`, complete investigation and paging but do not propose a local action. The UI marks the third step `No local fix`, and the incident becomes `Unfixable` with the reason preserved in the timeline.
 

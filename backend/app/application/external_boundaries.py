@@ -39,7 +39,12 @@ class OwnershipGateway:
         fallback = result.get("fallback_responder")
         if not isinstance(primary, str) or not isinstance(fallback, str) or not primary or not fallback:
             raise ExternalBoundaryError("ownership response must include responder and fallback_responder")
-        return {"responder": primary, "fallback_responder": fallback}
+        ownership = {"responder": primary, "fallback_responder": fallback}
+        for key in ("responder_email", "fallback_email"):
+            value = result.get(key)
+            if isinstance(value, str) and value:
+                ownership[key] = value
+        return ownership
 
 
 class NotificationGateway:
@@ -54,20 +59,36 @@ class NotificationGateway:
         if not host:
             return None
         message = EmailMessage()
+        incident_id = str(payload.get("incident_id", ""))
         severity = str(payload.get("severity", "incident")).replace("\r", " ").replace("\n", " ")
         service = str(payload.get("service", "service")).replace("\r", " ").replace("\n", " ")
+        responder = str(payload.get("responder", "service-owner")).replace("\r", " ").replace("\n", " ")
+        recipient = payload.get("responder_email") or os.getenv("NOTIFICATION_EMAIL_TO") or f"{responder}@{os.getenv('NOTIFICATION_EMAIL_DOMAIN', 'demo.local')}"
+        console_url = os.getenv("INCIDENT_CONSOLE_URL", "http://localhost:8000/?incident={incident_id}").format(incident_id=incident_id)
+        response_channel_url = os.getenv("RESPONSE_CHANNEL_URL", "http://localhost:8002")
         message["Subject"] = f"[{severity.upper()}] {service} needs attention"
         message["From"] = os.getenv("NOTIFICATION_EMAIL_FROM", "assistant@demo.local")
-        message["To"] = os.getenv("NOTIFICATION_EMAIL_TO", "oncall@demo.local")
+        message["To"] = recipient
         message["Message-ID"] = make_msgid(domain="demo.local")
-        message.set_content("\n".join([
-            f"Incident: {payload.get('incident_id', '')}",
+        lines = [
+            f"Incident ID: {incident_id}",
             f"Service: {service}",
             f"Summary: {payload.get('summary', '')}",
+            f"Owner: {responder}",
             f"Finding: {payload.get('evidence_summary', 'Investigation pending')}",
+            f"Likely cause: {payload.get('likely_cause', 'See the investigation evidence')}",
             f"Suggested next step: {payload.get('suggested_next_step', 'Review incident')}",
-            "Open the local incident console: http://localhost:8000",
-        ]))
+            "",
+            "Evidence:",
+        ]
+        for evidence in payload.get("evidence", []):
+            lines.append(f"- {evidence.get('source_type', 'source')}: {json.dumps(evidence.get('items', []), sort_keys=True)}")
+        lines.extend([
+            "",
+            f"Open incident console: {console_url}",
+            f"Open responder inbox: {response_channel_url}",
+        ])
+        message.set_content("\n".join(lines))
         try:
             with smtplib.SMTP(
                 host,

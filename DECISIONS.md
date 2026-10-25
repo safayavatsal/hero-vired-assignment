@@ -42,3 +42,7 @@ This file is the index of the detailed decision records in [`_decision_docs/`](_
 | [021 — Scenario Extensibility](_decision_docs/021-scenario-extensibility.md) | Makes new incident scenarios data-only through finding rules, runtime registration, and a UI that follows the scenario listing. |
 | [022 — Submission And On-Site Readiness](_decision_docs/022-submission-readiness.md) | Maps the required demo, live-change, and discussion evidence and closes structured-output validation. |
 | [023 — Submission Preflight](_decision_docs/023-submission-preflight.md) | Adds one repeatable local command for the final Compose, test, build, demo, and diff checks. |
+| [024 — Customer Scenario Storefront](_decision_docs/024-customer-scenario-storefront.md) | Makes all three built-in incident scenarios reproducible from customer-facing store journeys. |
+| [025 — Investigation Explainability Surface](_decision_docs/025-investigation-explainability-surface.md) | Shows the structured brief, tool provenance, model telemetry, and progressive evidence detail in the browser. |
+| [026 — Guided Investigation Workflow](_decision_docs/026-guided-investigation-workflow.md) | Presents scenario context automatically and explains ownership, approval, and verification in operator language. |
+| [027 — Sequential Operator Workflow](_decision_docs/027-sequential-operator-workflow.md) | Separates completed findings, deeper analysis, ownership acknowledgement, action explanation, and owner-specific notification. |

@@ -69,6 +69,20 @@ def test_simulator_state_and_action_idempotency_survive_service_restart(tmp_path
     assert restarted.execute_action("clear_disk", "orders-worker", {}, "clear-1")["id"] == action["id"]
 
 
+def test_action_preview_projects_changes_without_mutating_simulator_state(tmp_path: Path) -> None:
+    service = SimulatorService(str(tmp_path / "preview.json"))
+    service.select_scenario("disk_pressure")
+
+    preview = service.preview_action("disk_pressure", "clear_disk", "orders-worker", {})
+
+    assert preview["sandboxed"] is True
+    assert preview["state_before"]["disk_usage_percent"] == 96
+    assert preview["state_after"]["disk_usage_percent"] == 62
+    assert preview["changes"]["disk_usage_percent"] == {"before": 96, "after": 62}
+    assert service.state()["service_state"]["disk_usage_percent"] == 96
+    assert service.state()["action_count"] == 0
+
+
 def test_alert_delivery_controls_make_ordering_and_delay_visible() -> None:
     service = SimulatorService()
     service.select_scenario("deployment_regression")

@@ -1,0 +1,28 @@
+# Sequential Operator Workflow
+
+## Goal
+
+Make the browser workflow unambiguous after a finding is produced: show the result, let the operator request a deeper pass explicitly, close ownership after acknowledgement, and explain the safe action before approval.
+
+## Steps
+
+1. Remove the normal rerun control from the completed investigation state.
+2. Add an explicit deeper-investigation request that uses a distinct queued run mode and remains idempotent.
+3. Keep owner notes optional before acknowledgement and close the notification step after ownership is accepted.
+4. Gate remediation on acknowledgement and show the evidence-backed reason for the recommendation before proposal or approval.
+5. Deliver notifications to the resolved owner when available and include incident identity, finding context, evidence, and local navigation links.
+6. Make remediation review read-only until the operator chooses Approve or Reject; show the projected before/after service state.
+
+## Acceptance checks
+
+- A completed finding remains visible without a normal `Re-run investigation` button.
+- `Request deeper investigation` starts a distinct background investigation and does not reuse the completed standard result.
+- Acknowledgement is the ownership boundary; the remediation step does not open before it.
+- The remediation view explains the finding, current condition, and cited evidence before a human approves the action.
+- Local notification delivery identifies the specific responder and includes the incident console and responder inbox links.
+- Reviewing a remediation produces a sandbox projection without changing simulator state or creating an action decision.
+- Approve and Reject are the only controls that create the audited action decision after the projection is visible.
+
+## Status
+
+Implemented in the backend workflow, local notification boundary, incident console, and focused tests.

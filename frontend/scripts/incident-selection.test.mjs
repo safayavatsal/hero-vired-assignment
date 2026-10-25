@@ -39,6 +39,7 @@ test("keeps the workflow sequential until each operator decision is complete", (
     response: "done",
     action: "current",
   });
-  assert.deepEqual(workflowStates({ status: "completed", findings: [{}] }, { status: "replied" }, { status: "verified" }).action, "done");
+  assert.equal(workflowStates({ status: "completed", findings: [{}] }, { status: "replied" }, { status: "verified" }).response, "current");
+  assert.equal(workflowStates({ status: "completed", findings: [{}] }, { status: "replied" }, { status: "verified" }).action, "locked");
   assert.equal(workflowStates({ status: "completed", findings: [{}] }, { status: "acknowledged" }, undefined, true).action, "done");
 });
