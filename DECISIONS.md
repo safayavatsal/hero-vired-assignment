@@ -41,3 +41,4 @@ This file is the index of the detailed decision records in [`_decision_docs/`](_
 | [020 — Embedded Observer Integration](_decision_docs/020-embedded-observer-integration.md) | Separates customer checkout from bounded operational event reporting. |
 | [021 — Scenario Extensibility](_decision_docs/021-scenario-extensibility.md) | Makes new incident scenarios data-only through finding rules, runtime registration, and a UI that follows the scenario listing. |
 | [022 — Submission And On-Site Readiness](_decision_docs/022-submission-readiness.md) | Maps the required demo, live-change, and discussion evidence and closes structured-output validation. |
+| [023 — Submission Preflight](_decision_docs/023-submission-preflight.md) | Adds one repeatable local command for the final Compose, test, build, demo, and diff checks. |

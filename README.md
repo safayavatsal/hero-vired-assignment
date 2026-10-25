@@ -21,7 +21,7 @@ The product accepts normalized alerts, groups repeat deliveries, collects bounde
 
 ## Repository map
 
-- `_plan_docs/_features_docs/` — feature plans (00–17)
+- `_plan_docs/_features_docs/` — feature plans (00–18)
 - `_plan_docs/_hld_docs/` — architecture, data model, UI, and API plans
 - `_plan_docs/_lld_docs/` — classes, runtime sequence, and UML
 - `_decision_docs/` — architecture and implementation decisions
@@ -58,12 +58,15 @@ docker compose run --rm --user root api pytest -q tests
 (cd frontend && npm test && npm run build)
 (cd demo-store/frontend && npm run build)
 docker compose run --rm --user root store-backend pytest -q tests
+./scripts/verify-submission.sh
 ./scripts/reset-demo.sh
 ./scripts/demo.sh
 ./scripts/verify-commerce-demo.sh
 ```
 
 The demo exercises all scenarios with duplicate, late, flapping, delayed, and out-of-order deliveries, then shows degraded dependency evidence.
+
+`verify-submission.sh` is the final local preflight. Run it after the Compose stack is up; it checks configuration, readiness, both served frontends, backend tests, both frontend builds, the commerce workflow, and the working-tree diff.
 
 `verify-commerce-demo.sh` proves the approved checkout, declined checkout, incident creation, completed investigation, responder page, and captured inbox message against the running stack.
 

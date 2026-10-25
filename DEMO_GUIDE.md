@@ -24,6 +24,8 @@ Before presenting, run the repeatable API-level proof:
 
 It prints one compact JSON result containing the approved outcome, fresh incident identifier, `incident_alert_count: 1`, completed investigation, delivered page, and captured-message count.
 
+For the final local submission check, run `./scripts/verify-submission.sh` after the stack is running. It combines the backend suite, served-frontend checks, frontend builds, health checks, commerce proof, and diff validation.
+
 ## Live scenario addition demo
 
 New scenarios are registered as data through `POST /api/v1/simulator/scenarios` with a `definition` payload (see the README example). During a session:

@@ -22,7 +22,7 @@ To unset or change this rule, edit or remove this `AGENTS.md` file. The rule is 
 
 - Treat the documented product direction, feature scope, HLD, LLD, classes, methods, variables, API boundaries, data model, and safety decisions as deliberately authored and approved by the project owner.
 - Treat implementation logic, integrations, tests, and runtime wiring as AI-assisted work that must be reviewed and verified against the approved documents.
-- Work feature by feature from `_plan_docs/_features_docs/` (00–17).
+- Work feature by feature from `_plan_docs/_features_docs/` (00–18).
 - Before each feature, inspect its related HLD, LLD, API, and decision documents.
 - After each feature, update the relevant plans and the project records: `AI_USAGE.md`, `DEMO_GUIDE.md`, `DOCUMENTATION_STATUS.md`, `SCENARIO_RUNBOOK.md`, and decision records when needed.
 - Perform a private parity check against supplied reference material before a feature is pushed. Keep that check internal and do not expose the references in project artifacts.

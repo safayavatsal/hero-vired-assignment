@@ -60,6 +60,8 @@ No local remediation is offered for this scenario. The console preserves the inc
 
 The scripts cover all three scenarios, duplicate/late/flapping/out-of-order delivery, the degraded service-health path, and the complete store-payment-to-responder-inbox path. They are safe to repeat against the local Compose stack.
 
+Run `./scripts/verify-submission.sh` after starting Compose for the final combined local proof.
+
 ## Verification record
 
 The current local verification includes the Docker/PostgreSQL backend suite, frontend smoke tests and production build, liveness/readiness checks, live scenario delivery, persisted workflow checks, and frontend HTTP serving on port `8000`. Hosted deployment is outside this local assignment boundary.
