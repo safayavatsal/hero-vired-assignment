@@ -1,11 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import { activeAction, activePage, workflowStates } from "../lib/incidentSelection";
-import type { Action, Incident, IncidentDetail, Investigation, Page, TimelineEvent } from "../domain/types";
+import { activeAction, activePage, scenarioForService, workflowStates } from "../lib/incidentSelection";
+import type { Action, Incident, IncidentDetail, Investigation, Page, ScenarioInfo, TimelineEvent } from "../domain/types";
 
-const scenarioServices: Record<string, string> = { deployment_regression: "payments-api", disk_pressure: "orders-worker", third_party_outage: "checkout-api" };
-const serviceScenarios = Object.fromEntries(Object.entries(scenarioServices).map(([scenario, service]) => [service, scenario]));
-const scenarioLabels: Record<string, string> = { deployment_regression: "Deployment regression", disk_pressure: "Disk pressure", third_party_outage: "Third-party outage" };
-const actionTypes: Record<string, string | null> = { deployment_regression: "rollback", disk_pressure: "clear_disk", third_party_outage: null };
+const fallbackScenarios: ScenarioInfo[] = [
+  { id: "deployment_regression", name: "Deployment regression", service: "payments-api", severity: "critical", alert_type: "p99_latency_high", allowed_actions: ["rollback", "restart"], finding: { metric: "p99_latency_ms", category: "deployment_regression", suggested_next_step: "rollback" } },
+  { id: "disk_pressure", name: "Disk pressure", service: "orders-worker", severity: "high", alert_type: "disk_usage_high", allowed_actions: ["clear_disk", "restart", "scale"], finding: { metric: "disk_usage_percent", category: "disk_pressure", suggested_next_step: "clear_disk" } },
+  { id: "third_party_outage", name: "Third-party outage", service: "checkout-api", severity: "high", alert_type: "dependency_errors_high", allowed_actions: [], finding: { metric: "provider_error_rate", category: "third_party_outage", suggested_next_step: "unfixable" } },
+];
+
+const scenarioMaps = (definitions: ScenarioInfo[]) => ({
+  scenarioServices: Object.fromEntries(definitions.map((scenario) => [scenario.id, scenario.service])),
+  scenarioLabels: Object.fromEntries(definitions.map((scenario) => [scenario.id, scenario.name])),
+  actionTypes: Object.fromEntries(definitions.map((scenario) => [scenario.id,
+    scenario.finding && scenario.finding.suggested_next_step !== "unfixable" ? scenario.finding.suggested_next_step : scenario.allowed_actions[0] ?? null])),
+});
 
 const titleCase = (value: string) => value.replace(/_/g, " ").replace(/\b\w/g, (letter: string) => letter.toUpperCase());
 const readableValue = (value: unknown) => typeof value === "string" ? value : JSON.stringify(value);
@@ -43,6 +51,7 @@ export function App() {
   const [actions, setActions] = useState<Action[]>([]);
   const [investigation, setInvestigation] = useState<Investigation | null>(null);
   const [scenarioId, setScenarioId] = useState("deployment_regression");
+  const [scenarios, setScenarios] = useState<ScenarioInfo[]>(fallbackScenarios);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [responseText, setResponseText] = useState("");
@@ -54,6 +63,12 @@ export function App() {
     const timer = window.setTimeout(() => setError(null), 6000);
     return () => window.clearTimeout(timer);
   }, [error]);
+
+  useEffect(() => {
+    getJson<ScenarioInfo[]>("/api/v1/simulator/scenarios")
+      .then((items) => { if (items.length) setScenarios(items); })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (!feedback) return;
@@ -131,6 +146,13 @@ export function App() {
 
   const currentPage = activePage(pages);
   const pageOpen = ["delivered", "acknowledged", "replied"].includes(currentPage?.status ?? "");
+  const { scenarioServices, scenarioLabels, actionTypes } = scenarioMaps(scenarios);
+  const serviceScenarios = Object.fromEntries(Object.entries(scenarioServices).map(([scenario, service]) => [service, scenario]));
+  useEffect(() => {
+    if (!selected) return;
+    const matchingScenario = scenarioForService(scenarios, selected.service);
+    if (matchingScenario && matchingScenario !== scenarioId) setScenarioId(matchingScenario);
+  }, [scenarios, selected?.service]);
   const scenarioMatchesIncident = Boolean(selected && scenarioServices[scenarioId] === selected.service);
   const currentAction = activeAction(actions, selected ? { scenarioId, target: selected.service } : undefined);
   const actionType = actionTypes[scenarioId];

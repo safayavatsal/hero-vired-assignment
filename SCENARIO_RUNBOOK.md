@@ -26,6 +26,8 @@
 | Check | Expected result |
 | --- | --- |
 | Repeated `source_event_id` | Existing alert returned with `duplicate: true` |
+| New scenario registered as data | Scenario listed publicly without its hidden cause; investigation produces its declared finding; registration survives a restart |
+| Incomplete or built-in scenario registration | Rejected with a validation error and no state change |
 | Wrong scenario for an incident service | `409` and no investigation or action created |
 | Slow evidence source | Source is marked degraded/unavailable within its deadline |
 | Responder timeout | Primary page escalates once and fallback page is delivered once |
@@ -42,7 +44,7 @@
 
 1. Open `http://localhost:8003`, add one product, and proceed to checkout.
 2. Select the declined test card and submit the payment through the store backend on port `8004`.
-3. Follow the returned incident link and confirm `checkout-api` selected the third-party-outage scenario.
+3. In a separate operator-console tab, locate the new `checkout-api` incident and confirm it selected the third-party-outage scenario.
 4. Run the investigation and confirm the finding cites dependency and service-health evidence.
 5. Page the owner and verify the captured message in `http://localhost:8002` contains the finding and suggested next step.
 

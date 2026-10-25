@@ -28,6 +28,9 @@ declined=$(request -X POST "$STORE_URL/api/store/payments" \
   -H 'content-type: application/json' \
   -d "{\"attempt_id\":\"$ATTEMPT_ID-declined\",\"product_ids\":[\"desk-lamp\"],\"cardholder\":\"Demo Shopper\",\"card_number\":\"4111111111110002\",\"expiry\":\"12/30\",\"security_code\":\"123\"}")
 incident_id=$(printf '%s' "$declined" | json_value 'value["incident_id"]')
+incident=$(request "$ASSISTANT_URL/api/v1/incidents/$incident_id")
+incident_alert_count=$(printf '%s' "$incident" | json_value 'value["alert_count"]')
+test "$incident_alert_count" = "1"
 
 request -X POST "$ASSISTANT_URL/api/v1/incidents/$incident_id/investigate" \
   -H 'content-type: application/json' \
@@ -56,15 +59,16 @@ for _ in {1..10}; do
 done
 test "$after" -gt "$before"
 
-python3 - "$incident_id" "$approved_status" "$investigation_status" "$page_status" "$after" <<'PY'
+python3 - "$incident_id" "$approved_status" "$incident_alert_count" "$investigation_status" "$page_status" "$after" <<'PY'
 import json
 import sys
 
 print(json.dumps({
     "approved_payment": sys.argv[2],
     "declined_incident_id": sys.argv[1],
-    "investigation": sys.argv[3],
-    "page": sys.argv[4],
-    "captured_messages": int(sys.argv[5]),
+    "incident_alert_count": int(sys.argv[3]),
+    "investigation": sys.argv[4],
+    "page": sys.argv[5],
+    "captured_messages": int(sys.argv[6]),
 }, separators=(",", ":")))
 PY

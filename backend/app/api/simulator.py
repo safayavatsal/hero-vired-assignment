@@ -13,6 +13,7 @@ router = APIRouter(prefix="/api/v1/simulator", tags=["simulator"])
 
 class ScenarioRequest(BaseModel):
     scenario_id: str
+    definition: dict[str, Any] | None = None
 
 
 class AlertRequest(BaseModel):
@@ -44,6 +45,8 @@ def list_scenarios() -> list[dict[str, Any]]:
 @router.post("/scenarios")
 def select_scenario(request: ScenarioRequest) -> dict[str, Any]:
     try:
+        if request.definition is not None:
+            simulator_service.register_scenario(request.scenario_id, request.definition)
         return simulator_service.select_scenario(request.scenario_id)
     except ValueError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error

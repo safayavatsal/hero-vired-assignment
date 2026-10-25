@@ -140,10 +140,19 @@ def _sensitive_key(key: str) -> bool:
 
 def validate_model_response(response: dict[str, Any], evidence_ids: set[str]) -> dict[str, Any]:
     required = {"current_condition", "likely_cause", "confidence", "suggested_next_step", "evidence_ids", "uncertainty"}
-    if set(response) < required:
+    if not isinstance(response, dict):
+        raise ValueError("model response must be an object")
+    if set(response) != required:
         raise ValueError("model response is missing required fields")
-    if not isinstance(response["confidence"], (int, float)) or not 0 <= response["confidence"] <= 1:
+    for field in ("current_condition", "likely_cause", "suggested_next_step"):
+        if not isinstance(response[field], str) or not response[field].strip():
+            raise ValueError(f"model response field {field} must be a non-empty string")
+    if not isinstance(response["confidence"], (int, float)) or isinstance(response["confidence"], bool) or not 0 <= response["confidence"] <= 1:
         raise ValueError("model confidence must be between 0 and 1")
-    if not isinstance(response["evidence_ids"], list) or not set(response["evidence_ids"]).issubset(evidence_ids):
+    if response["uncertainty"] is not None and not isinstance(response["uncertainty"], str):
+        raise ValueError("model uncertainty must be a string or null")
+    if not isinstance(response["evidence_ids"], list) or not all(isinstance(item, str) for item in response["evidence_ids"]):
+        raise ValueError("model response evidence_ids must be a list of strings")
+    if not set(response["evidence_ids"]).issubset(evidence_ids):
         raise ValueError("model response cited unsupported evidence")
     return response

@@ -1,4 +1,5 @@
 export type Incident = { id: string; service: string; severity: string; status: string; summary: string; alert_count: number; version: number; updated_at: string };
+export type ScenarioInfo = { id: string; name: string; service: string; severity: string; alert_type: string; allowed_actions: string[]; finding?: { metric: string; category: string; suggested_next_step: string } };
 export type TimelineEvent = { id: string; event_type: string; event_time: string; payload: Record<string, unknown> };
 export type IncidentDetail = Incident & { timeline: TimelineEvent[] };
 export type Page = { id: string; status: string; responder: string; level: string; response_type: string | null; incident_version: number };

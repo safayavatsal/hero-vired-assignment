@@ -10,11 +10,11 @@ The API endpoints are available at `http://localhost:8001/api/v1/health` and `ht
 
 1. Open `http://localhost:8003` and add any product to the cart.
 2. Select `Checkout`, choose `Use declined card`, and submit the synthetic payment.
-3. Confirm the declined result displays an incident ID, then select `Open on-call console`.
-4. Start the preselected third-party-outage investigation and wait for the finding to appear.
+3. Confirm the customer-safe failed payment result and its payment reference.
+4. In a separate operator-console tab, locate the new checkout incident and start the preselected third-party-outage investigation.
 5. Select `Page service owner`, then open `http://localhost:8002` to show the captured email with the incident, finding, and next step.
 
-The checkout form talks to the separate demo-store backend on port `8004`. Cardholder, card number, expiry, and security code are validated there but never persisted or copied into the alert payload. Use `Use approved card` to demonstrate the non-incident path.
+The checkout form talks to the separate demo-store backend on port `8004`. Its embedded observer emits bounded operational metadata only after the simulated provider becomes unavailable. Cardholder, card number, expiry, and security code are validated there but never persisted or copied into the event payload. Use `Use approved card` to demonstrate the non-incident path.
 
 Before presenting, run the repeatable API-level proof:
 
@@ -22,7 +22,17 @@ Before presenting, run the repeatable API-level proof:
 ./scripts/verify-commerce-demo.sh
 ```
 
-It prints one compact JSON result containing the approved outcome, fresh incident identifier, completed investigation, delivered page, and captured-message count.
+It prints one compact JSON result containing the approved outcome, fresh incident identifier, `incident_alert_count: 1`, completed investigation, delivered page, and captured-message count.
+
+## Live scenario addition demo
+
+New scenarios are registered as data through `POST /api/v1/simulator/scenarios` with a `definition` payload (see the README example). During a session:
+
+1. Register the described scenario with its evidence, allowed actions, and finding rule.
+2. Trigger its alert through `/api/v1/simulator/alerts`.
+3. Investigate the new incident in the console; the scenario dropdown and action types follow the public scenario listing automatically.
+
+Registered scenarios persist in simulator state, so a restart keeps them available. Built-in scenarios cannot be replaced and incomplete definitions are rejected.
 
 ## Local Kubernetes browser verification
 

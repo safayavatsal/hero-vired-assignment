@@ -1,6 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { activeAction, activePage, workflowStates } from "../src/lib/incidentSelection.js";
+import { activeAction, activePage, scenarioForService, workflowStates } from "../src/lib/incidentSelection.js";
+
+test("selects a scenario from the service returned by the API", () => {
+  assert.equal(scenarioForService([
+    { id: "cache_stampede", service: "catalog-api" },
+    { id: "disk_pressure", service: "orders-worker" },
+  ], "catalog-api"), "cache_stampede");
+});
 
 test("selects the page that still needs a response", () => {
   assert.equal(activePage([{ id: "old", status: "acknowledged" }, { id: "current", status: "delivered" }]).id, "current");

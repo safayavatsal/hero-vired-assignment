@@ -53,7 +53,7 @@ class PostgresIncidentRepository:
                     """,
                     (alert.service, str(correlation_key), alert.source_time, alert.source_time),
                 ).fetchone()
-            if incident is None:
+            if incident is None and not correlation_key:
                 incident = connection.execute(
                     """
                     SELECT i.*

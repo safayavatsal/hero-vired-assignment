@@ -16,12 +16,12 @@ The product accepts normalized alerts, groups repeat deliveries, collects bounde
 - Worker-backed investigation and action execution with retry, lease, timeout, and recovery handling.
 - Human paging, acknowledgement, free-form reply, fallback escalation, approval, rejection, execution, and verification.
 - React incident console with stable selection, investigation controls, evidence review, action state, and timeline context.
-- Browser-based demo store with catalog, cart, synthetic checkout, controlled payment failure, direct incident handoff, and a captured responder inbox.
+- Browser-based demo store with catalog, cart, synthetic checkout, a controlled payment failure, an embedded observer, and a captured responder inbox.
 - Local HTTP boundary tests for model, notification, ownership, and action reconciliation integrations.
 
 ## Repository map
 
-- `_plan_docs/_features_docs/` — feature plans
+- `_plan_docs/_features_docs/` — feature plans (00–17)
 - `_plan_docs/_hld_docs/` — architecture, data model, UI, and API plans
 - `_plan_docs/_lld_docs/` — classes, runtime sequence, and UML
 - `_decision_docs/` — architecture and implementation decisions
@@ -80,7 +80,44 @@ curl -sS -X POST http://localhost:8001/api/v1/simulator/alerts \
 
 The response contains both the generated deliveries and the incidents accepted by the webhook pipeline. Refresh the UI on port `8000` to continue the investigation workflow.
 
-For the presenter-facing commerce flow, open port `8003`, add a product, and use the displayed declined test card. The separate store backend validates the synthetic payment, strips payment fields, sends only operational metadata to the normal alert endpoint, and returns the incident link. Run the investigation, page the service owner, and open the responder inbox on port `8002` to show the captured notification. The approved test card completes without creating an incident.
+### Add a new scenario live
+
+New scenarios are data, not code. Send one definition to the scenario endpoint and the system investigates it immediately; registered scenarios survive restarts and appear in the console automatically:
+
+```bash
+curl -sS -X POST http://localhost:8001/api/v1/simulator/scenarios \
+  -H 'content-type: application/json' \
+  -d '{
+    "scenario_id": "cache_stampede",
+    "definition": {
+      "name": "Cache stampede",
+      "service": "catalog-api",
+      "severity": "high",
+      "alert_type": "cache_miss_rate_high",
+      "hidden_cause": "cache expiry aligned with a traffic spike",
+      "evidence": {
+        "logs": [{"message": "cache miss storm on catalog lookups", "level": "error"}],
+        "metrics": [{"name": "cache_miss_rate", "value": 82, "threshold": 20, "window": "5m"}],
+        "deploys": [],
+        "service_health": [{"service": "catalog-api", "healthy": true}]
+      },
+      "allowed_actions": ["restart"],
+      "initial_state": {"cache_miss_rate": 82},
+      "finding": {
+        "metric": "cache_miss_rate",
+        "category": "cache_stampede",
+        "statement": "Cache misses spiked above threshold across the catalog service.",
+        "confidence": 0.88,
+        "suggested_next_step": "restart",
+        "evidence_sources": ["metrics", "logs"]
+      }
+    }
+  }'
+```
+
+Trigger its alerts with `{"scenario_id":"cache_stampede"}` against `/api/v1/simulator/alerts`, then investigate the new incident from the console.
+
+For the presenter-facing commerce flow, open port `8003`, add a product, and use the displayed declined test card. The separate store backend validates the synthetic payment and its embedded observer sends only operational metadata to the normal alert endpoint. The customer sees a payment reference, not an internal incident link. In a separate operator-console tab, locate the new checkout incident, run the investigation, page the service owner, and open the responder inbox on port `8002` to show the captured notification. The approved test card completes without creating an incident.
 
 The investigation view uses realistic e-commerce signals rather than a single generic fixture message. It records named bounded evidence queries and safe model telemetry, then shows the structured model readout separately from the deterministic finding. A configured model gateway can supply the structured analysis; without one, the deterministic finding remains visible with an explicit degraded model status.
 

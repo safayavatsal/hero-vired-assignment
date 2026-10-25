@@ -1,13 +1,10 @@
-import json
-import os
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
 from typing import Any
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+
+from app.observer import CheckoutObserver
 
 
 @dataclass(frozen=True)
@@ -38,29 +35,9 @@ class PaymentRequest(BaseModel):
     security_code: str = Field(pattern=r"^\d{3,4}$")
 
 
-class AlertGateway:
-    def create_incident(self, payload: dict[str, Any]) -> str:
-        base_url = os.getenv("ON_CALL_API_URL", "http://api:8000").rstrip("/")
-        request = Request(
-            f"{base_url}/api/v1/alerts",
-            data=json.dumps(payload).encode(),
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-        try:
-            with urlopen(request, timeout=5) as response:
-                body = json.loads(response.read().decode())
-        except (HTTPError, URLError, TimeoutError, ValueError) as error:
-            raise RuntimeError("the on-call assistant did not accept the alert") from error
-        incident_id = body.get("incident", {}).get("id")
-        if not isinstance(incident_id, str) or not incident_id:
-            raise RuntimeError("the on-call assistant returned an invalid incident")
-        return incident_id
-
-
 class PaymentService:
-    def __init__(self, alert_gateway: AlertGateway | None = None) -> None:
-        self.alert_gateway = alert_gateway or AlertGateway()
+    def __init__(self, observer: CheckoutObserver | None = None) -> None:
+        self.observer = observer or CheckoutObserver()
 
     def pay(self, payment: PaymentRequest) -> dict[str, Any]:
         products = [PRODUCTS.get(product_id) for product_id in payment.product_ids]
@@ -71,24 +48,14 @@ class PaymentService:
             return {"status": "approved", "order_id": f"order-{payment.attempt_id}", "total_cents": total_cents}
         if payment.card_number != "4111111111110002":
             raise ValueError("use one of the displayed synthetic card numbers")
-        incident_id = self.alert_gateway.create_incident({
-            "source_event_id": f"demo-payment-{payment.attempt_id}",
-            "source": "demo-storefront",
-            "service": "checkout-api",
-            "severity": "critical",
-            "alert_type": "payment_authorization_failed",
-            "labels": {
-                "scenario": "third_party_outage",
-                "failure_category": "authorization_unavailable",
-                "product_ids": ",".join(payment.product_ids),
-                "order_total_cents": str(total_cents),
-            },
-            "description": "Checkout payment authorization is unavailable for a synthetic order.",
-            "lifecycle": "firing",
-            "source_time": datetime.now(timezone.utc).isoformat(),
-            "correlation_key": f"checkout-authorization-provider-{payment.attempt_id}",
-        })
-        return {"status": "declined", "incident_id": incident_id, "total_cents": total_cents}
+        incident_id = self.observer.record_authorization_unavailable(payment.attempt_id, payment.product_ids, total_cents)
+        return {
+            "status": "declined",
+            "payment_reference": f"payment-{payment.attempt_id}",
+            "incident_id": incident_id,
+            "observation_status": "delivered" if incident_id else "unavailable",
+            "total_cents": total_cents,
+        }
 
 
 app = FastAPI(title="Northstar Supply Demo Store")
@@ -111,5 +78,3 @@ def create_payment(payment: PaymentRequest) -> dict[str, Any]:
         return payment_service.pay(payment)
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
-    except RuntimeError as error:
-        raise HTTPException(status_code=502, detail=str(error)) from error

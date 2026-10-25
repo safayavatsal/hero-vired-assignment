@@ -27,6 +27,23 @@ class EvidenceProvider(Protocol):
 
     def query_evidence(self, source_type: str) -> dict[str, Any]: ...
 
+    def finding_rules(self, scenario_id: str | None) -> list[dict[str, Any]]: ...
+
+
+# Generic rules cover metric patterns that can appear in any scenario's evidence,
+# so a newly registered scenario works even when it reuses a known metric shape.
+GENERIC_FINDING_RULES = (
+    {
+        "metric": "queue_depth",
+        "category": "queue_pressure",
+        "statement": "Queue depth is above threshold and worker capacity should be increased.",
+        "confidence": 0.86,
+        "suggested_next_step": "scale",
+        "evidence_sources": ["metrics", "logs"],
+        "uncertainty": None,
+    },
+)
+
 
 class InvestigationService:
     PROMPT_VERSION = "investigation-v1"
@@ -86,7 +103,7 @@ class InvestigationService:
         cached = self._results.get(cache_key)
         if cached is not None:
             return cached
-        findings = self._findings(evidence)
+        findings = self._findings(evidence, self.evidence_provider.finding_rules(scenario_id))
         result = {
             "incident_id": str(incident_id),
             "scenario_id": scenario_id,
@@ -300,84 +317,50 @@ class InvestigationService:
             error=error,
         )
 
-    def _findings(self, evidence: list[Evidence]) -> list[Finding]:
+    def _findings(self, evidence: list[Evidence], rules: list[dict[str, Any]] | None = None) -> list[Finding]:
         by_source = {item.source_type: item for item in evidence}
         metrics = by_source["metrics"].items
-        deploys = by_source["deploys"].items
-        logs = by_source["logs"].items
-        health = by_source["service_health"].items
-        findings: list[Finding] = []
         unavailable = [item.source_type for item in evidence if item.availability == "unavailable"]
         degraded = [item.source_type for item in evidence if item.availability != "available"]
         contradictions = self._contradictions(metrics)
 
-        metric = metrics[0] if metrics else {}
-        if metric.get("name") == "p99_latency_ms" and metric.get("value", 0) > metric.get("threshold", 0):
-            evidence_ids = [by_source["metrics"].id, by_source["logs"].id, by_source["deploys"].id]
-            findings.append(Finding(
-                id="latency-regression",
-                category="deployment_regression",
-                statement="Latency is above threshold and the latest deployment differs from the previous version.",
-                confidence=0.92,
-                suggested_next_step="rollback",
+        for rule in list(rules or []) + list(GENERIC_FINDING_RULES):
+            metric = next((item for item in metrics if item.get("name") == rule["metric"]), None)
+            if metric is None:
+                continue
+            if metric.get("value", 0) <= metric.get("threshold", 0):
+                continue
+            evidence_ids = []
+            for source in rule.get("evidence_sources", []):
+                if source in by_source:
+                    evidence_ids.append(by_source[source].id)
+            return [Finding(
+                id=rule["category"],
+                category=rule["category"],
+                statement=rule["statement"],
+                confidence=rule["confidence"],
+                suggested_next_step=rule["suggested_next_step"],
                 evidence_ids=evidence_ids,
                 uncertainty=self._uncertainty(
-                    "The evidence supports a deployment regression but does not prove causation.",
+                    rule.get("uncertainty"),
                     degraded,
                     contradictions,
                 ),
-            ))
-        elif metric.get("name") == "disk_usage_percent" and metric.get("value", 0) > metric.get("threshold", 0):
-            findings.append(Finding(
-                id="disk-pressure",
-                category="disk_pressure",
-                statement="Disk usage is above threshold and cleanup activity is degraded.",
-                confidence=0.94,
-                suggested_next_step="clear_disk",
-                evidence_ids=[by_source["metrics"].id, by_source["logs"].id],
-                uncertainty=self._uncertainty(None, degraded, contradictions),
-            ))
-        elif metric.get("name") == "queue_depth" and metric.get("value", 0) > metric.get("threshold", 0):
-            findings.append(Finding(
-                id="queue-depth",
-                category="queue_pressure",
-                statement="Queue depth is above threshold and worker capacity should be increased.",
-                confidence=0.86,
-                suggested_next_step="scale",
-                evidence_ids=[by_source["metrics"].id, by_source["logs"].id],
-                uncertainty=self._uncertainty(None, degraded, contradictions),
-            ))
-        elif metric.get("name") == "provider_error_rate" and metric.get("value", 0) > metric.get("threshold", 0):
-            findings.append(Finding(
-                id="dependency-outage",
-                category="third_party_outage",
-                statement="The dependency error rate is above threshold while the local service remains healthy.",
-                confidence=0.97,
-                suggested_next_step="unfixable",
-                evidence_ids=[by_source["metrics"].id, by_source["logs"].id, by_source["service_health"].id],
-                uncertainty=self._uncertainty(
-                    "The external dependency must recover; local remediation is not proposed.",
-                    degraded,
-                    contradictions,
-                ),
-            ))
-        else:
-            findings.append(Finding(
-                id="insufficient-evidence",
-                category="unknown",
-                statement="The collected evidence does not support a specific root cause.",
-                confidence=0.2,
-                suggested_next_step="investigate",
-                evidence_ids=[item.id for item in evidence],
-                uncertainty=self._uncertainty(
-                    "One or more evidence patterns did not match a known analyzer.",
-                    unavailable or degraded,
-                    contradictions,
-                ),
-            ))
-        return findings
+            )]
+        return [Finding(
+            id="insufficient-evidence",
+            category="unknown",
+            statement="The collected evidence does not support a specific root cause.",
+            confidence=0.2,
+            suggested_next_step="investigate",
+            evidence_ids=[item.id for item in evidence],
+            uncertainty=self._uncertainty(
+                "One or more evidence patterns did not match a known analyzer.",
+                unavailable or degraded,
+                contradictions,
+            ),
+        )]
 
-    @staticmethod
     @staticmethod
     def _contradictions(metrics: list[dict[str, Any]]) -> list[str]:
         values: dict[str, set[Any]] = {}

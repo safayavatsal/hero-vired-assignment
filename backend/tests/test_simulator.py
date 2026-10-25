@@ -131,3 +131,73 @@ def test_action_validation_rejects_actions_not_allowed_by_scenario() -> None:
 
     with pytest.raises(ValueError, match="not allowed"):
         service.validate_action("third_party_outage", "rollback", "checkout-api", {})
+
+
+def test_registered_scenario_survives_restart_and_hides_root_cause(tmp_path: Path) -> None:
+    state_path = str(tmp_path / "simulator.json")
+    definition = {
+        "name": "Cache stampede",
+        "service": "catalog-api",
+        "severity": "high",
+        "alert_type": "cache_miss_rate_high",
+        "hidden_cause": "cache expiry aligned with a traffic spike",
+        "evidence": {
+            "logs": [{"message": "cache miss storm on catalog lookups", "level": "error"}],
+            "metrics": [{"name": "cache_miss_rate", "value": 82, "threshold": 20, "window": "5m"}],
+            "deploys": [],
+            "service_health": [{"service": "catalog-api", "healthy": True}],
+        },
+        "allowed_actions": ["restart"],
+        "initial_state": {"cache_miss_rate": 82},
+        "finding": {
+            "metric": "cache_miss_rate",
+            "category": "cache_stampede",
+            "statement": "Cache misses spiked above threshold across the catalog service.",
+            "confidence": 0.88,
+            "suggested_next_step": "restart",
+            "evidence_sources": ["metrics", "logs"],
+        },
+    }
+    first = SimulatorService(state_path)
+    first.register_scenario("cache_stampede", definition)
+
+    restarted = SimulatorService(state_path)
+    public = {scenario["id"]: scenario for scenario in restarted.list_scenarios()}["cache_stampede"]
+
+    assert public["service"] == "catalog-api"
+    assert public["finding"]["suggested_next_step"] == "restart"
+    assert "hidden_cause" not in public
+    assert restarted.select_scenario("cache_stampede")["scenario"]["service"] == "catalog-api"
+
+
+def test_register_scenario_rejects_incomplete_definitions() -> None:
+    service = SimulatorService()
+
+    with pytest.raises(ValueError, match="requires"):
+        service.register_scenario("broken", {"name": "Broken scenario"})
+
+    with pytest.raises(ValueError, match="cannot be replaced"):
+        service.register_scenario("disk_pressure", {"name": "Duplicate"})
+
+
+def test_scenario_endpoint_registers_and_selects(monkeypatch) -> None:
+    registered = {}
+
+    class FakeSimulator:
+        def register_scenario(self, scenario_id, definition):
+            registered[scenario_id] = definition
+            return {"id": scenario_id}
+
+        def select_scenario(self, scenario_id):
+            return {"scenario": {"id": scenario_id}}
+
+    monkeypatch.setattr(simulator_api, "simulator_service", FakeSimulator())
+
+    response = client.post(
+        "/api/v1/simulator/scenarios",
+        json={"scenario_id": "cache_stampede", "definition": {"name": "Cache stampede"}},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["scenario"]["id"] == "cache_stampede"
+    assert registered == {"cache_stampede": {"name": "Cache stampede"}}

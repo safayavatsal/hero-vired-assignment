@@ -1,4 +1,5 @@
 import time
+import pytest
 from uuid import uuid4
 
 from app.application.investigation import InvestigationService
@@ -9,6 +10,7 @@ from app.application.model_gateway import (
     _openai_request,
     _openai_response,
     mask_sensitive,
+    validate_model_response,
 )
 
 
@@ -187,6 +189,18 @@ def test_invalid_model_citations_are_rejected() -> None:
     assert result["model_status"] == "failed"
 
 
+def test_model_response_validation_rejects_malformed_structured_output() -> None:
+    with pytest.raises(ValueError, match="non-empty string"):
+        validate_model_response({
+            "current_condition": "",
+            "likely_cause": "release",
+            "confidence": 0.9,
+            "suggested_next_step": "rollback",
+            "evidence_ids": [],
+            "uncertainty": None,
+        }, set())
+
+
 def test_sensitive_values_are_masked_before_model_use() -> None:
     masked = mask_sensitive({"token": "secret-value", "message": "Bearer abc123"})
 
@@ -327,3 +341,44 @@ def test_investigation_rejects_cross_service_scenario() -> None:
         assert str(error) == "selected scenario does not match the incident service"
     else:
         raise AssertionError("cross-service investigation was accepted")
+
+
+def test_registered_scenario_investigates_without_code_changes() -> None:
+    simulator = SimulatorService()
+    simulator.register_scenario("queue_backlog", {
+        "name": "Queue backlog",
+        "service": "notification-worker",
+        "severity": "high",
+        "alert_type": "queue_depth_high",
+        "hidden_cause": "downstream consumer crashed and retries accumulated",
+        "evidence": {
+            "logs": [{"timestamp": "2026-10-25T09:00:00Z", "message": "consumer group lag rising", "level": "warn"}],
+            "metrics": [{"name": "queue_depth", "value": 1200, "threshold": 200, "window": "5m"}],
+            "deploys": [],
+            "service_health": [{"service": "notification-worker", "healthy": True}],
+        },
+        "allowed_actions": ["restart", "scale"],
+        "controls": {"evidence_slow": [], "action_timeout_after_completion": [], "responder_non_response": False, "third_party_outage": False},
+        "initial_state": {"queue_depth": 1200, "healthy": True},
+        "finding": {
+            "metric": "queue_depth",
+            "category": "queue_backlog",
+            "statement": "The notification queue depth is far above its threshold after a consumer crash.",
+            "confidence": 0.9,
+            "suggested_next_step": "restart",
+            "evidence_sources": ["metrics", "logs"],
+            "uncertainty": None,
+        },
+    })
+
+    incident_service = ExistingIncident(service="notification-worker")
+    service = InvestigationService(incident_service, simulator, MemoryInvestigationRepository())
+
+    result = service.investigate(uuid4(), "queue_backlog")
+
+    finding = result["findings"][0]
+    assert finding["category"] == "queue_backlog"
+    assert finding["suggested_next_step"] == "restart"
+    assert finding["confidence"] == 0.9
+    evidence_ids = {item["id"] for item in result["evidence"]}
+    assert set(finding["evidence_ids"]).issubset(evidence_ids)

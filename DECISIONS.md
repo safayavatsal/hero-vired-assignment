@@ -1,5 +1,20 @@
 # Decisions
 
+## Executive summary
+
+| Decision area | Choice | Why | Trade-off |
+| --- | --- | --- | --- |
+| API and UI | FastAPI backend, React + TypeScript frontend | Matches the assignment and keeps the operator workflow easy to inspect | Two application runtimes must be packaged together |
+| Persistence | PostgreSQL owns incidents, evidence, pages, actions, jobs, and timeline events | Restart-safe state and transactional human decisions | Requires migrations and a running database |
+| Background work | Small PostgreSQL-backed worker with leases, retries, and idempotency | Durable investigations and actions without introducing a workflow platform | Queue throughput is limited until a broker is added |
+| Investigation | Bounded evidence tools plus deterministic findings, with optional structured model enrichment | The product remains useful when the provider is slow, unavailable, or wrong | The baseline supports a small scenario set rather than open-ended diagnosis |
+| Remediation | Typed allowlisted actions require explicit human approval and post-action verification | Prevents model text from becoming executable infrastructure commands | No autonomous remediation in the baseline |
+| Demo boundary | Local simulator, synthetic commerce app, captured inbox, and Compose | Reproduces production-like behavior without external accounts | It is not a production multi-tenant deployment |
+
+Known weaknesses are the intentionally local provider boundary, synthetic infrastructure, limited resource families, no authentication or multi-tenancy, and a polling UI rather than streamed progress. These are visible in the runbook and are not disguised as production proof.
+
+For one million users, the next architecture step is to separate stateless API and worker pools, move jobs to a managed queue, partition PostgreSQL by tenant and incident time, add read replicas and a search/index layer for evidence, store large raw payloads outside the relational database, enforce tenant-scoped authorization, and apply per-tenant/model budgets with queue-level backpressure. The current boundaries make those changes additive rather than requiring a rewrite.
+
 This file is the index of the detailed decision records in [`_decision_docs/`](_decision_docs/).
 
 | Decision | Brief |
@@ -23,3 +38,6 @@ This file is the index of the detailed decision records in [`_decision_docs/`](_
 | [017 — Assignment Flow Parity Closure](_decision_docs/017-assignment-flow-parity-closure.md) | Defines explicit resolved/unfixable outcomes, usable human follow-up, and the evidence required for assignment-flow closure. |
 | [018 — Simulator Alert Intake](_decision_docs/018-simulator-alert-intake.md) | Routes simulator deliveries through canonical alert intake and preserves lifecycle ordering. |
 | [019 — Demo Commerce Integration](_decision_docs/019-demo-commerce-integration.md) | Drives the real incident workflow from a synthetic storefront payment failure and local captured email. |
+| [020 — Embedded Observer Integration](_decision_docs/020-embedded-observer-integration.md) | Separates customer checkout from bounded operational event reporting. |
+| [021 — Scenario Extensibility](_decision_docs/021-scenario-extensibility.md) | Makes new incident scenarios data-only through finding rules, runtime registration, and a UI that follows the scenario listing. |
+| [022 — Submission And On-Site Readiness](_decision_docs/022-submission-readiness.md) | Maps the required demo, live-change, and discussion evidence and closes structured-output validation. |

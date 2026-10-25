@@ -18,6 +18,7 @@ class ScenarioDefinition:
     allowed_actions: tuple[str, ...]
     controls: dict[str, Any]
     initial_state: dict[str, Any]
+    finding: dict[str, Any] | None = None
 
 
 @dataclass
@@ -27,6 +28,7 @@ class SimulatorState:
     actions: list[dict[str, Any]] = field(default_factory=list)
     service_state: dict[str, Any] = field(default_factory=dict)
     failure_controls: dict[str, Any] = field(default_factory=dict)
+    custom_scenarios: dict[str, dict[str, Any]] = field(default_factory=dict)
 
 
 def scenario_definitions() -> dict[str, ScenarioDefinition]:
@@ -52,6 +54,15 @@ def scenario_definitions() -> dict[str, ScenarioDefinition]:
                 "third_party_outage": False,
             },
             initial_state={"version": "2026.10.22", "healthy": False, "p99_latency_ms": 3210},
+            finding={
+                "metric": "p99_latency_ms",
+                "category": "deployment_regression",
+                "statement": "Latency is above threshold and the latest deployment differs from the previous version.",
+                "confidence": 0.92,
+                "suggested_next_step": "rollback",
+                "evidence_sources": ["metrics", "logs", "deploys"],
+                "uncertainty": "The evidence supports a deployment regression but does not prove causation.",
+            },
         ),
         "disk_pressure": ScenarioDefinition(
             id="disk_pressure",
@@ -74,6 +85,15 @@ def scenario_definitions() -> dict[str, ScenarioDefinition]:
                 "third_party_outage": False,
             },
             initial_state={"disk_usage_percent": 96, "replicas": 1, "healthy": True},
+            finding={
+                "metric": "disk_usage_percent",
+                "category": "disk_pressure",
+                "statement": "Disk usage is above threshold and cleanup activity is degraded.",
+                "confidence": 0.94,
+                "suggested_next_step": "clear_disk",
+                "evidence_sources": ["metrics", "logs"],
+                "uncertainty": None,
+            },
         ),
         "third_party_outage": ScenarioDefinition(
             id="third_party_outage",
@@ -96,18 +116,91 @@ def scenario_definitions() -> dict[str, ScenarioDefinition]:
                 "third_party_outage": True,
             },
             initial_state={"provider_available": False, "healthy": True},
+            finding={
+                "metric": "provider_error_rate",
+                "category": "third_party_outage",
+                "statement": "The dependency error rate is above threshold while the local service remains healthy.",
+                "confidence": 0.97,
+                "suggested_next_step": "unfixable",
+                "evidence_sources": ["metrics", "logs", "service_health"],
+                "uncertainty": "The external dependency must recover; local remediation is not proposed.",
+            },
         ),
     }
 
 
 class SimulatorService:
+    REQUIRED_DEFINITION_FIELDS = ("name", "service", "severity", "alert_type", "evidence", "finding")
+
     def __init__(self, state_path: str | None = None) -> None:
         self._definitions = scenario_definitions()
         self._state_path = state_path or os.getenv("SIMULATOR_STATE_PATH")
         self._state = self._load()
+        for scenario_id, payload in self._state.custom_scenarios.items():
+            try:
+                self._definitions[scenario_id] = self._definition_from_payload(scenario_id, payload)
+            except (KeyError, TypeError, ValueError):
+                continue
 
     def list_scenarios(self) -> list[dict[str, Any]]:
         return [self._public_definition(definition) for definition in self._definitions.values()]
+
+    def register_scenario(self, scenario_id: str, definition: dict[str, Any]) -> dict[str, Any]:
+        if scenario_id in {"deployment_regression", "disk_pressure", "third_party_outage"}:
+            raise ValueError("a built-in scenario cannot be replaced")
+        parsed = self._definition_from_payload(scenario_id, definition)
+        self._definitions[scenario_id] = parsed
+        self._state.custom_scenarios[scenario_id] = definition
+        self._save()
+        return self._public_definition(parsed)
+
+    def finding_rules(self, scenario_id: str | None) -> list[dict[str, Any]]:
+        if not scenario_id or scenario_id not in self._definitions:
+            return []
+        finding = self._definitions[scenario_id].finding
+        return [finding] if finding else []
+
+    @classmethod
+    def _definition_from_payload(cls, scenario_id: str, payload: dict[str, Any]) -> ScenarioDefinition:
+        for field in cls.REQUIRED_DEFINITION_FIELDS:
+            if not payload.get(field):
+                raise ValueError(f"scenario definition requires {field}")
+        evidence = payload["evidence"]
+        if not isinstance(evidence, dict) or not evidence:
+            raise ValueError("scenario evidence must be a non-empty object")
+        finding = payload["finding"]
+        for field in ("metric", "category", "statement", "suggested_next_step"):
+            if not isinstance(finding.get(field), str) or not finding[field]:
+                raise ValueError(f"scenario finding requires {field}")
+        if not isinstance(finding.get("confidence"), (int, float)) or not 0 <= finding["confidence"] <= 1:
+            raise ValueError("scenario finding confidence must be between 0 and 1")
+        controls = payload.get("controls", {})
+        return ScenarioDefinition(
+            id=scenario_id,
+            name=str(payload["name"]),
+            service=str(payload["service"]),
+            severity=str(payload["severity"]),
+            alert_type=str(payload["alert_type"]),
+            hidden_cause=str(payload.get("hidden_cause", "")),
+            evidence={str(key): list(value) for key, value in evidence.items()},
+            allowed_actions=tuple(payload.get("allowed_actions", ())),
+            controls={
+                "evidence_slow": list(controls.get("evidence_slow", [])),
+                "action_timeout_after_completion": list(controls.get("action_timeout_after_completion", [])),
+                "responder_non_response": bool(controls.get("responder_non_response", False)),
+                "third_party_outage": bool(controls.get("third_party_outage", False)),
+            },
+            initial_state=dict(payload.get("initial_state", {})),
+            finding={
+                "metric": finding["metric"],
+                "category": finding["category"],
+                "statement": finding["statement"],
+                "confidence": float(finding["confidence"]),
+                "suggested_next_step": finding["suggested_next_step"],
+                "evidence_sources": list(finding.get("evidence_sources", ["metrics", "logs"])),
+                "uncertainty": finding.get("uncertainty"),
+            },
+        )
 
     def select_scenario(self, scenario_id: str) -> dict[str, Any]:
         definition = self._definition(scenario_id)
@@ -115,6 +208,7 @@ class SimulatorService:
             scenario_id=scenario_id,
             service_state=dict(definition.initial_state),
             failure_controls=self._controls(definition),
+            custom_scenarios=dict(self._state.custom_scenarios),
         )
         self._save()
         return self.state()
@@ -126,6 +220,7 @@ class SimulatorService:
             scenario_id=scenario_id,
             service_state=dict(definition.initial_state) if definition else {},
             failure_controls=self._controls(definition) if definition else {},
+            custom_scenarios=dict(self._state.custom_scenarios),
         )
         self._save()
         return self.state()
@@ -303,6 +398,7 @@ class SimulatorService:
                 actions=payload.get("actions", []),
                 service_state=payload.get("service_state", {}),
                 failure_controls=payload.get("failure_controls", {}),
+                custom_scenarios=payload.get("custom_scenarios", {}),
             )
         except (FileNotFoundError, json.JSONDecodeError, OSError):
             return SimulatorState()
@@ -336,7 +432,7 @@ class SimulatorService:
     def _public_definition(definition: ScenarioDefinition | None) -> dict[str, Any] | None:
         if definition is None:
             return None
-        return {
+        public = {
             "id": definition.id,
             "name": definition.name,
             "service": definition.service,
@@ -345,3 +441,10 @@ class SimulatorService:
             "allowed_actions": definition.allowed_actions,
             "controls": definition.controls,
         }
+        if definition.finding:
+            public["finding"] = {
+                "metric": definition.finding["metric"],
+                "category": definition.finding["category"],
+                "suggested_next_step": definition.finding["suggested_next_step"],
+            }
+        return public

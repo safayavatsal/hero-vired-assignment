@@ -2,6 +2,10 @@ export function activePage(pages) {
   return pages[pages.length - 1];
 }
 
+export function scenarioForService(scenarios, service) {
+  return scenarios.find((scenario) => scenario.service === service)?.id;
+}
+
 export function activeAction(actions, match) {
   const eligible = match
     ? actions.filter((action) => action.scenario_id === match.scenarioId && action.target === match.target)
