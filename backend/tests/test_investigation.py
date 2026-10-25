@@ -96,6 +96,8 @@ def test_investigation_findings_cite_collected_evidence(monkeypatch) -> None:
         "simulator.evidence.logs", "simulator.evidence.metrics",
         "simulator.evidence.deploys", "simulator.evidence.service_health",
     ]
+    assert all(item["enabled"] and item["purpose"] for item in result["tool_trace"])
+    assert len(result["tool_catalog"]) == 4
     assert result["model_telemetry"]["status"] == "unavailable"
 
 

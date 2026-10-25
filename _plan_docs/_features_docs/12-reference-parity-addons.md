@@ -23,4 +23,6 @@ Close the six capability differences identified by the function-level comparison
 
 ## Implementation status
 
-Analysis complete; implementation not started. The current assignment implementation remains the accepted baseline until the project owner approves one of these add-ons.
+The first approved add-on is implemented: scenario definitions now expose a bounded, data-owned investigation runbook, and the console renders its progress from the existing investigation lifecycle. The second approved add-on is also implemented: the bounded evidence layer exposes an explicit tool catalog, persists purpose/enabled metadata in investigation traces, and shows that purpose in the console. The third approved add-on is implemented: a separate read-only resource analyzer surface exposes six named analyzers, explicit filters, normalized findings, and a discoverable API without changing the existing incident workflow.
+
+Verification: Docker images built successfully, the backend suite returned 70 passing tests after the analyzer addition, the focused analyzer suite returned 8 passing tests, the frontend suite returned 6 passing tests, the production frontend build passed, the live Docker analyzer API returned all six analyzers and a normalized Pending-Pod finding, and browser verification confirmed the dedicated Kubernetes health tab and sample scan while the existing incident workflow remained intact.

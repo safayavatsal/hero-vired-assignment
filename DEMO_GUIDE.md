@@ -16,6 +16,12 @@ The API endpoints are available at `http://localhost:8001/api/v1/health` and `ht
 6. In a separate operator-console tab, locate any resulting incident and start the matching investigation.
 7. Select `Page service owner`, then open `http://localhost:8002` to show the captured email with the incident, finding, and next step.
 
+The incident console shows an investigation checklist for the selected scenario. Before starting, the four checks are pending; after `Start investigation`, they become active while the worker runs and complete when the finding is ready. This gives the presenter a visible explanation of what the system is checking.
+
+For a resource-health demo, open the `Kubernetes health` tab and click `Run sample scan`. It shows a Pending pod, an unhealthy deployment, problem counts, read-only analyzer coverage, and suggested inspection steps. The API remains available through `GET /api/v1/kubernetes/analyzers` and `POST /api/v1/kubernetes/analyze` for custom snapshots and filters; no resource is changed.
+
+Expand `Evidence used` and then `View tool trace` to show each bounded query's purpose, stable query name, availability, and duration. API clients can discover the same read-only catalog at `GET /api/v1/investigation-tools`.
+
 The checkout form talks to the separate demo-store backend on port `8004`. Its embedded observer emits bounded operational metadata only after the simulated provider becomes unavailable. Cardholder, card number, expiry, and security code are validated there but never persisted or copied into the event payload. Use `Use approved card` to demonstrate the non-incident path.
 
 Before presenting, run the repeatable API-level proof:
@@ -63,6 +69,20 @@ The browser-only Kubernetes recordings are stored locally in `demo-output/`:
 
 - `kubernetes-demo-workflow.mov` shows the incident console and live investigation feedback.
 - `kubernetes-demo.mov` shows the completed guided workflow state.
+
+## Helm browser verification
+
+The Helm chart is an additive local deployment option:
+
+```bash
+docker compose build api worker frontend store-backend store-frontend
+helm upgrade --install hero-vired ./k8s/helm/hero-vired --namespace hero-vired --create-namespace
+kubectl -n hero-vired rollout status deployment/api --timeout=120s
+helm test hero-vired --namespace hero-vired
+kubectl -n hero-vired port-forward service/frontend 8000:8080
+```
+
+Open `http://localhost:8000`, run one guided incident workflow, and use the store and notification port-forwards from the Helm notes for the commerce path. The chart uses the same local images and service contracts as the raw manifest.
 
 The workflow strip is sequential: investigation comes first, responder work unlocks after a finding, and action controls unlock after acknowledgement. `Verified` appears only after service-state verification succeeds.
 

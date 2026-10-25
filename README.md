@@ -15,6 +15,10 @@ The product accepts normalized alerts, groups repeat deliveries, collects bounde
 - PostgreSQL-backed incidents, alerts, evidence, findings, pages, actions, jobs, attempts, and timeline events.
 - Worker-backed investigation and action execution with retry, lease, timeout, and recovery handling.
 - Human paging, acknowledgement, free-form reply, fallback escalation, approval, rejection, execution, and verification.
+- Scenario-owned investigation checklists that show the bounded checks before, during, and after a worker-backed investigation.
+- Read-only evidence-tool catalog with named purposes, availability, timing, and persisted trace metadata.
+- Read-only resource analyzer API with six named analyzers for Pods, Deployments, Services, Events, Nodes, and PersistentVolumeClaims, plus namespace, kind, name, label, and analyzer filters.
+- Incident console with separate `Incidents` and `Kubernetes health` tabs; the health view has a runnable sample snapshot, finding cards, problem counts, and an explicit no-cluster-changes boundary.
 - React incident console with stable selection, investigation controls, evidence review, action state, and timeline context.
 - Browser-based demo store with catalog, cart, synthetic checkout, customer-facing slow-checkout and delayed-fulfillment journeys, a controlled payment failure, an embedded observer, and a captured responder inbox.
 - Local HTTP boundary tests for model, notification, ownership, and action reconciliation integrations.
@@ -49,6 +53,19 @@ docker compose up --build
 - Responder inbox: `http://localhost:8002`
 
 The API applies migrations before serving traffic. Credentials remain in the ignored `.env` file.
+
+The resource analyzer surface is available without authentication for local snapshots:
+
+```bash
+curl http://localhost:8001/api/v1/kubernetes/analyzers
+curl -X POST http://localhost:8001/api/v1/kubernetes/analyze \
+  -H 'content-type: application/json' \
+  -d '{"namespace":"shop","resources":[{"kind":"Pod","metadata":{"name":"checkout","namespace":"shop"},"status":{"phase":"Pending"}}]}'
+```
+
+It is read-only: findings recommend the next inspection step but do not change a resource.
+
+The console also exposes this locally at the bottom of the incident view. Click `Run sample scan` to demonstrate a Pending pod and unhealthy deployment snapshot without needing a live cluster.
 
 ## Verify locally
 
@@ -154,6 +171,20 @@ kubectl -n hero-vired port-forward service/store-frontend 8003:8080
 kubectl -n hero-vired port-forward service/store-backend 8004:8000
 kubectl -n hero-vired port-forward service/mailpit 8002:8025
 ```
+
+### Helm extension
+
+The same local runtime is also packaged as an additive Helm chart. Build the local images, install the chart, and inspect the rollout:
+
+```bash
+docker compose build api worker frontend store-backend store-frontend
+helm upgrade --install hero-vired ./k8s/helm/hero-vired \
+  --namespace hero-vired --create-namespace
+kubectl -n hero-vired get pods
+helm test hero-vired --namespace hero-vired
+```
+
+Use the port-forward commands printed by Helm, or run the same forwards above. The chart defaults to local images and persistence; override `values.yaml` for credentials or registry-backed images. This is a local Kubernetes extension, not a hosted deployment path.
 
 ## Start with the design
 

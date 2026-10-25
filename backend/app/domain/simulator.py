@@ -18,6 +18,7 @@ class ScenarioDefinition:
     allowed_actions: tuple[str, ...]
     controls: dict[str, Any]
     initial_state: dict[str, Any]
+    runbook: tuple[dict[str, str], ...] = ()
     finding: dict[str, Any] | None = None
 
 
@@ -54,6 +55,12 @@ def scenario_definitions() -> dict[str, ScenarioDefinition]:
                 "third_party_outage": False,
             },
             initial_state={"version": "2026.10.22", "healthy": False, "p99_latency_ms": 3210},
+            runbook=(
+                {"id": "latency", "title": "Check payment latency", "purpose": "Confirm the route is above its p99 threshold."},
+                {"id": "release", "title": "Compare the latest release", "purpose": "Check whether the active version changed before the regression."},
+                {"id": "health", "title": "Check service health", "purpose": "Separate a local service failure from a dependency failure."},
+                {"id": "rollback", "title": "Review rollback safety", "purpose": "Prepare a reversible action for human approval."},
+            ),
             finding={
                 "metric": "p99_latency_ms",
                 "category": "deployment_regression",
@@ -85,6 +92,12 @@ def scenario_definitions() -> dict[str, ScenarioDefinition]:
                 "third_party_outage": False,
             },
             initial_state={"disk_usage_percent": 96, "replicas": 1, "healthy": True},
+            runbook=(
+                {"id": "disk", "title": "Check disk pressure", "purpose": "Confirm storage is above the safe threshold."},
+                {"id": "cleanup", "title": "Inspect cleanup logs", "purpose": "Find whether artifact cleanup degraded."},
+                {"id": "worker", "title": "Check worker health", "purpose": "Confirm the worker is still serving the queue."},
+                {"id": "clear", "title": "Review disk-clear safety", "purpose": "Prepare a bounded action for human approval."},
+            ),
             finding={
                 "metric": "disk_usage_percent",
                 "category": "disk_pressure",
@@ -116,6 +129,12 @@ def scenario_definitions() -> dict[str, ScenarioDefinition]:
                 "third_party_outage": True,
             },
             initial_state={"provider_available": False, "healthy": True},
+            runbook=(
+                {"id": "provider", "title": "Check provider error rate", "purpose": "Confirm the dependency is above its error threshold."},
+                {"id": "upstream", "title": "Inspect upstream errors", "purpose": "Look for provider failures in checkout requests."},
+                {"id": "local-health", "title": "Check local service health", "purpose": "Confirm the checkout service itself remains healthy."},
+                {"id": "escalate", "title": "Prepare external escalation", "purpose": "Keep the issue visible when no safe local action exists."},
+            ),
             finding={
                 "metric": "provider_error_rate",
                 "category": "third_party_outage",
@@ -175,6 +194,13 @@ class SimulatorService:
         if not isinstance(finding.get("confidence"), (int, float)) or not 0 <= finding["confidence"] <= 1:
             raise ValueError("scenario finding confidence must be between 0 and 1")
         controls = payload.get("controls", {})
+        runbook = payload.get("runbook", [])
+        if not isinstance(runbook, list) or any(
+            not isinstance(step, dict)
+            or not all(isinstance(step.get(field), str) and step[field].strip() for field in ("id", "title", "purpose"))
+            for step in runbook
+        ):
+            raise ValueError("scenario runbook steps require id, title, and purpose")
         return ScenarioDefinition(
             id=scenario_id,
             name=str(payload["name"]),
@@ -191,6 +217,7 @@ class SimulatorService:
                 "third_party_outage": bool(controls.get("third_party_outage", False)),
             },
             initial_state=dict(payload.get("initial_state", {})),
+            runbook=tuple({"id": step["id"], "title": step["title"], "purpose": step["purpose"]} for step in runbook),
             finding={
                 "metric": finding["metric"],
                 "category": finding["category"],
@@ -465,6 +492,7 @@ class SimulatorService:
             "alert_type": definition.alert_type,
             "allowed_actions": definition.allowed_actions,
             "controls": definition.controls,
+            "runbook": list(definition.runbook),
         }
         if definition.finding:
             public["finding"] = {

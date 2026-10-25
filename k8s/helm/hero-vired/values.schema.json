@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/schema#",
+  "type": "object",
+  "required": ["images", "services", "database", "replicas", "resources"],
+  "properties": {
+    "imagePullPolicy": { "type": "string", "enum": ["Always", "IfNotPresent", "Never"] },
+    "database": {
+      "type": "object",
+      "required": ["name", "user", "persistence"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "user": { "type": "string", "minLength": 1 },
+        "password": { "type": "string" },
+        "persistence": {
+          "type": "object",
+          "required": ["enabled", "size"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "size": { "type": "string", "minLength": 1 },
+            "storageClass": { "type": "string" }
+          }
+        }
+      }
+    },
+    "networkPolicy": {
+      "type": "object",
+      "required": ["enabled"],
+      "properties": { "enabled": { "type": "boolean" } }
+    }
+  }
+}

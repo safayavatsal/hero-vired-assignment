@@ -18,6 +18,22 @@ def test_scenarios_hide_root_causes() -> None:
     assert all("hidden_cause" not in scenario for scenario in response.json())
 
 
+def test_scenarios_expose_bounded_runbooks_without_hidden_causes() -> None:
+    scenarios = client.get("/api/v1/simulator/scenarios").json()
+
+    assert all(len(scenario["runbook"]) == 4 for scenario in scenarios)
+    assert all(set(step) == {"id", "title", "purpose"} for scenario in scenarios for step in scenario["runbook"])
+
+
+def test_investigation_tool_catalog_exposes_enabled_purposes() -> None:
+    response = client.get("/api/v1/investigation-tools")
+
+    assert response.status_code == 200
+    tools = response.json()["tools"]
+    assert len(tools) == 4
+    assert all(tool["enabled"] and tool["purpose"] for tool in tools)
+
+
 def test_scenario_exposes_evidence_and_verifies_timeout() -> None:
     selected = client.post(
         "/api/v1/simulator/scenarios",

@@ -1,0 +1,124 @@
+# Local image pull behavior. OrbStack already has these images after a Compose build.
+imagePullPolicy: Never
+
+# Component images are overridable for a registry-backed environment later.
+images:
+  api:
+    repository: hero-vired-api
+    tag: latest
+  worker:
+    repository: hero-vired-worker
+    tag: latest
+  frontend:
+    repository: hero-vired-frontend
+    tag: latest
+  storeBackend:
+    repository: hero-vired-store-backend
+    tag: latest
+  storeFrontend:
+    repository: hero-vired-store-frontend
+    tag: latest
+  database:
+    repository: postgres
+    tag: 16-alpine
+  mailpit:
+    repository: axllent/mailpit
+    tag: v1.32.0
+
+# Stable service names preserve the URLs used by the existing application images.
+services:
+  api: api
+  db: db
+  frontend: frontend
+  mailpit: mailpit
+  storeBackend: store-backend
+  storeFrontend: store-frontend
+  config: hero-vired-config
+
+# Local database settings. Replace the password for any shared environment.
+database:
+  name: hero_vired
+  user: postgres
+  # Leave empty for local trust authentication; provide a secret for shared clusters.
+  password: ""
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: ""
+
+# Optional model configuration. The token is intentionally empty by default.
+modelGateway:
+  url: ""
+  format: openai_responses
+  model: openai/gpt-oss-20b
+  timeoutSeconds: 5
+  token: ""
+
+# Local notification defaults use the bundled SMTP capture service.
+notification:
+  gatewayUrl: ""
+  gatewayToken: ""
+  emailFrom: assistant@demo.local
+  emailTo: primary-oncall@demo.local
+  emailDomain: demo.local
+
+# Replica counts keep the local footprint small while remaining overridable.
+replicas:
+  api: 1
+  worker: 1
+  frontend: 1
+  storeBackend: 1
+  storeFrontend: 1
+  database: 1
+  mailpit: 1
+
+# Resource defaults prevent unbounded local workloads.
+resources:
+  api:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 512Mi }
+  worker:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+  frontend:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { cpu: 250m, memory: 256Mi }
+  storeBackend:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { cpu: 250m, memory: 256Mi }
+  storeFrontend:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { cpu: 250m, memory: 256Mi }
+  database:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 512Mi }
+  mailpit:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { cpu: 250m, memory: 256Mi }
+
+# Backend pods run with a non-root identity and a writable temporary volume.
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+# Application containers drop Linux capabilities and keep their root filesystem read-only.
+backendContainerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+# Nginx needs its normal runtime paths writable in the bundled image.
+frontendContainerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop: [ALL]
+
+# NetworkPolicy is opt-in because local clusters vary in policy support.
+networkPolicy:
+  enabled: false
+
+# Extra non-secret configuration can be added without editing templates.
+extraConfig: {}

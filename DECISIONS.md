@@ -46,3 +46,7 @@ This file is the index of the detailed decision records in [`_decision_docs/`](_
 | [025 — Investigation Explainability Surface](_decision_docs/025-investigation-explainability-surface.md) | Shows the structured brief, tool provenance, model telemetry, and progressive evidence detail in the browser. |
 | [026 — Guided Investigation Workflow](_decision_docs/026-guided-investigation-workflow.md) | Presents scenario context automatically and explains ownership, approval, and verification in operator language. |
 | [027 — Sequential Operator Workflow](_decision_docs/027-sequential-operator-workflow.md) | Separates completed findings, deeper analysis, ownership acknowledgement, action explanation, and owner-specific notification. |
+| [028 — Investigation Runbook Catalog](_decision_docs/028-investigation-runbook-catalog.md) | Makes scenario-owned investigation checks visible before, during, and after a run. |
+| [029 — Evidence Tool Catalog](_decision_docs/029-evidence-tool-catalog.md) | Gives each bounded evidence query a stable name, purpose, enabled state, and traceable result. |
+| [030 — Read-only Resource Analyzers](_decision_docs/030-read-only-resource-analyzers.md) | Adds discoverable, filtered, read-only resource analysis beside the existing incident workflow. |
+| [031 — Helm Local Extension](_decision_docs/031-helm-local-extension.md) | Packages the existing local runtime as an additive Helm workflow while preserving Compose and the raw Kubernetes manifest. |

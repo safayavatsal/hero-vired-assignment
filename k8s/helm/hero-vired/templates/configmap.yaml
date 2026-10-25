@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.services.config }}
+  labels:
+    {{- include "hero-vired.labels" . | nindent 4 }}
+data:
+  MODEL_GATEWAY_FORMAT: {{ .Values.modelGateway.format | quote }}
+  MODEL_GATEWAY_MODEL: {{ .Values.modelGateway.model | quote }}
+  MODEL_GATEWAY_TIMEOUT_SECONDS: {{ .Values.modelGateway.timeoutSeconds | quote }}
+  SIMULATOR_STATE_PATH: /tmp/hero-vired-simulator-state.json
+  NOTIFICATION_SMTP_HOST: {{ .Values.services.mailpit | quote }}
+  NOTIFICATION_SMTP_PORT: "1025"
+  NOTIFICATION_EMAIL_FROM: {{ .Values.notification.emailFrom | quote }}
+  NOTIFICATION_EMAIL_TO: {{ .Values.notification.emailTo | quote }}
+  NOTIFICATION_EMAIL_DOMAIN: {{ .Values.notification.emailDomain | quote }}
+  INCIDENT_CONSOLE_URL: "http://localhost:8000/?incident={incident_id}"
+  RESPONSE_CHANNEL_URL: "http://localhost:8002"
+  ON_CALL_API_URL: "http://{{ .Values.services.api }}:8000"
+  {{- if .Values.modelGateway.url }}
+  MODEL_GATEWAY_URL: {{ .Values.modelGateway.url | quote }}
+  {{- end }}
+  {{- if .Values.notification.gatewayUrl }}
+  NOTIFICATION_GATEWAY_URL: {{ .Values.notification.gatewayUrl | quote }}
+  {{- end }}
+  {{- with .Values.extraConfig }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

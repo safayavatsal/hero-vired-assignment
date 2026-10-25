@@ -19,7 +19,7 @@ from app.application.model_gateway import (
     validate_model_response,
 )
 from app.application.resilience import env_float, env_int
-from app.application.evidence_tools import EVIDENCE_TOOLS, EvidenceTool
+from app.application.evidence_tools import EVIDENCE_TOOLS, EvidenceTool, evidence_tool_catalog
 
 
 class EvidenceProvider(Protocol):
@@ -111,6 +111,7 @@ class InvestigationService:
             "generated_at": datetime.now().astimezone().isoformat(),
             "evidence": [self._serialize_evidence(item) for item in evidence],
             "findings": [self._serialize_finding(item) for item in findings],
+            "tool_catalog": evidence_tool_catalog(),
             "tool_trace": self._tool_trace(tools, evidence),
             "model_status": "not_configured",
             "prompt_version": self.PROMPT_VERSION,
@@ -273,6 +274,8 @@ class InvestigationService:
             {
                 "tool": tool.name,
                 "source_type": item.source_type,
+                "purpose": tool.purpose,
+                "enabled": tool.enabled,
                 "parameters": item.parameters or {},
                 "status": item.availability,
                 "evidence_id": item.id,

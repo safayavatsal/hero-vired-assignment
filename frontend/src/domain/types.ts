@@ -1,5 +1,6 @@
 export type Incident = { id: string; service: string; severity: string; status: string; summary: string; alert_count: number; version: number; updated_at: string };
-export type ScenarioInfo = { id: string; name: string; service: string; severity: string; alert_type: string; allowed_actions: string[]; finding?: { metric: string; category: string; suggested_next_step: string } };
+export type RunbookStep = { id: string; title: string; purpose: string };
+export type ScenarioInfo = { id: string; name: string; service: string; severity: string; alert_type: string; allowed_actions: string[]; runbook?: RunbookStep[]; finding?: { metric: string; category: string; suggested_next_step: string } };
 export type TimelineEvent = { id: string; event_type: string; event_time: string; payload: Record<string, unknown> };
 export type IncidentDetail = Incident & { timeline: TimelineEvent[] };
 export type Page = { id: string; status: string; responder: string; level: string; response_type: string | null; incident_version: number };
@@ -8,5 +9,7 @@ export type ActionPreview = { sandboxed: boolean; scenario_id: string; action_ty
 export type Evidence = { id: string; source_type: string; availability: string; observed_at: string; query: string; parameters: Record<string, unknown>; duration_ms: number | null; error: string | null; items: unknown[] };
 export type Finding = { id: string; category: string; statement: string; confidence: number; suggested_next_step: string; evidence_ids: string[]; uncertainty: string | null };
 export type ModelAnalysis = { current_condition: string; likely_cause: string; confidence: number; suggested_next_step: string; evidence_ids: string[]; uncertainty: string | null };
-export type ToolTrace = { tool: string; source_type: string; parameters: Record<string, unknown>; status: string; evidence_id: string; duration_ms: number | null; error: string | null };
-export type Investigation = { status?: string; model_status: string; model_error?: string; model_analysis?: ModelAnalysis; model_telemetry?: { status: string; duration_ms: number; model?: string | null; response_format?: string | null }; tool_trace?: ToolTrace[]; findings: Finding[]; evidence: Evidence[] };
+export type ToolTrace = { tool: string; source_type: string; purpose?: string; enabled?: boolean; parameters: Record<string, unknown>; status: string; evidence_id: string; duration_ms: number | null; error: string | null };
+export type Investigation = { status?: string; model_status: string; model_error?: string; model_analysis?: ModelAnalysis; model_telemetry?: { status: string; duration_ms: number; model?: string | null; response_format?: string | null }; tool_catalog?: { source_type: string; name: string; purpose: string; enabled: boolean }[]; tool_trace?: ToolTrace[]; findings: Finding[]; evidence: Evidence[] };
+export type ResourceFinding = { id: string; analyzer: string; kind: string; name: string; namespace: string | null; severity: string; reason: string; evidence: Record<string, unknown>; suggested_next_step: string };
+export type ResourceAnalysis = { status: string; problems: number; resources_scanned: number; filters: { namespace: string | null; resource_type: string | null; resource_name: string | null; labels: Record<string, string> }; analyzers: { name: string; resource_types: string[]; read_only: boolean }[]; findings: ResourceFinding[]; errors: string[] };

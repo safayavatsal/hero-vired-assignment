@@ -1,0 +1,14 @@
+The local deployment is installed in namespace {{ .Release.Namespace }}.
+
+Check rollout status:
+  kubectl -n {{ .Release.Namespace }} get pods
+  kubectl -n {{ .Release.Namespace }} rollout status deployment/{{ .Values.services.api }} --timeout=120s
+
+Open the incident console:
+  kubectl -n {{ .Release.Namespace }} port-forward service/{{ .Values.services.frontend }} 8000:8080
+
+Open the demo store in a second terminal:
+  kubectl -n {{ .Release.Namespace }} port-forward service/{{ .Values.services.storeFrontend }} 8003:8080
+
+Open captured notifications:
+  kubectl -n {{ .Release.Namespace }} port-forward service/{{ .Values.services.mailpit }} 8002:8025

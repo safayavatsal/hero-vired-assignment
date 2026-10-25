@@ -28,10 +28,15 @@ Each journey sends bounded operational metadata through the normal alert intake.
 4. Confirm duplicate deliveries do not create duplicate incidents or timeline events.
 5. Investigate the matching incident and check evidence, finding, confidence, uncertainty, citations, and model status.
    For the e-commerce proof, confirm the evidence includes a request or trace identifier, route or provider, a time window, and deployment or dependency context where relevant.
+   In the browser, confirm the scenario-owned investigation checklist shows four pending checks before the run, active feedback while queued/running, and four completed checks with the finding.
+   Expand the tool trace and confirm every query has a purpose, stable name, enabled state, availability, and duration.
 6. Page and acknowledge a responder, or send `response_type=timeout` to verify fallback escalation.
 7. For a local-remediation scenario, propose, approve, execute, and verify the allowed action; the incident ends as `resolved`. For the external-dependency scenario, confirm the incident ends as `unfixable` without a local action.
 8. Read the incident timeline and confirm the workflow events remain ordered.
 9. In the UI, confirm the selected incident auto-selects its investigation context, a completed result offers only an explicit deeper-investigation option, responder controls target the newest page, acknowledgement closes ownership, remediation controls explain their evidence before approval, and failures appear in the toast region rather than in the page layout.
+10. For a resource snapshot, list the read-only analyzers, submit resources with a namespace or label filter, and confirm the response contains only normalized findings and suggested inspection steps.
+11. In the browser, open the `Kubernetes health` tab, click `Run sample scan`, and confirm the panel reports the detected problems, scanned resources, four finding cards, six read-only analyzers, and no cluster changes.
+12. For the Helm extension, run `helm lint`, install with `helm upgrade --install`, wait for the API rollout, run `helm test`, and repeat the browser workflow through the chart’s port-forwarded services.
 
 ## Failure-mode checks
 
