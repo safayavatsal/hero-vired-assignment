@@ -104,6 +104,8 @@ The response contains both the generated deliveries and the incidents accepted b
 
 New scenarios are data, not code. Send one definition to the scenario endpoint and the system investigates it immediately; registered scenarios survive restarts and appear in the console automatically:
 
+For the validated register-and-trigger workflow, use the [scenario onboarding guide](docs/scenario-onboarding.md) and `./scripts/add-scenario.sh <definition.json>`.
+
 ```bash
 curl -sS -X POST http://localhost:8001/api/v1/simulator/scenarios \
   -H 'content-type: application/json' \

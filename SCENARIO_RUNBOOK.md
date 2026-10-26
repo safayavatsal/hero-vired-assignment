@@ -40,6 +40,7 @@ Each journey sends bounded operational metadata through the normal alert intake.
 13. Repeat one scenario for a second incident and confirm `Similar past incidents` shows the earlier statement, category, and resolution without changing the deterministic finding.
 14. With a configured model gateway, request one allowed and one disallowed extra query; confirm the allowed result is cited only after collection and the disallowed request is recorded without execution.
 15. In `Evidence used`, confirm prompt tokens, completion tokens, estimated cost, and the slowest source are shown; verify the persisted result contains source durations and retrieval latency.
+16. For a new scenario, validate and trigger it with `./scripts/add-scenario.sh <definition.json>`, open the printed incident ID, and confirm the registered scenario appears in the console.
 
 ## Failure-mode checks
 
@@ -66,6 +67,7 @@ Each journey sends bounded operational metadata through the normal alert intake.
 | Declined synthetic checkout | One `checkout-api` incident is created without payment credentials in its payload |
 | Slow checkout journey | One `payments-api` incident is created with a latency-regression alert |
 | Delayed fulfillment journey | One `orders-worker` incident is created with a disk-pressure alert |
+| Onboarding script | One valid definition is registered and one incident ID is printed |
 
 ## Commerce failure walkthrough
 

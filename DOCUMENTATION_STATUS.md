@@ -141,3 +141,4 @@ Implemented:
 - Similar-incident verification passed the focused ranking, empty-history, and failure-isolation tests, the backend suite (`73 passed`), frontend tests (`6 passed`), and the production build. Live Compose proof is pending because the local container runtime is not running.
 - Bounded-loop verification passed allowlist, citation revalidation, round-cap, and no-model-path tests; the prompt contract hash and golden evaluation contract remain unchanged.
 - Telemetry verification passed sane token/cost/source-latency assertions, the full backend suite (`77 passed`), frontend tests (`6 passed`), and the production build.
+- Scenario onboarding verification covers local definition validation, one registration request, one alert request, incident-id extraction, and the one-page presenter guide; the stub-server test is the automated proof.

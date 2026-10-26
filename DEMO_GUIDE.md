@@ -44,6 +44,8 @@ For the final local submission check, run `./scripts/verify-submission.sh` after
 
 New scenarios are registered as data through `POST /api/v1/simulator/scenarios` with a `definition` payload (see the README example). During a session:
 
+For the shortest presenter path, prepare a definition JSON file and run `./scripts/add-scenario.sh <definition.json>`. It validates the payload, registers the scenario, triggers one alert, and prints the incident ID. The full file shape is in [Scenario onboarding](docs/scenario-onboarding.md).
+
 1. Register the described scenario with its evidence, allowed actions, and finding rule.
 2. Trigger its alert through `/api/v1/simulator/alerts`.
 3. Investigate the new incident in the console; the scenario dropdown and action types follow the public scenario listing automatically.
