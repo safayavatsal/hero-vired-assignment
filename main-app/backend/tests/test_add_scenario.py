@@ -6,7 +6,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 
-ROOT = Path(__file__).parents[2]
+ROOT = Path(__file__).parents[3]
 
 
 class ScenarioStub(BaseHTTPRequestHandler):

@@ -2,6 +2,8 @@
 
 This document describes the main incident-console structure. It focuses on user-visible composition and interaction boundaries, not backend execution order.
 
+The console implementation lives in `main-app/frontend/`; the API and worker it calls live in `main-app/backend/`.
+
 ```mermaid
 flowchart TB
     App[Incident console]

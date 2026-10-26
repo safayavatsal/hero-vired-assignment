@@ -1,5 +1,7 @@
 # LLD UML Class Diagram
 
+The classes below are implemented under `main-app/backend/app/`; the browser boundary is `main-app/frontend/src/`.
+
 ```mermaid
 classDiagram
     direction TB

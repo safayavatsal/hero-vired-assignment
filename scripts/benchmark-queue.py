@@ -41,7 +41,10 @@ def main() -> int:
     if args.count < 1 or args.count > 500:
         parser.error("--count must be between 1 and 500")
 
-    backend_path = os.path.join(os.path.dirname(__file__), "..", "backend")
+    backend_path = os.path.join(os.path.dirname(__file__), "..", "main-app", "backend")
+    venv_python = os.path.join(backend_path, ".venv", "bin", "python")
+    if os.path.exists(venv_python) and sys.prefix == sys.base_prefix:
+        os.execv(venv_python, [venv_python, os.path.abspath(__file__), *sys.argv[1:]])
     sys.path.insert(0, os.path.abspath(backend_path))
     from app.application.job_queue import JobRepository
     from app.migrations import run_migrations

@@ -22,6 +22,8 @@ Each journey sends bounded operational metadata through the normal alert intake.
 
 ## Tester workflow
 
+Run commands from the repository root. The primary API, worker, migrations, and tests live under `main-app/backend/`; the primary console lives under `main-app/frontend/`.
+
 1. Start Compose and confirm `/api/v1/readiness` returns `{"status":"ready","database":"ok"}`.
 2. Select one scenario with `POST /api/v1/simulator/scenarios`.
 3. Generate deliveries with `POST /api/v1/simulator/alerts`.

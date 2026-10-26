@@ -12,11 +12,11 @@ Use one flow from synthetic commerce failure to operator response:
 flowchart LR
     A["Catalog and checkout<br/>demo-store/frontend/src/App.tsx"]
     S["Store payment API<br/>demo-store/backend/app/main.py"]
-    B["Canonical alert intake<br/>backend/app/api/incidents.py:33"]
-    C["Existing incident pipeline<br/>backend/app/application/alert_pipeline.py:18"]
-    D["Existing investigation worker<br/>backend/app/application/investigation.py:108"]
-    E["Existing paging workflow<br/>backend/app/application/workflow.py:69"]
-    F["Captured email<br/>backend/app/application/external_boundaries.py:42"]
+    B["Canonical alert intake<br/>main-app/backend/app/api/incidents.py:33"]
+    C["Existing incident pipeline<br/>main-app/backend/app/application/alert_pipeline.py:18"]
+    D["Existing investigation worker<br/>main-app/backend/app/application/investigation.py:108"]
+    E["Existing paging workflow<br/>main-app/backend/app/application/workflow.py:69"]
+    F["Captured email<br/>main-app/backend/app/application/external_boundaries.py:42"]
     A --> S --> B --> C --> D --> E --> F
 ```
 

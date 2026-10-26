@@ -3,7 +3,7 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 
-SCRIPT = Path(__file__).parents[2] / "scripts" / "benchmark-queue.py"
+SCRIPT = Path(__file__).parents[3] / "scripts" / "benchmark-queue.py"
 SPEC = importlib.util.spec_from_file_location("benchmark_queue", SCRIPT)
 benchmark_queue = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None

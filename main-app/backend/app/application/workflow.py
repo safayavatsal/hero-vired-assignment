@@ -104,7 +104,7 @@ class WorkflowService:
                     """INSERT INTO page_delivery_attempts
                     (id, page_id, attempt_number, status, external_id, created_at)
                     VALUES (%s, %s, 1, %s, %s, %s)""",
-                    (uuid4(), page_id, 1, "delivered", delivery.get("id") if delivery else None, now),
+                    (uuid4(), page_id, "delivered", delivery.get("id") if delivery else None, now),
                 )
                 timeline = {"page_id": str(page_id), "responder": responder}
                 if delivery and delivery.get("id"):

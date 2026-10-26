@@ -62,6 +62,7 @@ The project owner identified, prioritized, or reviewed the following grouped fin
 - **Operator-safety enhancement:** the owner approved a minimal authorization seam. The AI-assisted implementation adds an opt-in bearer-token role resolver and route-level permissions while preserving the local demo default; the owner retains the identity and tenancy boundary decision.
 - **Operational-correlation enhancement:** the owner approved local diagnostic evidence. The AI-assisted implementation adds bounded request IDs, outbound propagation, structured request records, and route latency metrics without a new runtime dependency; the owner retains the production telemetry decision.
 - **Monitoring navigation enhancement:** the owner identified that the incident link should lead to a useful monitoring view rather than reload the console. The AI-assisted implementation removes the on-call header’s demo-store shortcut, adds a separate read-only observability frontend/backend, maps three service profiles to incident/action state, and provides incident and remediation backlinks; the owner retains the monitoring scope and data-feasibility decision.
+- **Main app layout enhancement:** the owner requested the primary application to be organized like the independent demos. The AI-assisted implementation moves tracked frontend/backend code and tests under `main-app/`, updates runtime and documentation path consumers, and preserves ports and API boundaries; the owner retains the repository-structure decision.
 
 ## Human-owned remediation enhancement
 

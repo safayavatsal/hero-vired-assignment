@@ -32,16 +32,16 @@
     ]
   },
   "components": [
-    { "id": "operator", "type": "external", "label": "Operator", "sublabel": "Browser user", "pos": [40, 250], "size": [140, 64], "sources": [{ "path": "frontend/src/app/App.tsx", "label": "console UI" }] },
+    { "id": "operator", "type": "external", "label": "Operator", "sublabel": "Browser user", "pos": [40, 250], "size": [140, 64], "sources": [{ "path": "main-app/frontend/src/app/App.tsx", "label": "console UI" }] },
     { "id": "shopper", "type": "external", "label": "Shopper", "sublabel": "Demo-store user", "pos": [40, 500], "size": [140, 64], "sources": [{ "path": "demo-store/frontend/src/App.tsx", "label": "store UI" }] },
     { "id": "store", "type": "backend", "label": "Demo store", "sublabel": "Checkout + observer", "pos": [250, 500], "size": [170, 64], "sources": [{ "path": "demo-store/backend/app/main.py", "label": "store backend" }] },
-    { "id": "console", "type": "frontend", "label": "Incident console", "sublabel": "React :8000", "pos": [250, 250], "size": [170, 64], "sources": [{ "path": "frontend/src/app/App.tsx", "label": "main UI" }] },
-    { "id": "api", "type": "backend", "label": "Assistant API", "sublabel": "FastAPI :8001", "pos": [500, 250], "size": [170, 64], "sources": [{ "path": "backend/app/main.py", "label": "HTTP routes" }] },
-    { "id": "worker", "type": "backend", "label": "Investigation worker", "sublabel": "Async jobs", "pos": [750, 250], "size": [180, 64], "sources": [{ "path": "backend/app/execution/worker.py", "label": "job execution" }] },
-    { "id": "retrieval", "type": "backend", "label": "Historical retriever", "sublabel": "Bounded similar findings", "pos": [1000, 90], "size": [190, 64], "sources": [{ "path": "backend/app/application/retrieval.py", "label": "local embeddings" }, { "path": "backend/app/adapters/postgres_retrieval_repository.py", "label": "vector store adapter" }] },
-    { "id": "db", "type": "database", "label": "PostgreSQL", "sublabel": "Durable incidents + evidence", "pos": [1000, 250], "size": [190, 64], "sources": [{ "path": "backend/migrations/001_initial_schema.sql", "label": "schema" }] },
-    { "id": "model", "type": "external", "label": "Model gateway", "sublabel": "Optional analysis provider", "pos": [750, 90], "size": [180, 64], "sources": [{ "path": "backend/app/application/model_gateway.py", "label": "provider adapter" }] },
-    { "id": "notifications", "type": "external", "label": "Notification sink", "sublabel": "Local mailbox", "pos": [500, 500], "size": [170, 64], "sources": [{ "path": "backend/app/application/workflow.py", "label": "notification boundary" }] },
+    { "id": "console", "type": "frontend", "label": "Incident console", "sublabel": "React :8000", "pos": [250, 250], "size": [170, 64], "sources": [{ "path": "main-app/frontend/src/app/App.tsx", "label": "main UI" }] },
+    { "id": "api", "type": "backend", "label": "Assistant API", "sublabel": "FastAPI :8001", "pos": [500, 250], "size": [170, 64], "sources": [{ "path": "main-app/backend/app/main.py", "label": "HTTP routes" }] },
+    { "id": "worker", "type": "backend", "label": "Investigation worker", "sublabel": "Async jobs", "pos": [750, 250], "size": [180, 64], "sources": [{ "path": "main-app/backend/app/execution/worker.py", "label": "job execution" }] },
+    { "id": "retrieval", "type": "backend", "label": "Historical retriever", "sublabel": "Bounded similar findings", "pos": [1000, 90], "size": [190, 64], "sources": [{ "path": "main-app/backend/app/application/retrieval.py", "label": "local embeddings" }, { "path": "main-app/backend/app/adapters/postgres_retrieval_repository.py", "label": "vector store adapter" }] },
+    { "id": "db", "type": "database", "label": "PostgreSQL", "sublabel": "Durable incidents + evidence", "pos": [1000, 250], "size": [190, 64], "sources": [{ "path": "main-app/backend/migrations/001_initial_schema.sql", "label": "schema" }] },
+    { "id": "model", "type": "external", "label": "Model gateway", "sublabel": "Optional analysis provider", "pos": [750, 90], "size": [180, 64], "sources": [{ "path": "main-app/backend/app/application/model_gateway.py", "label": "provider adapter" }] },
+    { "id": "notifications", "type": "external", "label": "Notification sink", "sublabel": "Local mailbox", "pos": [500, 500], "size": [170, 64], "sources": [{ "path": "main-app/backend/app/application/workflow.py", "label": "notification boundary" }] },
     { "id": "runtime", "type": "cloud", "label": "Local runtime", "sublabel": "Compose or Helm", "pos": [750, 500], "size": [180, 64], "sources": [{ "path": "docker-compose.yml", "label": "Compose" }, { "path": "k8s/helm/hero-vired/Chart.yaml", "label": "Helm" }] }
   ],
   "boundaries": [

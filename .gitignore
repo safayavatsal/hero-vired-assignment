@@ -8,7 +8,8 @@ FDE-Assignment.docx
 __pycache__/
 .pytest_cache/
 node_modules/
-frontend/dist/
+main-app/frontend/dist/
+main-app/frontend/*.tsbuildinfo
 demo-store/frontend/dist/
 demo-store/frontend/*.tsbuildinfo
 demo-observability/frontend/dist/

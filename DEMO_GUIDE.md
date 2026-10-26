@@ -2,6 +2,8 @@
 
 ## Baseline runtime
 
+The repository root is the operational entry point. Primary application code is under `main-app/backend/` and `main-app/frontend/`; demo applications remain under their named folders.
+
 Run `docker compose up --build`, open `http://localhost:8000`, and confirm that the incident console loads.
 
 The API endpoints are available at `http://localhost:8001/api/v1/health` and `http://localhost:8001/api/v1/readiness`.

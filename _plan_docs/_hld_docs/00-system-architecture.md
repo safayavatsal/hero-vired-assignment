@@ -2,6 +2,8 @@
 
 This high-level architecture describes the runtime boundaries and the executable PostgreSQL schema used by the product.
 
+The main application code is grouped under `main-app/backend/` and `main-app/frontend/`; documentation and demo applications remain at the repository root.
+
 ## 1. Runtime architecture
 
 ```mermaid
@@ -9,16 +11,16 @@ flowchart LR
     Shopper[Demo shopper] --> Storefront[Demo store frontend]
     Storefront -->|catalog and payment API| StoreAPI[Demo store backend]
     StoreAPI -->|failed payment alert| API
-    Responder[On-call engineer] --> UI[React + TypeScript incident console]
+    Responder[On-call engineer] --> UI[Main app frontend]
     Responder --> MonitorUI[Demo observability frontend]
-    UI -->|REST and polling| API[FastAPI API]
+    UI -->|REST and polling| API[Main app backend API]
     MonitorUI -->|read-only dashboard requests| MonitorAPI[Demo observability backend]
     MonitorAPI -->|bounded incident/action reads| API
     Operator[Configured operator token] -.->|role authorization| API
     API --> Metrics[Bounded runtime metrics]
     API --> Store[(PostgreSQL system of record)]
     API --> Jobs[(PostgreSQL durable jobs)]
-    Worker[Python worker] --> Jobs
+    Worker[Main app worker] --> Jobs
     Worker --> Store
     Worker --> Simulator[Production simulator]
     Worker --> Retrieval[Historical finding retriever]
@@ -33,7 +35,7 @@ flowchart LR
 
 | Component | Owns | Does not own |
 | --- | --- | --- |
-| React + TypeScript incident UI | Incident list, detail, timeline, evidence review, and human decision forms | State transitions, action execution, inferred completion, or payment processing |
+| Main app frontend | Incident list, detail, timeline, evidence review, and human decision forms | State transitions, action execution, inferred completion, or payment processing |
 | Demo observability frontend | Service dashboard pages, before/current comparisons, and incident backlinks | Incident state, action execution, or durable metric storage |
 | Demo store frontend | Product selection, cart, synthetic checkout form, and payment result | Incident creation, payment processing, or durable state |
 | Demo store backend | Product catalog, synthetic payment validation, deterministic outcome, and bounded failure alert | Real payments, card persistence, or incident investigation |

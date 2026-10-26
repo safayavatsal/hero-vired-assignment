@@ -28,7 +28,7 @@ services:
         max-file: "3"
 
   api:
-    build: ./backend
+    build: ./main-app/backend
     restart: unless-stopped
     init: true
     mem_limit: 512m
@@ -78,7 +78,7 @@ services:
     logging: *default-logging
 
   worker:
-    build: ./backend
+    build: ./main-app/backend
     restart: unless-stopped
     init: true
     mem_limit: 256m
@@ -110,7 +110,7 @@ services:
     logging: *default-logging
 
   frontend:
-    build: ./frontend
+    build: ./main-app/frontend
     restart: unless-stopped
     init: true
     mem_limit: 256m

@@ -6,10 +6,10 @@
 | --- | --- | --- | --- |
 | Demo storefront | `demo-store/frontend/src/main.tsx` | `demo-store/frontend/src/App.tsx` | Browse a small catalog, enter synthetic payment details, and produce an approved or failed payment result. |
 | Demo store API | `demo-store/backend/app/main.py` | `PaymentRequest`, `PaymentService`, `AlertGateway` | Own product pricing and synthetic payment behavior, then emit a bounded operational alert after a declined payment. |
-| Alert intake | `POST /api/v1/alerts` | `backend/app/api/incidents.py`, `backend/app/application/alert_pipeline.py` | Validate, normalize, deduplicate, correlate, and persist a payment-failure alert. |
-| Investigation workflow | `POST /api/v1/incidents/{id}/investigate` | `backend/app/application/investigation.py`, `backend/app/domain/simulator.py` | Collect scenario evidence and produce a cited finding. |
-| Responder delivery | `POST /api/v1/incidents/{id}/page` | `backend/app/application/workflow.py`, `backend/app/application/external_boundaries.py` | Attach the finding to a durable page and deliver a local responder notification. |
-| Operator console | `frontend/src/app/App.tsx` | `frontend/src/domain/types.ts`, `frontend/src/lib/incidentSelection.js` | Guide the operator through investigation, response, and safe action handling. |
+| Alert intake | `POST /api/v1/alerts` | `main-app/backend/app/api/incidents.py`, `main-app/backend/app/application/alert_pipeline.py` | Validate, normalize, deduplicate, correlate, and persist a payment-failure alert. |
+| Investigation workflow | `POST /api/v1/incidents/{id}/investigate` | `main-app/backend/app/application/investigation.py`, `main-app/backend/app/domain/simulator.py` | Collect scenario evidence and produce a cited finding. |
+| Responder delivery | `POST /api/v1/incidents/{id}/page` | `main-app/backend/app/application/workflow.py`, `main-app/backend/app/application/external_boundaries.py` | Attach the finding to a durable page and deliver a local responder notification. |
+| Operator console | `main-app/frontend/src/app/App.tsx` | `main-app/frontend/src/domain/types.ts`, `main-app/frontend/src/lib/incidentSelection.js` | Guide the operator through investigation, response, and safe action handling. |
 
 ## Boundary decision
 

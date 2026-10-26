@@ -4,14 +4,16 @@ This LLD describes the main classes, their responsibilities, method signatures, 
 
 ## Package boundaries
 
+The main application package root is `main-app/backend/app/`; the operator console root is `main-app/frontend/src/`.
+
 | Package | Main responsibility |
 | --- | --- |
-| `domain` | Incident, evidence, decision, action, and timeline concepts |
-| `application` | Use-case services coordinating domain operations |
-| `ports` | Interfaces for persistence, evidence, historical retrieval, paging, model access, and actions |
-| `adapters` | PostgreSQL, simulator, retrieval, paging, model, and HTTP implementations |
-| `execution` | Durable jobs, worker handlers, leases, retries, and verification |
-| `api` | Request validation, authorization, and response mapping |
+| `main-app/backend/app/domain` | Incident, evidence, decision, action, and timeline concepts |
+| `main-app/backend/app/application` | Use-case services coordinating domain operations |
+| `main-app/backend/app/ports` | Interfaces for persistence, evidence, historical retrieval, paging, model access, and actions |
+| `main-app/backend/app/adapters` | PostgreSQL, simulator, retrieval, paging, model, and HTTP implementations |
+| `main-app/backend/app/execution` | Durable jobs, worker handlers, leases, retries, and verification |
+| `main-app/backend/app/api` | Request validation, authorization, and response mapping |
 | `demo-store/backend` | Product catalog, synthetic payment validation, deterministic routing, and failure-alert delivery |
 | `demo-store/frontend` | Customer-facing catalog, cart, checkout, and incident handoff |
 

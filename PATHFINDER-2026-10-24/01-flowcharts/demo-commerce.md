@@ -4,13 +4,13 @@
 flowchart TD
     Store["Storefront<br/>demo-store/frontend/src/App.tsx"]
     Checkout["Synthetic payment API<br/>demo-store/backend/app/main.py"]
-    Alert["Create alert<br/>backend/app/api/incidents.py:33"]
-    Normalize["Normalize and fingerprint<br/>backend/app/application/alert_pipeline.py:43"]
-    Persist["Deduplicate and correlate<br/>backend/app/adapters/postgres_incident_repository.py:23"]
-    Console["Incident console polling<br/>frontend/src/app/App.tsx:98"]
-    Investigate["Queue investigation<br/>backend/app/application/investigation.py:108"]
-    Page["Create durable page<br/>backend/app/application/workflow.py:69"]
-    Notify["Deliver notification<br/>backend/app/application/external_boundaries.py:42"]
+    Alert["Create alert<br/>main-app/backend/app/api/incidents.py:33"]
+    Normalize["Normalize and fingerprint<br/>main-app/backend/app/application/alert_pipeline.py:43"]
+    Persist["Deduplicate and correlate<br/>main-app/backend/app/adapters/postgres_incident_repository.py:23"]
+    Console["Incident console polling<br/>main-app/frontend/src/app/App.tsx:98"]
+    Investigate["Queue investigation<br/>main-app/backend/app/application/investigation.py:108"]
+    Page["Create durable page<br/>main-app/backend/app/application/workflow.py:69"]
+    Notify["Deliver notification<br/>main-app/backend/app/application/external_boundaries.py:42"]
 
     Store --> Checkout
     Checkout -->|"failed payment alert"| Alert

@@ -33,10 +33,10 @@ The product accepts normalized alerts, groups repeat deliveries, collects bounde
 - `_plan_docs/_lld_docs/` — classes, runtime sequence, and UML
 - `_decision_docs/` — architecture and implementation decisions
 - `_research_refs/` — assignment and research material
-- `frontend/src/app/` — React screen and workflow orchestration
-- `frontend/src/domain/` — shared frontend data types
-- `frontend/src/lib/` — small reusable workflow helpers
-- `frontend/src/styles/` — frontend presentation styles
+- `main-app/frontend/src/app/` — React screen and workflow orchestration
+- `main-app/frontend/src/domain/` — shared frontend data types
+- `main-app/frontend/src/lib/` — small reusable workflow helpers
+- `main-app/frontend/src/styles/` — frontend presentation styles
 - `demo-store/backend/` — synthetic catalog, payment router, and bounded alert adapter
 - `demo-store/frontend/` — standalone customer-facing store and checkout
 - `demo-observability/backend/` and `demo-observability/frontend/` — read-only local monitoring demo
@@ -78,7 +78,7 @@ The console also exposes this locally at the bottom of the incident view. Click 
 ```bash
 docker compose config -q
 docker compose run --rm --user root api pytest -q tests
-(cd frontend && npm test && npm run build)
+(cd main-app/frontend && npm test && npm run build)
 (cd demo-store/frontend && npm run build)
 (cd demo-observability/frontend && npm test && npm run build)
 docker compose run --rm demo-observability-backend pytest -q tests
