@@ -1,3 +1,4 @@
+import math
 import time
 import pytest
 from uuid import uuid4
@@ -8,6 +9,7 @@ from app.application.simulator import SimulatorService
 from app.application.model_gateway import (
     DEFAULT_MODEL_GATEWAY_URL,
     HttpModelGateway,
+    UnavailableModelGateway,
     _openai_request,
     _openai_response,
     mask_sensitive,
@@ -256,6 +258,25 @@ def test_model_analysis_and_telemetry_are_returned_for_a_realistic_incident() ->
     assert logs["items"][0]["route"] == "POST /v1/payments/authorize"
 
 
+def test_investigation_telemetry_contains_sane_token_cost_and_source_latency(monkeypatch) -> None:
+    monkeypatch.setenv("MODEL_PROMPT_COST_PER_1K", "0.2")
+    monkeypatch.setenv("MODEL_COMPLETION_COST_PER_1K", "0.4")
+    result = InvestigationService(
+        ExistingIncident(service="payments-api"),
+        SimulatorService(),
+        MemoryInvestigationRepository(),
+        model_gateway=CompletedModelGateway(),
+    ).investigate(uuid4(), "deployment_regression")
+
+    telemetry = result["model_telemetry"]
+    assert telemetry["prompt_tokens"] > 0
+    assert telemetry["completion_tokens"] > 0
+    assert math.isfinite(telemetry["estimated_cost"])
+    assert telemetry["estimated_cost"] >= 0
+    assert len(telemetry["evidence_sources"]) == 5
+    assert telemetry["retrieval_latency_ms"] is not None
+
+
 def test_similar_incidents_are_ranked_after_a_repeated_scenario() -> None:
     retrieval = InMemoryRetrievalRepository()
     incident_service = ExistingIncident(service="payments-api")
@@ -315,6 +336,90 @@ def test_similar_incident_failure_does_not_change_deterministic_finding() -> Non
 
     assert degraded["findings"] == baseline["findings"]
     assert next(item for item in degraded["evidence"] if item["source_type"] == "similar_incidents")["availability"] == "unavailable"
+
+
+def test_agent_loop_enforces_allowlist_and_reenters_citation_validation() -> None:
+    class RequestingGateway:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def analyze(self, prompt):
+            self.calls += 1
+            response = {
+                "current_condition": "latency is elevated",
+                "likely_cause": "a recent deployment",
+                "confidence": 0.9,
+                "suggested_next_step": "rollback",
+                "evidence_ids": [item["id"] for item in prompt["evidence"]],
+                "uncertainty": None,
+            }
+            if self.calls == 1:
+                response["evidence_requests"] = [
+                    {"source_type": "logs"},
+                    {"source_type": "logs", "query": "not-allowed"},
+                ]
+            return response
+
+    gateway = RequestingGateway()
+    result = InvestigationService(
+        ExistingIncident(service="payments-api"),
+        SimulatorService(),
+        MemoryInvestigationRepository(),
+        model_gateway=gateway,
+    ).investigate(uuid4(), "deployment_regression")
+
+    loop = result["model_telemetry"]["agent_loop"]
+    assert gateway.calls == 2
+    assert loop["requests_seen"] == 2
+    assert loop["requests_executed"] == 1
+    assert loop["rejected_requests"] == ["disallowed evidence query"]
+    assert len(result["evidence"]) == 6
+    assert result["model_analysis"]["evidence_ids"]
+
+
+def test_agent_loop_round_cap_is_recorded_without_raising(monkeypatch) -> None:
+    class RepeatingGateway:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def analyze(self, prompt):
+            self.calls += 1
+            return {
+                "current_condition": "latency is elevated",
+                "likely_cause": "a recent deployment",
+                "confidence": 0.9,
+                "suggested_next_step": "rollback",
+                "evidence_ids": [item["id"] for item in prompt["evidence"]],
+                "uncertainty": None,
+                "evidence_requests": [{"source_type": "logs"}],
+            }
+
+    monkeypatch.setenv("AGENT_MAX_ROUNDS", "1")
+    gateway = RepeatingGateway()
+    result = InvestigationService(
+        ExistingIncident(service="payments-api"),
+        SimulatorService(),
+        MemoryInvestigationRepository(),
+        model_gateway=gateway,
+    ).investigate(uuid4(), "deployment_regression")
+
+    assert gateway.calls == 1
+    assert result["model_telemetry"]["agent_loop"]["stop_reason"] == "round_limit"
+    assert len(result["evidence"]) == 5
+
+
+def test_no_model_keeps_the_fixed_evidence_path() -> None:
+    result = InvestigationService(
+        ExistingIncident(service="payments-api"),
+        SimulatorService(),
+        MemoryInvestigationRepository(),
+        model_gateway=UnavailableModelGateway(),
+    ).investigate(uuid4(), "deployment_regression")
+
+    assert [item["source_type"] for item in result["evidence"]] == [
+        "logs", "metrics", "deploys", "service_health", "similar_incidents"
+    ]
+    assert "agent_loop" not in result["model_telemetry"]
 
 
 def test_same_evidence_uses_versioned_cache() -> None:

@@ -89,6 +89,20 @@ def _openai_request(prompt: dict[str, Any], model: str | None) -> dict[str, Any]
             "suggested_next_step": {"type": "string"},
             "evidence_ids": {"type": "array", "items": {"type": "string"}},
             "uncertainty": {"type": ["string", "null"]},
+            "evidence_requests": {
+                "type": "array",
+                "maxItems": 2,
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "source_type": {"type": "string"},
+                        "query": {"type": "string"},
+                        "parameters": {"type": "object"},
+                    },
+                    "required": ["source_type"],
+                    "additionalProperties": False,
+                },
+            },
         },
         "required": ["current_condition", "likely_cause", "confidence", "suggested_next_step", "evidence_ids", "uncertainty"],
         "additionalProperties": False,
@@ -140,9 +154,10 @@ def _sensitive_key(key: str) -> bool:
 
 def validate_model_response(response: dict[str, Any], evidence_ids: set[str]) -> dict[str, Any]:
     required = {"current_condition", "likely_cause", "confidence", "suggested_next_step", "evidence_ids", "uncertainty"}
+    optional = {"evidence_requests"}
     if not isinstance(response, dict):
         raise ValueError("model response must be an object")
-    if set(response) != required:
+    if not set(response).issubset(required | optional) or not required.issubset(response):
         raise ValueError("model response is missing required fields")
     for field in ("current_condition", "likely_cause", "suggested_next_step"):
         if not isinstance(response[field], str) or not response[field].strip():
@@ -155,4 +170,14 @@ def validate_model_response(response: dict[str, Any], evidence_ids: set[str]) ->
         raise ValueError("model response evidence_ids must be a list of strings")
     if not set(response["evidence_ids"]).issubset(evidence_ids):
         raise ValueError("model response cited unsupported evidence")
+    requests = response.get("evidence_requests", [])
+    if not isinstance(requests, list) or len(requests) > 2:
+        raise ValueError("model response evidence_requests must be a bounded list")
+    for request in requests:
+        if not isinstance(request, dict) or not isinstance(request.get("source_type"), str) or not request["source_type"].strip():
+            raise ValueError("model evidence request must name a source")
+        if "query" in request and not isinstance(request["query"], str):
+            raise ValueError("model evidence request query must be a string")
+        if "parameters" in request and not isinstance(request["parameters"], dict):
+            raise ValueError("model evidence request parameters must be an object")
     return response

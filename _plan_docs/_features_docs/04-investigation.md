@@ -48,6 +48,7 @@ Implemented in the current slice:
 - Evidence collection uses a small named tool registry, and each result carries a bounded tool trace with availability and duration metadata.
 - Investigation persistence records safe model telemetry without credentials or raw provider responses; the UI displays structured model analysis separately from deterministic findings.
 - Similar completed findings are stored with deterministic vectors and retrieved through a fifth bounded evidence source; retrieval context is additive and the deterministic finding is calculated before it.
+- Configured model analysis may request only allowlisted read-only re-queries through a bounded loop; every returned item re-enters evidence and citation validation.
 
 Boundary verification:
 

@@ -28,6 +28,8 @@
 | resource analyzer surface | Kubernetes resource health checks | Implemented; six read-only analyzers expose namespace, kind, name, label, and analyzer filters through the analysis API, and the console now exposes a dedicated Kubernetes health tab with a visible sample scan and finding cards; Docker suite returned 70 passing tests and browser verification completed |
 | Helm local extension | Additive Kubernetes packaging | Implemented; the chart packages the API, worker, database, notification capture, incident UI, and demo store with configurable images, resources, persistence, probes, security settings, port-forward notes, and a Helm smoke-test hook |
 | Similar past incidents | Bounded historical finding context | Implemented; deterministic vectors are persisted for completed findings, ranked context is exposed as a fifth bounded evidence source, retrieval failures degrade to uncertainty, and the console renders the historical finding panel |
+| Bounded evidence loop | Optional model-directed evidence | Implemented; allowlisted re-queries are validated server-side, re-enter citation validation, and stop safely at round, request, item, or wall-clock limits |
+| Cost and latency telemetry | Model and evidence timing readout | Implemented; bounded token estimates, finite cost, source durations, retrieval latency, and a compact evidence-panel summary are persisted and rendered |
 
 The approved HLD and LLD remain the authority for boundaries and relationships. The current implementation includes durable investigation and action jobs, action-attempt, verification, delivery-attempt, and worker-startup pieces required by those documents.
 
@@ -87,6 +89,8 @@ Implemented:
 - The UI refreshes the selected incident while polling, supports free-form page replies, and displays queued and running action states.
 - Investigation completion, no-local-fix classification, and verified remediation are visible as explicit terminal timeline states; verified local actions resolve the incident.
 - Similar-incident retrieval uses no new service or required credential, stores vectors in PostgreSQL, excludes the current incident, and leaves deterministic findings unchanged when history is empty or retrieval is unavailable.
+- The optional evidence loop is enabled only for configured model gateways; missing models preserve the fixed path, while invalid requests and exhausted bounds remain telemetry rather than errors.
+- Model telemetry now includes estimated prompt/completion tokens, finite non-negative cost, source durations, and similar-history retrieval latency; local rate settings are optional.
 
 ## Environment-dependent verification:
 
@@ -135,3 +139,5 @@ Implemented:
 - The investigation review surface now presents a structured brief, model status/latency, bounded tool trace, query timing, source availability, parameters, and opt-in raw payloads. The frontend smoke suite, production build, diff checks, and full local submission verifier pass after this change.
 - Helm extension verification passed `helm lint`, default and credential-override `helm template`, chart packaging, packaged test-hook presence, resource rendering, and `git diff --check`. Live Helm install and `helm test` remain pending until the local Kubernetes API is running; the attempted install reported `127.0.0.1:26443 connection refused`.
 - Similar-incident verification passed the focused ranking, empty-history, and failure-isolation tests, the backend suite (`73 passed`), frontend tests (`6 passed`), and the production build. Live Compose proof is pending because the local container runtime is not running.
+- Bounded-loop verification passed allowlist, citation revalidation, round-cap, and no-model-path tests; the prompt contract hash and golden evaluation contract remain unchanged.
+- Telemetry verification passed sane token/cost/source-latency assertions, the full backend suite (`77 passed`), frontend tests (`6 passed`), and the production build.

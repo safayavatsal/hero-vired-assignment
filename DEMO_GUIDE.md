@@ -24,6 +24,10 @@ Expand `Evidence used` and then `View tool trace` to show each bounded query's p
 
 For similar-history context, run the same scenario for two different incidents. The second completed investigation shows a `Similar past incidents` panel with the prior statement, category, and resolution. The first run reports that the history is not yet large enough; this is an uncertainty note and does not change the deterministic finding.
 
+When a model gateway is configured, its optional evidence requests remain server-validated and bounded. The tool trace shows the extra read-only query, while the model telemetry records rejected requests and the loop stop reason. With no model configuration, only the fixed evidence path runs.
+
+The same evidence panel shows prompt tokens, completion tokens, estimated cost, and the slowest evidence source. The cost is an estimate from local rate settings, not a billing record.
+
 The checkout form talks to the separate demo-store backend on port `8004`. Its embedded observer emits bounded operational metadata only after the simulated provider becomes unavailable. Cardholder, card number, expiry, and security code are validated there but never persisted or copied into the event payload. Use `Use approved card` to demonstrate the non-incident path.
 
 Before presenting, run the repeatable API-level proof:

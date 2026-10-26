@@ -51,3 +51,5 @@ This file is the index of the detailed decision records in [`_decision_docs/`](_
 | [030 — Read-only Resource Analyzers](_decision_docs/030-read-only-resource-analyzers.md) | Adds discoverable, filtered, read-only resource analysis beside the existing incident workflow. |
 | [031 — Helm Local Extension](_decision_docs/031-helm-local-extension.md) | Packages the existing local runtime as an additive Helm workflow while preserving Compose and the raw Kubernetes manifest. |
 | [032 — Similar Past Incidents](_decision_docs/032-similar-past-incidents.md) | Adds bounded ranked historical context with deterministic vectors, PostgreSQL persistence, masking, and failure isolation. |
+| [033 — Bounded Evidence Loop](_decision_docs/033-bounded-evidence-loop.md) | Allows validated, bounded read-only model re-queries while preserving the fixed no-model path. |
+| [034 — Cost And Latency Telemetry](_decision_docs/034-cost-latency-telemetry.md) | Persists bounded token/cost estimates and source timing, then shows a compact evidence-panel summary. |

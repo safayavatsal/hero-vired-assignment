@@ -25,4 +25,8 @@ Close the six capability differences identified by the function-level comparison
 
 The first approved add-on is implemented: scenario definitions now expose a bounded, data-owned investigation runbook, and the console renders its progress from the existing investigation lifecycle. The second approved add-on is also implemented: the bounded evidence layer exposes an explicit tool catalog, persists purpose/enabled metadata in investigation traces, and shows that purpose in the console. The third approved add-on is implemented: a separate read-only resource analyzer surface exposes six named analyzers, explicit filters, normalized findings, and a discoverable API without changing the existing incident workflow.
 
+The bounded evidence-loop add-on is implemented: configured model analysis can request only allowlisted read-only evidence, with round, request, item, and wall-clock limits recorded in telemetry. The no-model path remains fixed fan-out.
+
+The cost and latency telemetry add-on is implemented: bounded prompt/completion estimates, configurable local rates, source durations, retrieval latency, and a compact console readout are persisted without credentials or raw provider responses.
+
 Verification: Docker images built successfully, the backend suite returned 70 passing tests after the analyzer addition, the focused analyzer suite returned 8 passing tests, the frontend suite returned 6 passing tests, the production frontend build passed, the live Docker analyzer API returned all six analyzers and a normalized Pending-Pod finding, and browser verification confirmed the dedicated Kubernetes health tab and sample scan while the existing incident workflow remained intact.

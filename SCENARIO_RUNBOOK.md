@@ -38,6 +38,8 @@ Each journey sends bounded operational metadata through the normal alert intake.
 11. In the browser, open the `Kubernetes health` tab, click `Run sample scan`, and confirm the panel reports the detected problems, scanned resources, four finding cards, six read-only analyzers, and no cluster changes.
 12. For the Helm extension, run `helm lint`, install with `helm upgrade --install`, wait for the API rollout, run `helm test`, and repeat the browser workflow through the chart’s port-forwarded services.
 13. Repeat one scenario for a second incident and confirm `Similar past incidents` shows the earlier statement, category, and resolution without changing the deterministic finding.
+14. With a configured model gateway, request one allowed and one disallowed extra query; confirm the allowed result is cited only after collection and the disallowed request is recorded without execution.
+15. In `Evidence used`, confirm prompt tokens, completion tokens, estimated cost, and the slowest source are shown; verify the persisted result contains source durations and retrieval latency.
 
 ## Failure-mode checks
 
@@ -55,6 +57,9 @@ Each journey sends bounded operational metadata through the normal alert intake.
 | Missing model configuration | Deterministic finding remains available with explicit degraded model status |
 | Empty or small similar-incident history | `similar_incidents` is unavailable with a clear uncertainty note |
 | Similar-incident retrieval failure | Deterministic finding remains unchanged and the retrieval source is degraded |
+| Disallowed model evidence query | Request is rejected in telemetry and no unapproved provider call occurs |
+| Evidence-loop bound reached | Investigation completes with a recorded stop reason and no raised error |
+| Telemetry estimate unavailable | Counts remain bounded and cost remains finite and non-negative |
 | Verified local action | Incident transitions to `resolved` and the timeline records verification and resolution |
 | External dependency finding | Incident transitions to `unfixable` and no local action is proposed |
 | Approved synthetic checkout | Order succeeds and no incident is created |
