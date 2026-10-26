@@ -17,7 +17,7 @@ Use the following technologies because they directly support the system boundari
 | Local runtime | Docker Compose | Gives every contributor the same API, worker, frontend, and database environment | Kubernetes would add deployment machinery that is not needed for the local system |
 | Verification | Pytest, Vitest, React Testing Library, and Playwright | Covers domain behavior, simulator behavior, UI behavior, and one complete browser flow | A large end-to-end-only suite would be slower and less precise for state-machine failures |
 
-Do not add Redis, Kafka, a vector database, or an external paging provider unless a measured requirement makes one necessary. PostgreSQL can initially provide the durable job, cache, idempotency, and audit storage needed by the system.
+Do not add a separate queue/cache service, a vector database, or an external paging provider unless a measured requirement makes one necessary. PostgreSQL can initially provide the durable job, cache, idempotency, and audit storage needed by the system.
 
 ## Consequences
 

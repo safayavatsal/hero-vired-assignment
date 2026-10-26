@@ -3,6 +3,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Thread
 
 from app.application import external_boundaries
+from app.application.observability import _request_id
 
 
 def test_ownership_gateway_is_opt_in_and_validates_response(monkeypatch) -> None:
@@ -164,3 +165,31 @@ def test_external_boundary_timeout_is_configurable(monkeypatch) -> None:
     external_boundaries.NotificationGateway().deliver({"page_id": "page-1"})
 
     assert captured == {"timeout": 0.2}
+
+
+def test_external_boundary_propagates_request_id(monkeypatch) -> None:
+    token = _request_id.set("boundary-check-1")
+    captured = {}
+
+    class Response:
+        def read(self):
+            return b'{"status":"accepted"}'
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    def request(request, timeout):
+        captured["request_id"] = request.get_header("X-request-id")
+        return Response()
+
+    try:
+        monkeypatch.setattr(external_boundaries, "urlopen", request)
+        monkeypatch.setenv("NOTIFICATION_GATEWAY_URL", "http://notify.test/page")
+        external_boundaries.NotificationGateway().deliver({"page_id": "page-1"})
+    finally:
+        _request_id.reset(token)
+
+    assert captured == {"request_id": "boundary-check-1"}

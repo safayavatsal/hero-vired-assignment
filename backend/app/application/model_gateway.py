@@ -6,6 +6,7 @@ from urllib.request import Request, urlopen
 from typing import Any, Protocol
 
 from app.application.resilience import env_float
+from app.application.observability import current_request_id
 
 DEFAULT_MODEL_GATEWAY_URL = "https://api.groq.com/openai/v1/responses"
 
@@ -63,6 +64,8 @@ class HttpModelGateway:
             headers={"Authorization": f"Bearer {self.token}", "Content-Type": "application/json"},
             method="POST",
         )
+        if request_id := current_request_id():
+            request.add_header("X-Request-ID", request_id)
         try:
             with urlopen(request, timeout=self.timeout_seconds) as response:
                 if response.status == 429:

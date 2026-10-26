@@ -4,8 +4,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app import main
+from app import observer as observer_module
 from app.main import CustomerScenarioRequest, PaymentRequest, PaymentService
 from app.observer import CheckoutObserver
+from app.request_context import reset_request_id, set_request_id
 
 
 class AlertGateway:
@@ -83,6 +85,36 @@ def test_catalog_endpoint_returns_store_products() -> None:
 
     assert response.status_code == 200
     assert [product["id"] for product in response.json()] == ["desk-lamp", "travel-mug", "cable-kit"]
+
+
+def test_store_returns_and_propagates_request_id(monkeypatch) -> None:
+    response = TestClient(main.app).get("/api/store/health", headers={"X-Request-ID": "store-check-1"})
+    assert response.headers["X-Request-ID"] == "store-check-1"
+
+    captured = {}
+    token = set_request_id("store-check-1")
+
+    class Response:
+        def read(self):
+            return b'{"incident":{"id":"incident-1"}}'
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    def request(request, timeout):
+        captured["request_id"] = request.get_header("X-request-id")
+        return Response()
+
+    try:
+        monkeypatch.setattr(observer_module, "urlopen", request)
+        observer_module.AlertGateway().create_incident({"source_event_id": "event-1"})
+    finally:
+        reset_request_id(token)
+
+    assert captured == {"request_id": "store-check-1"}
 
 
 def test_payment_endpoint_returns_created_incident(monkeypatch) -> None:

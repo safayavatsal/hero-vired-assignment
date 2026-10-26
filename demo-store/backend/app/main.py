@@ -1,10 +1,11 @@
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from app.observer import CheckoutObserver
+from app.request_context import request_id_from_header, reset_request_id, set_request_id
 
 
 @dataclass(frozen=True)
@@ -89,6 +90,18 @@ class PaymentService:
 
 
 app = FastAPI(title="Northstar Supply Demo Store")
+
+
+@app.middleware("http")
+async def request_context(request: Request, call_next):
+    request_id = request_id_from_header(request.headers.get("x-request-id"))
+    token = set_request_id(request_id)
+    try:
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
+    finally:
+        reset_request_id(token)
 payment_service = PaymentService()
 
 

@@ -14,6 +14,7 @@ The product accepts normalized alerts, groups repeat deliveries, collects bounde
 - Simulator alert deliveries are forwarded through the same incident webhook pipeline used by external alert sources, so a clean demo creates real incidents.
 - PostgreSQL-backed incidents, alerts, evidence, findings, pages, actions, jobs, attempts, and timeline events.
 - Read-only queue metrics for pending, leased, retrying, succeeded, and dead-lettered work.
+- Bounded HTTP request correlation and local route metrics at `GET /api/v1/metrics`.
 - Worker-backed investigation and action execution with retry, lease, timeout, and recovery handling.
 - Human paging, acknowledgement, free-form reply, fallback escalation, approval, rejection, execution, and verification.
 - Scenario-owned investigation checklists that show the bounded checks before, during, and after a worker-backed investigation.
@@ -81,6 +82,7 @@ docker compose run --rm --user root store-backend pytest -q tests
 ./scripts/demo.sh
 ./scripts/verify-commerce-demo.sh
 curl http://localhost:8001/api/v1/jobs/metrics
+curl http://localhost:8001/api/v1/metrics
 ./scripts/benchmark-queue.py --count 20
 ```
 

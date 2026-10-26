@@ -8,6 +8,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from app.application.resilience import env_float
+from app.application.observability import current_request_id
 
 
 class ExternalBoundaryError(ValueError):
@@ -17,6 +18,8 @@ class ExternalBoundaryError(ValueError):
 def _request_json(url: str, token: str, payload: dict[str, Any]) -> dict[str, Any]:
     request = Request(url, data=json.dumps(payload).encode(), method="POST")
     request.add_header("Content-Type", "application/json")
+    if request_id := current_request_id():
+        request.add_header("X-Request-ID", request_id)
     if token:
         request.add_header("Authorization", f"Bearer {token}")
     try:

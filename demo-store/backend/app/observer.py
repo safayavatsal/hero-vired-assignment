@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+from app.request_context import current_request_id
 
 
 class AlertGateway:
@@ -12,7 +13,7 @@ class AlertGateway:
         request = Request(
             f"{base_url}/api/v1/alerts",
             data=json.dumps(payload).encode(),
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", **({"X-Request-ID": current_request_id()} if current_request_id() else {})},
             method="POST",
         )
         try:

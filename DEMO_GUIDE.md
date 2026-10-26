@@ -44,6 +44,8 @@ For queue health, run `curl http://localhost:8001/api/v1/jobs/metrics`. It repor
 
 To measure the local queue path, run `./scripts/benchmark-queue.py --count 20` from the repository root. The result reports completed work, elapsed time, throughput, and the same bounded queue metrics; it does not add a service to the demo.
 
+For request correlation, send `X-Request-ID: demo-check-1` to any API request and read the same response header. `GET http://localhost:8001/api/v1/metrics` shows fixed-route request counts and p50/p95 latency without storing payloads.
+
 ## Live scenario addition demo
 
 New scenarios are registered as data through `POST /api/v1/simulator/scenarios` with a `definition` payload (see the README example). During a session:

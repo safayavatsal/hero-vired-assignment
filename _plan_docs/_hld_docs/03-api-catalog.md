@@ -36,6 +36,7 @@ This document lists the major HTTP APIs in the product. Detailed request validat
 | `/api/v1/incidents/{incident_id}/evidence` | Return collected evidence and availability states |
 | `/api/v1/investigation-tools` | List the fixed and historical evidence tools with purposes and enabled state |
 | `/api/v1/jobs/metrics` | Return bounded queue counts and wait/processing timings |
+| `/api/v1/metrics` | Return bounded in-process HTTP request counts and latency percentiles |
 | `/api/v1/health` | Report API and dependency health |
 | `/api/v1/simulator/scenarios` | List available simulator scenarios without hidden causes |
 | `/api/v1/simulator/state` | Return selected scenario state and action records |
@@ -54,3 +55,4 @@ This document lists the major HTTP APIs in the product. Detailed request validat
 - `scripts/add-scenario.sh` uses the existing scenario-registration and alert endpoints, then prints the accepted incident identifier.
 - Queue metrics are read-only operational summaries and never include job payloads or error bodies.
 - Operator mutations use the opt-in role boundary when `AUTH_MODE=required`; the default local demo remains unauthenticated by design.
+- API responses return a bounded `X-Request-ID`; route-level metrics use fixed templates and status classes rather than raw URLs.

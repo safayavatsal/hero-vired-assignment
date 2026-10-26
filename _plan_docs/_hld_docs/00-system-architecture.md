@@ -12,6 +12,7 @@ flowchart LR
     Responder[On-call engineer] --> UI[React + TypeScript incident console]
     UI -->|REST and polling| API[FastAPI API]
     Operator[Configured operator token] -.->|role authorization| API
+    API --> Metrics[Bounded runtime metrics]
     API --> Store[(PostgreSQL system of record)]
     API --> Jobs[(PostgreSQL durable jobs)]
     Worker[Python worker] --> Jobs
@@ -39,6 +40,7 @@ flowchart LR
 | Production simulator | Deterministic alerts, evidence sources, typed actions, and failure controls | Production credentials or arbitrary command execution |
 | Model and delivery boundaries | Structured analysis, bounded allowlisted evidence requests, telemetry, optional delivery, ownership, local captured email, and reconciliation | Direct authorization or incident truth |
 | Operator role boundary | Optional server-side viewer, responder, approver, and administrator permissions for mutations | Full identity lifecycle, tenancy, or session management |
+| Runtime metrics | Request IDs, structured request records, and bounded route latency summaries | Durable tracing backend or long-term metric retention |
 
 ## 3. Relational schema catalog
 

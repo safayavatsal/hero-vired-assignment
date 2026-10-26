@@ -60,6 +60,7 @@ Each journey sends bounded operational metadata through the normal alert intake.
 | Missing model configuration | Deterministic finding remains available with explicit degraded model status |
 | Local model mode | `MODEL_GATEWAY_MODE=local` returns bounded structured enrichment without credentials or action authority |
 | Required operator roles | `AUTH_MODE=required` rejects missing or insufficient tokens before protected workflow mutations |
+| Request correlation | `X-Request-ID` is returned and `GET /api/v1/metrics` reports bounded route counts and p50/p95 timings |
 | Empty or small similar-incident history | `similar_incidents` is unavailable with a clear uncertainty note |
 | Similar-incident retrieval failure | Deterministic finding remains unchanged and the retrieval source is degraded |
 | Disallowed model evidence query | Request is rejected in telemetry and no unapproved provider call occurs |
