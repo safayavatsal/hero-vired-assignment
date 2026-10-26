@@ -64,6 +64,6 @@ The project owner identified, prioritized, or reviewed the following grouped fin
 
 ## Human-owned remediation enhancement
 
-The owner identified that diagnosis, ownership, approval, queueing, and verification were visually ambiguous. The AI-assisted implementation now keeps analyzer categories internal until evidence completes, supports recipient email or local ownership, combines approval with queueing in the browser, persists action before/after state, and updates the HLD/LLD/API records. The owner retains the workflow, safety, and identity-boundary decisions.
+The owner identified that diagnosis, ownership, approval, queueing, verification, and closure were visually ambiguous. The AI-assisted implementation now keeps analyzer categories internal until evidence completes, supports recipient email or local ownership, combines approval with queueing in the browser, persists blue before/after state through verification, keeps the sandbox preview stable during polling, gives the operator a direct incident link, and makes incident closure an explicit human action. The owner retains the workflow, safety, and identity-boundary decisions.
 
 These contributions are recorded as human detection, direction, and verification; implementation changes remain explicitly attributed as AI-assisted.

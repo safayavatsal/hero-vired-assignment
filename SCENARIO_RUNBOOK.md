@@ -31,7 +31,7 @@ Each journey sends bounded operational metadata through the normal alert intake.
    In the browser, confirm the scenario-owned investigation checklist shows four pending checks before the run, active feedback while queued/running, and four completed checks with the finding.
    Expand the tool trace and confirm every query has a purpose, stable name, enabled state, availability, and duration.
 6. Page and acknowledge a responder, or send `response_type=timeout` to verify fallback escalation.
-7. For a local-remediation scenario, propose, approve, execute, and verify the allowed action; the incident ends as `resolved`. For the external-dependency scenario, confirm the incident ends as `unfixable` without a local action.
+7. For a local-remediation scenario, propose, approve, execute, and verify the allowed action; review the before/after evidence, then explicitly close the incident. For the external-dependency scenario, confirm the incident ends as `unfixable` without a local action.
 8. Read the incident timeline and confirm the workflow events remain ordered.
 9. In the UI, confirm the selected incident auto-selects its investigation context, a completed result offers only an explicit deeper-investigation option, responder controls target the newest page, acknowledgement closes ownership, remediation controls explain their evidence before approval, and failures appear in the toast region rather than in the page layout.
 10. For a resource snapshot, list the read-only analyzers, submit resources with a namespace or label filter, and confirm the response contains only normalized findings and suggested inspection steps.
@@ -66,7 +66,7 @@ Each journey sends bounded operational metadata through the normal alert intake.
 | Disallowed model evidence query | Request is rejected in telemetry and no unapproved provider call occurs |
 | Evidence-loop bound reached | Investigation completes with a recorded stop reason and no raised error |
 | Telemetry estimate unavailable | Counts remain bounded and cost remains finite and non-negative |
-| Verified local action | Incident transitions to `resolved` and the timeline records verification and resolution |
+| Verified local action | Verification and before/after evidence are recorded; an explicit close transitions the incident to `resolved` and records resolution |
 | External dependency finding | Incident transitions to `unfixable` and no local action is proposed |
 | Approved synthetic checkout | Order succeeds and no incident is created |
 | Declined synthetic checkout | One `checkout-api` incident is created without payment credentials in its payload |
@@ -108,4 +108,4 @@ The frontend interaction pass also includes a newest-page regression test, serve
 2. Start investigation and wait for the completed finding to reveal the category and next step.
 3. Notify a validated owner email, or choose local ownership and confirm the page is acknowledged without a delivery attempt.
 4. Review the sandbox projection, approve once, and confirm the action is queued without a second queue control.
-5. Wait for execution, confirm before/after state remains visible, then verify and confirm the incident becomes resolved.
+5. Wait for execution, confirm the before/after state remains visible and blue, verify the service state, follow the direct incident link if needed, then choose `Close incident` and confirm the incident becomes resolved.

@@ -129,6 +129,15 @@ def verify_action(action_id: UUID,
         raise HTTPException(status_code=400, detail=str(error)) from error
 
 
+@router.post("/incidents/{incident_id}/close")
+def close_incident(incident_id: UUID,
+                   _principal: Principal = Depends(require_role("responder"))) -> dict[str, Any]:
+    try:
+        return workflow_service.close_incident(incident_id)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
 @router.post("/actions/{action_id}/reconcile")
 def reconcile_action(action_id: UUID,
                      _principal: Principal = Depends(require_role("administrator"))) -> dict[str, Any]:

@@ -141,3 +141,44 @@ def test_self_ownership_creates_acknowledged_page_without_delivery(monkeypatch) 
     result = service.create_page(incident_id, "local-operator", None, 300, notify=False)
 
     assert result["page"]["status"] == "acknowledged"
+
+
+def test_closing_requires_a_verified_action(monkeypatch) -> None:
+    incident_id = uuid4()
+
+    class Connection:
+        def execute(self, query, _params):
+            if "SELECT * FROM incidents" in query:
+                return _Result({"id": incident_id, "status": "action_running"})
+            if "SELECT id FROM action_proposals" in query:
+                return _Result(None)
+            return _Result(None)
+
+    monkeypatch.setattr(workflow_module.psycopg, "connect", lambda *args, **kwargs: _Context(Connection()))
+
+    with pytest.raises(ValueError, match="verified action is required"):
+        WorkflowService("postgresql://test").close_incident(incident_id)
+
+
+def test_closing_is_a_separate_step_after_verification(monkeypatch) -> None:
+    incident_id = uuid4()
+    action_id = uuid4()
+    updates = []
+
+    class Connection:
+        def execute(self, query, _params):
+            if "SELECT * FROM incidents" in query:
+                return _Result({"id": incident_id, "status": "action_running"})
+            if "SELECT id FROM action_proposals" in query:
+                return _Result({"id": action_id})
+            if query.startswith("UPDATE incidents"):
+                updates.append(query)
+            return _Result(None)
+
+    monkeypatch.setattr(workflow_module.psycopg, "connect", lambda *args, **kwargs: _Context(Connection()))
+    monkeypatch.setattr(WorkflowService, "_timeline", staticmethod(lambda *_args: None))
+
+    result = WorkflowService("postgresql://test").close_incident(incident_id)
+
+    assert result == {"id": str(incident_id), "status": "resolved"}
+    assert len(updates) == 1

@@ -56,4 +56,4 @@ This file is the index of the detailed decision records in [`_decision_docs/`](_
 | [035 — Scenario Onboarding Kit](_decision_docs/035-scenario-onboarding-kit.md) | Adds one validated command for registering a scenario and creating its first incident. |
 | [036 — Local Operator Roles](_decision_docs/036-local-operator-roles.md) | Adds an opt-in server-side role boundary for operator mutations while preserving the local demo default. |
 | [037 — Request Correlation And Runtime Metrics](_decision_docs/037-request-correlation-and-runtime-metrics.md) | Adds bounded request IDs, propagation, structured request records, and local latency metrics. |
-| [038 — Human-Owned Remediation Flow](_decision_docs/038-human-owned-remediation-flow.md) | Makes findings discovery-driven, ownership explicit, approval automatically queue work, and verification persistent. |
+| [038 — Human-Owned Remediation Flow](_decision_docs/038-human-owned-remediation-flow.md) | Makes findings discovery-driven, ownership explicit, approval automatically queue work, verification persistent, and incident closure explicit. |

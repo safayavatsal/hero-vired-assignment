@@ -44,14 +44,16 @@ sequenceDiagram
     W->>D: Claim action job with lease
     W->>S: Execute approved typed action
     S-->>W: Operation result, timeout, or unknown outcome
-    W->>S: Verify current state independently
-    S-->>W: Verification evidence
-    W->>D: Persist attempt, verification, and resolution state
+    W->>D: Persist attempt and before/after result
+    U->>A: Verify service state
+    A->>D: Persist verification evidence
+    U->>A: Explicitly close incident
+    A->>D: Persist resolution state and timeline event
     U->>A: Poll incident and timeline
     A-->>U: Ordered backend truth
 ```
 
-The browser obtains the remediation action from the completed finding, accepts either a recipient email or a local ownership claim, and combines approval with queueing. Execution before/after state stays in the action read model until the verification request records the final result.
+The browser obtains the remediation action from the completed finding, accepts either a recipient email or a local ownership claim, and combines approval with queueing. Execution before/after state stays in the action read model until the verification request records the final result. Verification leaves the incident open; the operator reviews the result, follows the direct incident link if needed, and explicitly closes the incident.
 
 ## Runtime guarantees
 
@@ -62,5 +64,5 @@ The browser obtains the remediation action from the completed finding, accepts e
 - The model loop ends on its round, request, evidence-item, or wall-clock bound and records the stop reason instead of raising.
 - Source timings, retrieval latency, token estimates, and estimated cost are persisted with the investigation.
 - A human approval is checked again when the worker claims the action job.
-- An action timeout leads to verification before any success or resolution state is recorded.
+- An action timeout leads to verification before any success state is recorded; incident resolution requires a separate human close action.
 - The UI reads the durable incident state and timeline; it does not treat an optimistic request as completed work.

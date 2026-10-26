@@ -2,7 +2,7 @@
 
 ## Decision
 
-The investigation result is the only source for the displayed category and recommended local action. The operator may notify a specific owner or claim the incident locally. Approval is one browser action that records the decision and queues the typed work; the execution state and before/after result remain visible until verification.
+The investigation result is the only source for the displayed category and recommended local action. The operator may notify a specific owner or claim the incident locally. Approval is one browser action that records the decision and queues the typed work; the execution state and before/after result remain visible until verification. Verification records an action result, while a separate operator close action resolves the incident.
 
 ## Safety
 
@@ -10,6 +10,8 @@ The investigation result is the only source for the displayed category and recom
 - Email recipients are validated at the API boundary and stored with the page record.
 - Self-ownership skips delivery but still creates a durable acknowledged page and timeline event.
 - The existing typed action, approval, idempotency, worker, and verification boundaries remain authoritative.
+- Polling must refresh durable state without clearing an open sandbox preview for the selected incident.
+- A verified action exposes its evidence and a direct incident link; only an explicit close request records incident resolution.
 
 ## Consequences
 

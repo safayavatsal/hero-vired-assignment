@@ -34,7 +34,7 @@
 | Local model path | No-secret structured model demonstration | Implemented; `MODEL_GATEWAY_MODE=local` returns contract-valid enrichment without changing deterministic findings or action authorization |
 | Local operator roles | Opt-in server-side authorization seam | Implemented; configured tokens map to viewer, responder, approver, or administrator permissions when `AUTH_MODE=required`, while the default local path remains compatible |
 | Request correlation | Bounded HTTP IDs and runtime metrics | Implemented; API and demo-store boundaries return and propagate request IDs, while `GET /api/v1/metrics` reports fixed-label counts and latency percentiles |
-| Human-owned remediation | Discovery-driven category, explicit ownership, automatic queueing, persistent verification | Implemented; public scenario listings hide analyzer findings, page requests support recipient email or local ownership, approval queues once, and action before/after state remains visible through verification |
+| Human-owned remediation | Discovery-driven category, explicit ownership, automatic queueing, persistent verification, explicit closure | Implemented; public scenario listings hide analyzer findings, page requests support recipient email or local ownership, approval queues once, blue action before/after state remains visible through verification, and the operator receives a direct link and closes the incident explicitly |
 
 The approved HLD and LLD remain the authority for boundaries and relationships. The current implementation includes durable investigation and action jobs, action-attempt, verification, delivery-attempt, and worker-startup pieces required by those documents.
 
@@ -92,7 +92,7 @@ Implemented:
 - Feature 9 adds committed golden investigation cases with expected categories, safe next steps, confidence bounds, citation checks, required evidence sources, and prompt-version alignment.
 - Feature 10 adds clean-checkout Compose defaults, repeatable all-scenario demo/reset scripts, and a focused live-change analyzer path.
 - The UI refreshes the selected incident while polling, supports free-form page replies, and displays queued and running action states.
-- Investigation completion, no-local-fix classification, and verified remediation are visible as explicit terminal timeline states; verified local actions resolve the incident.
+- Investigation completion, no-local-fix classification, and verified remediation are visible as explicit timeline states; verification leaves the incident open until the operator explicitly closes it.
 - Similar-incident retrieval uses no new service or required credential, stores vectors in PostgreSQL, excludes the current incident, and leaves deterministic findings unchanged when history is empty or retrieval is unavailable.
 - The optional evidence loop is enabled only for configured model gateways; missing models preserve the fixed path, while invalid requests and exhausted bounds remain telemetry rather than errors.
 - Model telemetry now includes estimated prompt/completion tokens, finite non-negative cost, source durations, and similar-history retrieval latency; local rate settings are optional.

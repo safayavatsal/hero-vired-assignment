@@ -357,15 +357,28 @@ class WorkflowService:
             verified = bool(result.get("verified"))
             connection.execute("UPDATE action_proposals SET status = %s, result = %s, updated_at = %s WHERE id = %s", ("verified" if verified else "failed", Jsonb(result), datetime.now(timezone.utc), action_id))
             self._timeline(connection, action["incident_id"], "action_verified", {"action_id": str(action_id), "verified": verified})
-            if verified:
-                incident = connection.execute("SELECT * FROM incidents WHERE id = %s FOR UPDATE", (action["incident_id"],)).fetchone()
-                if incident and incident["status"] in {"investigating", "awaiting_human", "action_pending", "action_running"}:
-                    connection.execute(
-                        "UPDATE incidents SET status = 'resolved', version = version + 1, updated_at = %s WHERE id = %s",
-                        (datetime.now(timezone.utc), action["incident_id"]),
-                    )
-                    self._timeline(connection, action["incident_id"], "incident_resolved", {"action_id": str(action_id)})
             return self._get_action(connection, action_id)
+
+    def close_incident(self, incident_id: UUID) -> dict[str, Any]:
+        with psycopg.connect(self.database_url, row_factory=dict_row) as connection:
+            incident = connection.execute("SELECT * FROM incidents WHERE id = %s FOR UPDATE", (incident_id,)).fetchone()
+            if incident is None:
+                raise ValueError("incident not found")
+            if incident["status"] == "resolved":
+                return {"id": str(incident_id), "status": "resolved"}
+            verified = connection.execute(
+                "SELECT id FROM action_proposals WHERE incident_id = %s AND status = 'verified' ORDER BY updated_at DESC LIMIT 1",
+                (incident_id,),
+            ).fetchone()
+            if verified is None:
+                raise ValueError("a verified action is required before closing the incident")
+            now = datetime.now(timezone.utc)
+            connection.execute(
+                "UPDATE incidents SET status = 'resolved', version = version + 1, updated_at = %s WHERE id = %s",
+                (now, incident_id),
+            )
+            self._timeline(connection, incident_id, "incident_resolved", {"action_id": str(verified["id"])})
+            return {"id": str(incident_id), "status": "resolved"}
 
     @staticmethod
     def _verify_simulator_result(action: dict[str, Any]) -> dict[str, Any]:

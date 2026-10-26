@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { actionTypeForFinding, activeAction, activePage, scenarioForService, workflowStates } from "../src/lib/incidentSelection.js";
+import { actionTypeForFinding, activeAction, activePage, scenarioForService, shouldResetActionPreview, workflowStates } from "../src/lib/incidentSelection.js";
 
 test("selects a scenario from the service returned by the API", () => {
   assert.equal(scenarioForService([
@@ -50,4 +50,9 @@ test("derives the remediation action from the completed finding", () => {
   assert.equal(actionTypeForFinding(undefined, scenario), null);
   assert.equal(actionTypeForFinding({ suggested_next_step: "clear_disk" }, scenario), "clear_disk");
   assert.equal(actionTypeForFinding({ suggested_next_step: "rollback" }, scenario), null);
+});
+
+test("preserves the sandbox preview while polling the same incident", () => {
+  assert.equal(shouldResetActionPreview("incident-1", "incident-1"), false);
+  assert.equal(shouldResetActionPreview("incident-1", "incident-2"), true);
 });

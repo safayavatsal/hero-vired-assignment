@@ -11,6 +11,10 @@ export function actionTypeForFinding(finding, scenario) {
   return suggested && scenario?.allowed_actions?.includes(suggested) ? suggested : null;
 }
 
+export function shouldResetActionPreview(currentIncidentId, nextIncidentId) {
+  return currentIncidentId !== nextIncidentId;
+}
+
 export function activeAction(actions, match) {
   const eligible = match
     ? actions.filter((action) => action.scenario_id === match.scenarioId && action.target === match.target)

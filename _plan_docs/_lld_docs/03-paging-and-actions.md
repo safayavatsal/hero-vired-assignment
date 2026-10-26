@@ -35,5 +35,7 @@ sequenceDiagram
     A->>D: Persist queued job
     W->>D: Execute and persist before/after result
     U->>A: Verify service state
-    A->>D: Persist verification and resolution
+    A->>D: Persist verification and before/after evidence
+    U->>A: Close incident after review
+    A->>D: Persist resolution event
 ```

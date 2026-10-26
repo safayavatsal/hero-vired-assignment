@@ -15,6 +15,7 @@ This document lists the major HTTP APIs in the product. Detailed request validat
 | `/api/v1/actions/{action_id}/decision` | Approve or reject a typed action |
 | `/api/v1/actions/{action_id}/execute` | Execute an approved action through the simulator |
 | `/api/v1/actions/{action_id}/verify` | Verify the persisted action outcome |
+| `/api/v1/incidents/{incident_id}/close` | Explicitly close an incident after a verified action |
 | `/api/v1/actions/{action_id}/reconcile` | Reconcile an unknown action through the configured external executor |
 | `/api/v1/auth/context` | Return the authenticated local operator role without exposing credentials |
 | `/api/v1/simulator/scenarios` | Add or select a deterministic simulator scenario |
@@ -52,6 +53,7 @@ This document lists the major HTTP APIs in the product. Detailed request validat
 - Action approval never executes an action inside the request handler; it creates durable work.
 - A page request may include a validated recipient email or `notify=false` for a local ownership claim.
 - The browser combines approval with the existing execute request so one operator action records approval and queueing; the execute route remains compatible for other clients.
+- Verification records the action result but does not resolve the incident; the close endpoint requires a verified action and records the resolution event.
 - Error responses expose safe problem details and never treat model or simulator text as trusted instructions.
 - Similar-incident retrieval, bounded model re-queries, and telemetry are additive fields in the existing investigation response; no new investigation route is required.
 - `scripts/add-scenario.sh` uses the existing scenario-registration and alert endpoints, then prints the accepted incident identifier.

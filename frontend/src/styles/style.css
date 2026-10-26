@@ -131,10 +131,12 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .preview-grid small { display: block; font-weight: 700; margin-bottom: 0.3rem; }
 .preview-grid pre { margin: 0; padding: 0.7rem; overflow: auto; border-radius: 0.4rem; background: #10202d; color: #e4f2f8; font-size: 0.75rem; }
 @media (max-width: 720px) { .preview-grid { grid-template-columns: 1fr; } }
-.action-result { color: #166534; font-weight: 600; margin: 0.8rem 0 0; }
+.action-result { color: #075985; font-weight: 700; margin: 0.8rem 0 0; }
 .action-state-diff { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin-top: 0.8rem; }
-.action-state-diff > div { border: 1px solid #d6e1e8; border-radius: 0.4rem; background: #fff; padding: 0.7rem; }
-.action-state-diff pre { max-height: 12rem; overflow: auto; margin: 0.45rem 0 0; white-space: pre-wrap; color: #183044; font-size: 0.78rem; }
+.action-state-diff > div { border: 1px solid #7dd3fc; border-radius: 0.4rem; background: #eff6ff; color: #075985; padding: 0.7rem; }
+.action-state-diff pre { max-height: 12rem; overflow: auto; margin: 0.45rem 0 0; white-space: pre-wrap; border: 1px solid #bae6fd; border-radius: 0.3rem; background: #e0f2fe; color: #075985; font-size: 0.78rem; }
+.action-close-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem; margin-top: 0.8rem; }
+.incident-link { color: #075985; font-weight: 700; }
 .action-state-diff .citation-line { grid-column: 1 / -1; margin: 0; }
 .secondary-section { border-top: 1px solid #d8dee6; margin-top: 1rem; }
 .secondary-section > summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 0; color: #18202a; list-style: none; }
