@@ -73,3 +73,15 @@ def test_worker_claims_executes_investigation(monkeypatch):
     assert investigation.executed == [(incident_id, "disk_pressure")]
     assert len(jobs.completed) == 1
     assert jobs.failed == []
+
+
+def test_worker_accepts_an_injected_queue():
+    jobs = FakeJobs()
+    workflow = FakeWorkflow()
+
+    worker = worker_module.Worker(jobs=jobs)
+    worker.workflow = workflow
+    worker.run_once()
+
+    assert workflow.recovered == 1
+    assert len(jobs.completed) == 1

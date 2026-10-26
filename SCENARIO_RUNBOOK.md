@@ -56,6 +56,7 @@ Each journey sends bounded operational metadata through the normal alert intake.
 | Stale page/action version | Decision is rejected without changing the newer state |
 | Restart during durable work | Worker recovery resumes or safely retries leased work |
 | Queue metrics | `GET /api/v1/jobs/metrics` returns bounded counts and timings without job payloads |
+| Queue benchmark | `./scripts/benchmark-queue.py --count 20` completes bounded work and reports throughput without changing the default runtime |
 | Missing model configuration | Deterministic finding remains available with explicit degraded model status |
 | Empty or small similar-incident history | `similar_incidents` is unavailable with a clear uncertainty note |
 | Similar-incident retrieval failure | Deterministic finding remains unchanged and the retrieval source is degraded |

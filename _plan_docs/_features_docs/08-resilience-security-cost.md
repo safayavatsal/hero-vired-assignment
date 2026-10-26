@@ -16,10 +16,11 @@ Make degraded behavior safe, bounded, and explainable.
 8. Enforce tool and action permissions in backend code.
 9. Add health checks and startup recovery.
 10. Expose bounded queue state and prove idempotency, retry, and expired-lease recovery.
+11. Keep the worker dependent on a small queue contract and provide a bounded benchmark before selecting another queue implementation.
 
 ## Implementation status
 
-Implemented locally. Evidence collection runs concurrently with per-source deadlines, model and external boundary deadlines are configurable and bounded, model prompts are capped by evidence items and serialized size, and durable job retries use capped exponential backoff. Queue metrics expose pending, leased, retrying, succeeded, and dead-lettered work plus bounded wait and processing timings. Existing approval, idempotency, masking, validation, lease recovery, and startup health checks remain in force.
+Implemented locally. Evidence collection runs concurrently with per-source deadlines, model and external boundary deadlines are configurable and bounded, model prompts are capped by evidence items and serialized size, and durable job retries use capped exponential backoff. Queue metrics expose pending, leased, retrying, succeeded, and dead-lettered work plus bounded wait and processing timings. The worker accepts a small queue contract, and `scripts/benchmark-queue.py` measures the default queue without changing the Compose path. Existing approval, idempotency, masking, validation, lease recovery, and startup health checks remain in force.
 
 ## Acceptance checks
 
@@ -29,6 +30,7 @@ Implemented locally. Evidence collection runs concurrently with per-source deadl
 - Restarting the backend does not lose or repeat work.
 - Queue metrics report non-negative bounded values.
 - Duplicate enqueue returns the original job, and an expired lease is reclaimed once without creating another job.
+- The queue benchmark completes bounded work and reports non-negative throughput and persisted metrics.
 
 ## Verification
 

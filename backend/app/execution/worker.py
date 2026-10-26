@@ -5,12 +5,13 @@ from uuid import UUID
 from app.application.job_queue import JobRepository
 from app.application.workflow import WorkflowService
 from app.application.incident import investigation_service
+from app.ports.job_queue import JobQueue
 
 
 class Worker:
-    def __init__(self, poll_interval: float = 1.0) -> None:
+    def __init__(self, poll_interval: float = 1.0, jobs: JobQueue | None = None) -> None:
         self.poll_interval = poll_interval
-        self.jobs = JobRepository()
+        self.jobs = jobs or JobRepository()
         self.workflow = WorkflowService()
         self.investigation = investigation_service
 

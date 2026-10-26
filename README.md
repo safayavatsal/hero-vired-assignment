@@ -81,11 +81,14 @@ docker compose run --rm --user root store-backend pytest -q tests
 ./scripts/demo.sh
 ./scripts/verify-commerce-demo.sh
 curl http://localhost:8001/api/v1/jobs/metrics
+./scripts/benchmark-queue.py --count 20
 ```
 
 The demo exercises all scenarios with duplicate, late, flapping, delayed, and out-of-order deliveries, then shows degraded dependency evidence.
 
 `verify-submission.sh` is the final local preflight. Run it after the Compose stack is up; it checks configuration, readiness, both served frontends, the demo-store proxy, both backend test suites, both frontend builds, the commerce workflow, and the working-tree diff.
+
+`benchmark-queue.py` measures bounded work on the default durable queue and reports completion, elapsed time, throughput, and persisted queue metrics. It is an evaluation tool, not a required runtime dependency.
 
 `verify-commerce-demo.sh` proves the approved checkout, declined checkout, incident creation, completed investigation, responder page, and captured inbox message against the running stack.
 

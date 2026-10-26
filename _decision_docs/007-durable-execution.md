@@ -15,3 +15,4 @@ Action outcomes include success, failure, timed out, and unknown. An unknown act
 - The timeline can explain what the system believed and what actually happened.
 - Queue wait, lease, retry, completion, and dead-letter behavior can be evaluated from persisted state without exposing job payloads.
 - A future broker can implement the same enqueue/claim/complete/fail contract without changing incident or workflow semantics.
+- The worker consumes a small `JobQueue` contract, and the checked-in benchmark provides measured queue evidence before a broker migration is considered.
