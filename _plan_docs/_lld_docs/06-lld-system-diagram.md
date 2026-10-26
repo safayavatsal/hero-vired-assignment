@@ -43,6 +43,21 @@ classDiagram
         -str uncertainty
         +validate_confidence() None
     }
+    class ScenarioDefinition {
+        -str id
+        -str name
+        -str service
+        -str severity
+        -dict evidence
+        -tuple allowed_actions
+        -dict finding
+        +validate() None
+    }
+    class ScenarioController {
+        +list_scenarios() list~dict~
+        +register_scenario(id: str, definition: dict) dict
+        +trigger_alert(scenario_id: str) dict
+    }
     class FindingEmbedding {
         -UUID id
         -UUID incident_id
@@ -155,8 +170,18 @@ classDiagram
         +investigate(id: UUID, scenario_id: str) dict
         +enqueue(id: UUID, scenario_id: str, mode: str) dict
         +_query_similar_incidents(id: UUID, service: str, finding: Finding) Evidence
+        +_allowlisted_tool(request: dict) tuple~EvidenceTool, str~
         +_model_analysis(evidence: list~Evidence~) dict
         +_model_telemetry(evidence: list~Evidence~) dict
+    }
+    class ModelTelemetry {
+        -str status
+        -int prompt_tokens
+        -int completion_tokens
+        -float estimated_cost
+        -int retrieval_latency_ms
+        -list evidence_sources
+        -dict agent_loop
     }
     class EvidenceTool {
         -str source_type
@@ -199,6 +224,10 @@ classDiagram
         +render_dashboard(snapshot: DashboardSnapshot) None
         +open_incident_link(id: UUID) None
     }
+    class RuntimeMetrics {
+        +record(method: str, route: str, status: int, duration_ms: float) None
+        +snapshot() dict
+    }
 
     class IncidentRepository {
         <<interface>>
@@ -208,6 +237,7 @@ classDiagram
     }
     class EvidenceProvider {
         <<interface>>
+        +select_scenario(scenario_id: str) dict
         +query_evidence(source_type: str) dict
         +finding_rules(scenario_id: str) list~dict~
     }
@@ -354,8 +384,11 @@ classDiagram
     ActionAttempt "1" o-- "many" Verification : confirms
     Incident "1" o-- "many" TimelineEvent : records
     Incident "1" o-- "many" Job : schedules
+    ScenarioDefinition "1" o-- "many" Evidence : defines
+    InvestigationService "1" o-- "0..1" ModelTelemetry : records
 
     IncidentController --> IncidentService : calls
+    ScenarioController --> EvidenceProvider : registers and selects
     DecisionController --> DecisionService : calls
     DecisionController --> ActionService : calls
     ActionController --> ActionService : calls
@@ -367,6 +400,7 @@ classDiagram
     InvestigationService ..> InvestigationRepository : persists
     InvestigationService ..> RetrievalRepository : retrieves
     InvestigationService ..> EvidenceTool : bounds
+    InvestigationService ..> ModelTelemetry : estimates and persists
     PagingService ..> PagingGateway : sends
     PagingService ..> TimelineRepository : records
     DecisionService ..> ActionRepository : persists
@@ -396,4 +430,5 @@ classDiagram
     StorePaymentService --> StorePaymentRequest : validates
     StorePaymentService --> StoreAlertGateway : reports decline
     StoreAlertGateway --> IncidentController : sends alert
+    RuntimeMetrics --> IncidentController : records request timing
 ```

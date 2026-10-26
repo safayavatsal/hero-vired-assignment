@@ -1,5 +1,7 @@
 # Scenario Runbook
 
+Architecture review reference: [PATHFINDER-2026-10-24/05-current-state.md](PATHFINDER-2026-10-24/05-current-state.md) maps each scenario trigger to the main application, worker, remediation, and monitoring surfaces.
+
 ## Scenario matrix
 
 | Scenario | Service | Expected finding | Safe next step |

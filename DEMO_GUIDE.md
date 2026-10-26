@@ -4,6 +4,8 @@
 
 The repository root is the operational entry point. Primary application code is under `main-app/backend/` and `main-app/frontend/`; demo applications remain under their named folders.
 
+For architecture review, start with [the current Pathfinder state](PATHFINDER-2026-10-24/05-current-state.md), then follow the HLD, LLD, and rendered architecture map listed there.
+
 Run `docker compose up --build`, open `http://localhost:8000`, and confirm that the incident console loads.
 
 The API endpoints are available at `http://localhost:8001/api/v1/health` and `http://localhost:8001/api/v1/readiness`.

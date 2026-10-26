@@ -37,6 +37,7 @@
 | Human-owned remediation | Discovery-driven category, explicit ownership, automatic queueing, persistent verification, explicit closure | Implemented; public scenario listings hide analyzer findings, page requests support recipient email or local ownership, approval queues once, blue action before/after state remains visible through verification, and the operator receives a direct link and closes the incident explicitly |
 | Demo observability surface | Read-only service monitoring pages and remediation backlinks | Implemented; the separate observability frontend/backend demo exposes three service dashboards on ports `8005`/`8006`, derives snapshots from incident/action state, and renders before/current outcomes without adding a metric store |
 | Main app layout | Primary application frontend/backend grouping | Implemented and verified; `main-app/backend/` and `main-app/frontend/` own the primary code while root documents, scripts, demos, ports, and API paths remain stable |
+| Architecture documentation refresh | Pathfinder, HLD, LLD, and rendered architecture alignment | Implemented; current feature boundaries, runtime surfaces, source paths, and review order are recorded, and the architecture source/HTML passes deterministic showcase validation |
 
 The approved HLD and LLD remain the authority for boundaries and relationships. The current implementation includes durable investigation and action jobs, action-attempt, verification, delivery-attempt, and worker-startup pieces required by those documents.
 

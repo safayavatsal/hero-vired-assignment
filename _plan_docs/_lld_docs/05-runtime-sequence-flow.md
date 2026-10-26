@@ -5,14 +5,19 @@ This document describes the alert-to-resolution runtime sequence. It is intentio
 ```mermaid
 sequenceDiagram
     participant S as Simulator or alert source
+    participant O as Scenario onboarding script
     participant A as API
     participant D as PostgreSQL
     participant W as Worker
+    participant R as Historical retriever
     participant M as Model adapter
     participant P as Paging boundary
     participant H as Human responder
     participant U as React UI
+    participant V as Demo observability
 
+    O->>A: Register validated scenario and trigger one alert
+    A->>D: Persist scenario-backed alert through normal intake
     S->>A: Send alert webhook
     A->>D: Validate, fingerprint, and persist alert
     D-->>A: Existing or new incident
@@ -47,6 +52,9 @@ sequenceDiagram
     W->>D: Persist attempt and before/after result
     U->>A: Verify service state
     A->>D: Persist verification evidence
+    U->>V: Open read-only monitoring deep link
+    V->>A: Read bounded incident/action snapshot
+    A-->>V: Return service outcome and backlinks
     U->>A: Explicitly close incident
     A->>D: Persist resolution state and timeline event
     U->>A: Poll incident and timeline

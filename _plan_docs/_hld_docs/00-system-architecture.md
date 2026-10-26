@@ -16,8 +16,9 @@ flowchart LR
     UI -->|REST and polling| API[Main app backend API]
     MonitorUI -->|read-only dashboard requests| MonitorAPI[Demo observability backend]
     MonitorAPI -->|bounded incident/action reads| API
+    ScenarioScript[Scenario onboarding script] -->|register + trigger one alert| API
     Operator[Configured operator token] -.->|role authorization| API
-    API --> Metrics[Bounded runtime metrics]
+    API --> Metrics[Bounded request metrics]
     API --> Store[(PostgreSQL system of record)]
     API --> Jobs[(PostgreSQL durable jobs)]
     Worker[Main app worker] --> Jobs
@@ -27,9 +28,13 @@ flowchart LR
     Retrieval --> Store
     Worker --> Model[Provider-neutral model adapter]
     Model -.->|validated bounded evidence requests| Worker
+    Worker --> Telemetry[Investigation telemetry]
+    Telemetry --> Store
     Worker --> Pager[Paging and executor boundaries]
     API --> Inbox[Local captured responder inbox]
 ```
+
+The investigation path is fixed before optional enrichment: four evidence sources run in parallel, the fifth source retrieves similar completed findings, and a configured model may request only bounded allowlisted re-queries. Without a configured model, no additional loop work occurs. The deterministic finding remains the source for category, confidence, and action selection.
 
 ## 2. Responsibility boundaries
 
@@ -39,12 +44,13 @@ flowchart LR
 | Demo observability frontend | Service dashboard pages, before/current comparisons, and incident backlinks | Incident state, action execution, or durable metric storage |
 | Demo store frontend | Product selection, cart, synthetic checkout form, and payment result | Incident creation, payment processing, or durable state |
 | Demo store backend | Product catalog, synthetic payment validation, deterministic outcome, and bounded failure alert | Real payments, card persistence, or incident investigation |
+| Scenario onboarding boundary | Validates data-defined scenario payloads, registers them through the simulator API, and triggers one alert | Direct database writes, duplicate alerts, or custom workflow engines |
 | FastAPI API | Validation, idempotency, state transitions, read models, and audit events | Long-running investigation or direct model execution |
 | Python worker | Investigation jobs, action execution, verification, retries, leases, and overdue-page recovery | Browser presentation or unvalidated human intent |
 | PostgreSQL | Incidents, alerts, evidence, findings, pages, actions, jobs, attempts, verifications, and timeline history | External alert generation or model reasoning |
 | Historical finding retriever | Deterministic finding vectors, bounded ranked history lookup, and retrieval timing | Deterministic diagnosis, model authorization, or incident state |
 | Production simulator | Deterministic alerts, evidence sources, typed actions, and failure controls | Production credentials or arbitrary command execution |
-| Model and delivery boundaries | Structured analysis, bounded allowlisted evidence requests, telemetry, optional delivery, ownership, local captured email, and reconciliation | Direct authorization or incident truth |
+| Model and delivery boundaries | Structured analysis, bounded allowlisted evidence requests, token/cost estimates, source timing, optional delivery, ownership, local captured email, and reconciliation | Direct authorization or incident truth |
 | Operator role boundary | Optional server-side viewer, responder, approver, and administrator permissions for mutations | Full identity lifecycle, tenancy, or session management |
 | Runtime metrics | Request IDs, structured request records, and bounded route latency summaries | Durable tracing backend or long-term metric retention |
 | Demo observability backend | Read-only service profiles and bounded incident/action snapshots for local monitoring pages | Incident mutation, metric retention, or production telemetry ingestion |

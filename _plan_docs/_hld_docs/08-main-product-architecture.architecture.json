@@ -2,39 +2,39 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "Main product architecture",
+    "title": "Main product architecture and runtime surfaces",
     "output": "08-main-product-architecture.html",
     "quality_profile": "showcase",
     "repository": {
       "url": "git@github.com:safayavatsal/hero-vired-assignment.git",
       "link_mode": "local-only",
-      "revision": "92b5a64f4a2bc1a9022a58a7e53e9dceec6de27e"
+      "revision": "2636fddee6c896a7121f428dc746dffa160eaafd"
     },
     "views": [
       {
         "id": "operator-workflow",
         "label": "Operator workflow",
-        "focus": ["operator", "console", "api", "worker", "retrieval", "db"],
-        "note": "Follow an operator from the incident console through durable investigation state."
+        "focus": ["operator", "console", "api", "worker", "retrieval", "db", "observability"],
+        "note": "Follow an operator from investigation through evidence review, remediation, verification, and monitoring."
       },
       {
         "id": "observed-system",
         "label": "Observed system",
-        "focus": ["shopper", "store", "api", "db"],
-        "note": "Follow a demo-store failure into an alert and incident."
+        "focus": ["shopper", "store", "api", "db", "observability"],
+        "note": "Follow a demo-store failure into an alert, incident, and read-only service view."
       },
       {
         "id": "runtime-boundaries",
         "label": "Runtime boundaries",
-        "focus": ["console", "api", "worker", "retrieval", "db", "model", "notifications", "runtime"],
-        "note": "See the local runtime and external integration boundaries."
+        "focus": ["console", "api", "worker", "retrieval", "db", "model", "notifications", "observability", "runtime"],
+        "note": "See the local runtime, bounded analysis loop, notification boundary, and monitoring demo."
       }
     ]
   },
   "components": [
     { "id": "operator", "type": "external", "label": "Operator", "sublabel": "Browser user", "pos": [40, 250], "size": [140, 64], "sources": [{ "path": "main-app/frontend/src/app/App.tsx", "label": "console UI" }] },
     { "id": "shopper", "type": "external", "label": "Shopper", "sublabel": "Demo-store user", "pos": [40, 500], "size": [140, 64], "sources": [{ "path": "demo-store/frontend/src/App.tsx", "label": "store UI" }] },
-    { "id": "store", "type": "backend", "label": "Demo store", "sublabel": "Checkout + observer", "pos": [250, 500], "size": [170, 64], "sources": [{ "path": "demo-store/backend/app/main.py", "label": "store backend" }] },
+    { "id": "store", "type": "backend", "label": "Demo store", "sublabel": "Checkout + observer", "pos": [250, 500], "size": [170, 64], "sources": [{ "path": "demo-store/backend/app/main.py", "label": "store backend" }, { "path": "demo-store/frontend/src/App.tsx", "label": "store UI" }] },
     { "id": "console", "type": "frontend", "label": "Incident console", "sublabel": "React :8000", "pos": [250, 250], "size": [170, 64], "sources": [{ "path": "main-app/frontend/src/app/App.tsx", "label": "main UI" }] },
     { "id": "api", "type": "backend", "label": "Assistant API", "sublabel": "FastAPI :8001", "pos": [500, 250], "size": [170, 64], "sources": [{ "path": "main-app/backend/app/main.py", "label": "HTTP routes" }] },
     { "id": "worker", "type": "backend", "label": "Investigation worker", "sublabel": "Async jobs", "pos": [750, 250], "size": [180, 64], "sources": [{ "path": "main-app/backend/app/execution/worker.py", "label": "job execution" }] },
@@ -42,28 +42,32 @@
     { "id": "db", "type": "database", "label": "PostgreSQL", "sublabel": "Durable incidents + evidence", "pos": [1000, 250], "size": [190, 64], "sources": [{ "path": "main-app/backend/migrations/001_initial_schema.sql", "label": "schema" }] },
     { "id": "model", "type": "external", "label": "Model gateway", "sublabel": "Optional analysis provider", "pos": [750, 90], "size": [180, 64], "sources": [{ "path": "main-app/backend/app/application/model_gateway.py", "label": "provider adapter" }] },
     { "id": "notifications", "type": "external", "label": "Notification sink", "sublabel": "Local mailbox", "pos": [500, 500], "size": [170, 64], "sources": [{ "path": "main-app/backend/app/application/workflow.py", "label": "notification boundary" }] },
+    { "id": "observability", "type": "backend", "label": "Demo observability", "sublabel": "UI :8005 / API :8006", "pos": [250, 380], "size": [210, 64], "sources": [{ "path": "demo-observability/frontend/src/App.tsx", "label": "monitoring UI" }, { "path": "demo-observability/backend/app/main.py", "label": "snapshot API" }] },
     { "id": "runtime", "type": "cloud", "label": "Local runtime", "sublabel": "Compose or Helm", "pos": [750, 500], "size": [180, 64], "sources": [{ "path": "docker-compose.yml", "label": "Compose" }, { "path": "k8s/helm/hero-vired/Chart.yaml", "label": "Helm" }] }
   ],
   "boundaries": [
-    { "kind": "region", "label": "Local product runtime", "wraps": ["console", "api", "worker", "retrieval", "db", "notifications", "runtime"], "pad": 28 }
+    { "kind": "region", "label": "Local product runtime", "wraps": ["console", "api", "worker", "retrieval", "db", "notifications", "observability", "runtime"], "pad": 28 }
   ],
   "connections": [
     { "id": "operator-console", "from": "operator", "to": "console", "label": "HTTPS :8000", "variant": "emphasis" },
     { "id": "console-api", "from": "console", "to": "api", "label": "REST /api/v1" },
+    { "id": "console-observability", "from": "console", "to": "observability", "label": "Monitoring deep link", "variant": "dashed", "fromSide": "bottom", "toSide": "top" },
     { "id": "shopper-store", "from": "shopper", "to": "store", "label": "Checkout" },
     { "id": "store-api", "from": "store", "to": "api", "label": "Alert webhook", "variant": "dashed", "fromSide": "top", "toSide": "bottom" },
     { "id": "api-db", "from": "api", "to": "db", "label": "Persist incidents + workflow", "fromSide": "bottom", "toSide": "bottom", "via": [[585, 410], [1095, 410]], "labelAt": [720, 380] },
     { "id": "api-worker", "from": "api", "to": "worker", "label": "Enqueue investigation", "variant": "dashed", "fromSide": "bottom", "toSide": "bottom" },
-    { "id": "worker-db", "from": "worker", "to": "db", "label": "Read/write evidence", "fromSide": "bottom", "toSide": "bottom", "via": [[840, 350], [1095, 350]], "labelAt": [965, 350] },
+    { "id": "worker-db", "from": "worker", "to": "db", "label": "Evidence + telemetry", "fromSide": "bottom", "toSide": "bottom", "via": [[840, 350], [1095, 350]], "labelAt": [965, 350] },
     { "id": "worker-retrieval", "from": "worker", "to": "retrieval", "label": "Similar incidents", "variant": "dashed", "fromSide": "top", "toSide": "bottom", "labelAt": [965, 180] },
     { "id": "retrieval-db", "from": "retrieval", "to": "db", "label": "Store/query embeddings", "fromSide": "bottom", "toSide": "top", "via": [[1095, 190], [1095, 250]], "labelAt": [1175, 220] },
     { "id": "worker-model", "from": "worker", "to": "model", "label": "Bounded structured analysis", "variant": "dashed", "fromSide": "top", "toSide": "bottom", "labelAt": [690, 190] },
+    { "id": "model-worker", "from": "model", "to": "worker", "label": "Allowlisted evidence requests", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "labelAt": [970, 180] },
     { "id": "api-notifications", "from": "api", "to": "notifications", "label": "Page + owner updates", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "labelAt": [720, 450] },
+    { "id": "observability-api", "from": "observability", "to": "api", "label": "Bounded incident/action reads", "variant": "dashed" },
     { "id": "runtime-services", "from": "runtime", "to": "api", "label": "Runs services", "variant": "dashed", "fromSide": "top", "toSide": "bottom" }
   ],
   "cards": [
-    { "dot": "cyan", "title": "Request path", "items": ["Operator uses the incident console", "API persists and exposes workflow state", "PostgreSQL is the durable source of truth"] },
-    { "dot": "emerald", "title": "Investigation path", "items": ["Worker collects fixed evidence and similar findings", "Optional model analysis is bounded and traceable", "Findings become reviewable recommendations"] },
-    { "dot": "amber", "title": "Safety path", "items": ["Paging and owner responses are recorded", "Actions require an explicit decision", "Execution and verification remain separate"] }
+    { "dot": "cyan", "title": "Request path", "items": ["Main app frontend runs on :8000 and API on :8001", "The worker drains durable PostgreSQL jobs", "Scenario onboarding uses the existing simulator boundary"] },
+    { "dot": "emerald", "title": "Investigation path", "items": ["Four fixed tools fan out before similar-history retrieval", "Optional model requests are allowlisted and bounded", "Telemetry records tokens, cost estimates, source timing, and retrieval latency"] },
+    { "dot": "amber", "title": "Safety path", "items": ["Ownership, approval, queueing, and verification remain explicit", "Before/after action state stays visible until verification", "Read-only observability links show service outcomes without owning incident truth"] }
   ]
 }
