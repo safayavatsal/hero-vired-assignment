@@ -20,6 +20,8 @@ from app.application.model_gateway import (
 )
 from app.application.resilience import env_float, env_int
 from app.application.evidence_tools import EVIDENCE_TOOLS, EvidenceTool, evidence_tool_catalog
+from app.application.evidence_tools import SIMILAR_INCIDENTS_TOOL
+from app.application.retrieval import embed_text
 
 
 class EvidenceProvider(Protocol):
@@ -51,12 +53,14 @@ class InvestigationService:
     PROMPT_CONTRACT_HASH = hashlib.sha256(json.dumps(PROMPT_CONTRACT).encode()).hexdigest()[:16]
 
     def __init__(self, incident_service: Any, evidence_provider: EvidenceProvider, repository: Any = None,
-                 model_gateway: ModelGateway | None = None, jobs: JobRepository | None = None) -> None:
+                 model_gateway: ModelGateway | None = None, jobs: JobRepository | None = None,
+                 retrieval_repository: Any = None) -> None:
         self.incident_service = incident_service
         self.evidence_provider = evidence_provider
         self.repository = repository
         self.model_gateway = model_gateway or configured_model_gateway()
         self.jobs = jobs
+        self.retrieval_repository = retrieval_repository
         self._results: dict[UUID, dict[str, Any]] = {}
         self._concurrency = BoundedSemaphore(env_int("INVESTIGATION_CONCURRENCY", 4, 1, 32))
 
@@ -90,7 +94,7 @@ class InvestigationService:
         tools = EVIDENCE_TOOLS
         executor = ThreadPoolExecutor(max_workers=env_int("EVIDENCE_CONCURRENCY", 4, 1, 16))
         try:
-            futures = [executor.submit(self._collect, scenario_id, tool) for tool in tools]
+            futures = [executor.submit(self._collect, scenario_id, tool, incident_id, incident.get("service")) for tool in tools]
             evidence = []
             for tool, future in zip(tools, futures):
                 try:
@@ -104,6 +108,22 @@ class InvestigationService:
         if cached is not None:
             return cached
         findings = self._findings(evidence, self.evidence_provider.finding_rules(scenario_id))
+        provisional = {
+            "incident_id": str(incident_id),
+            "scenario_id": scenario_id,
+            "service": incident.get("service"),
+            "findings": [self._serialize_finding(item) for item in findings],
+        }
+        self._index_findings(provisional)
+        similar = self._collect_with_timeout(
+            scenario_id,
+            SIMILAR_INCIDENTS_TOOL,
+            incident_id,
+            incident.get("service"),
+            self._serialize_finding(findings[0]) if findings else None,
+        )
+        evidence.append(similar)
+        tools_with_similar = tools + (SIMILAR_INCIDENTS_TOOL,)
         result = {
             "incident_id": str(incident_id),
             "scenario_id": scenario_id,
@@ -112,7 +132,7 @@ class InvestigationService:
             "evidence": [self._serialize_evidence(item) for item in evidence],
             "findings": [self._serialize_finding(item) for item in findings],
             "tool_catalog": evidence_tool_catalog(),
-            "tool_trace": self._tool_trace(tools, evidence),
+            "tool_trace": self._tool_trace(tools_with_similar, evidence),
             "model_status": "not_configured",
             "prompt_version": self.PROMPT_VERSION,
             "prompt_contract_hash": self.PROMPT_CONTRACT_HASH,
@@ -121,7 +141,9 @@ class InvestigationService:
         self._results[incident_id] = result
         self._results[cache_key] = result
         if self.repository is not None:
-            self.repository.save(result)
+            investigation_id = self.repository.save(result)
+            if investigation_id is not None:
+                self._index_findings({**result, "investigation_id": str(investigation_id)})
         self._finalize_incident(incident, incident_id, scenario_id, result["findings"], record_timeline=True)
         return result
 
@@ -285,6 +307,37 @@ class InvestigationService:
             for tool, item in zip(tools, evidence)
         ]
 
+    def _index_findings(self, result: dict[str, Any]) -> None:
+        if self.retrieval_repository is None:
+            return
+        try:
+            self.retrieval_repository.index(result)
+        except Exception:
+            return
+
+    def _collect_with_timeout(
+        self,
+        scenario_id: str,
+        tool: EvidenceTool,
+        incident_id: UUID,
+        service: str | None,
+        finding: dict[str, Any] | None = None,
+    ) -> Evidence:
+        executor = ThreadPoolExecutor(max_workers=1)
+        future = executor.submit(self._collect, scenario_id, tool, incident_id, service, finding)
+        try:
+            return future.result(timeout=env_float("EVIDENCE_TIMEOUT_SECONDS", 2.0, 0.1, 30.0))
+        except FutureTimeoutError:
+            return self._unavailable_evidence(
+                scenario_id,
+                tool.source_type,
+                "evidence provider timed out",
+                tool.name,
+                {"source_type": tool.source_type},
+            )
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
+
     def _bound_prompt(self, prompt: dict[str, Any]) -> dict[str, Any]:
         max_items = env_int("MODEL_MAX_EVIDENCE_ITEMS", 100, 1, 1000)
         max_bytes = env_int("MODEL_MAX_PROMPT_BYTES", 32000, 1024, 1_000_000)
@@ -307,14 +360,24 @@ class InvestigationService:
             raise ValueError("investigation not found")
         return result
 
-    def _collect(self, scenario_id: str, tool: EvidenceTool) -> Evidence:
+    def _collect(
+        self,
+        scenario_id: str,
+        tool: EvidenceTool,
+        incident_id: UUID,
+        service: str | None,
+        finding: dict[str, Any] | None = None,
+    ) -> Evidence:
         started = monotonic()
         source_type = tool.source_type
         query = tool.name
         parameters = {"source_type": source_type}
         try:
-            response = tool.query(self.evidence_provider)
-        except (KeyError, TimeoutError, ValueError) as error:
+            if source_type == SIMILAR_INCIDENTS_TOOL.source_type:
+                response = self._query_similar_incidents(incident_id, service, finding)
+            else:
+                response = tool.query(self.evidence_provider)
+        except Exception as error:
             return self._unavailable_evidence(scenario_id, source_type, str(error), query, parameters, started)
         encoded = json.dumps(response["items"], sort_keys=True, separators=(",", ":"))
         evidence_id = hashlib.sha256(f"{scenario_id}:{source_type}:{encoded}".encode()).hexdigest()[:16]
@@ -344,6 +407,42 @@ class InvestigationService:
             duration_ms=max(0, round((monotonic() - started) * 1000)) if started is not None else None,
             error=error,
         )
+
+    def _query_similar_incidents(
+        self,
+        incident_id: UUID,
+        service: str | None,
+        finding: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        if self.retrieval_repository is None:
+            raise ValueError("similar incident retrieval is unavailable")
+        total_incidents = self.retrieval_repository.count()
+        if total_incidents < 2:
+            raise ValueError("similar incident history requires at least 2 completed incidents")
+        finding = finding or {}
+        query = f"{service or ''} {finding.get('category', '')} {finding.get('statement', '')}"
+        records = self.retrieval_repository.search(
+            embed_text(query),
+            env_int("SIMILAR_INCIDENTS_LIMIT", 3, 1, 10),
+            exclude_incident_id=str(incident_id),
+        )
+        if not records:
+            raise ValueError("no similar completed incidents found")
+        return {
+            "availability": "available",
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "items": [
+                {
+                    "incident_id": record["incident_id"],
+                    "service": record.get("service"),
+                    "category": record["category"],
+                    "statement": record["statement"],
+                    "resolution": record.get("suggested_next_step"),
+                    "similarity": record.get("similarity"),
+                }
+                for record in records
+            ],
+        }
 
     def _findings(self, evidence: list[Evidence], rules: list[dict[str, Any]] | None = None) -> list[Finding]:
         by_source = {item.source_type: item for item in evidence}

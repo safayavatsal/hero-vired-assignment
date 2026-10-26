@@ -30,7 +30,7 @@ def test_investigation_tool_catalog_exposes_enabled_purposes() -> None:
 
     assert response.status_code == 200
     tools = response.json()["tools"]
-    assert len(tools) == 4
+    assert len(tools) == 5
     assert all(tool["enabled"] and tool["purpose"] for tool in tools)
 
 

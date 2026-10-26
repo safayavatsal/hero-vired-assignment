@@ -22,6 +22,8 @@ For a resource-health demo, open the `Kubernetes health` tab and click `Run samp
 
 Expand `Evidence used` and then `View tool trace` to show each bounded query's purpose, stable query name, availability, and duration. API clients can discover the same read-only catalog at `GET /api/v1/investigation-tools`.
 
+For similar-history context, run the same scenario for two different incidents. The second completed investigation shows a `Similar past incidents` panel with the prior statement, category, and resolution. The first run reports that the history is not yet large enough; this is an uncertainty note and does not change the deterministic finding.
+
 The checkout form talks to the separate demo-store backend on port `8004`. Its embedded observer emits bounded operational metadata only after the simulated provider becomes unavailable. Cardholder, card number, expiry, and security code are validated there but never persisted or copied into the event payload. Use `Use approved card` to demonstrate the non-incident path.
 
 Before presenting, run the repeatable API-level proof:

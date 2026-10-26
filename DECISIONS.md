@@ -50,3 +50,4 @@ This file is the index of the detailed decision records in [`_decision_docs/`](_
 | [029 — Evidence Tool Catalog](_decision_docs/029-evidence-tool-catalog.md) | Gives each bounded evidence query a stable name, purpose, enabled state, and traceable result. |
 | [030 — Read-only Resource Analyzers](_decision_docs/030-read-only-resource-analyzers.md) | Adds discoverable, filtered, read-only resource analysis beside the existing incident workflow. |
 | [031 — Helm Local Extension](_decision_docs/031-helm-local-extension.md) | Packages the existing local runtime as an additive Helm workflow while preserving Compose and the raw Kubernetes manifest. |
+| [032 — Similar Past Incidents](_decision_docs/032-similar-past-incidents.md) | Adds bounded ranked historical context with deterministic vectors, PostgreSQL persistence, masking, and failure isolation. |

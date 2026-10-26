@@ -18,7 +18,7 @@ class PostgresInvestigationRepository:
     def __init__(self, database_url: str = DATABASE_URL) -> None:
         self.database_url = database_url
 
-    def save(self, result: dict[str, Any]) -> None:
+    def save(self, result: dict[str, Any]) -> UUID:
         investigation_id = uuid4()
         with psycopg.connect(self.database_url) as connection:
             existing = connection.execute(
@@ -75,6 +75,7 @@ class PostgresInvestigationRepository:
                         Jsonb(finding["evidence_ids"]), finding["uncertainty"],
                     ),
                 )
+        return investigation_id
 
     def get(self, incident_id: UUID) -> dict[str, Any] | None:
         with psycopg.connect(self.database_url, row_factory=dict_row) as connection:

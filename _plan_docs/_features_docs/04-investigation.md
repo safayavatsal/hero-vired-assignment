@@ -47,6 +47,7 @@ Implemented in the current slice:
 - The three scenarios now expose concrete e-commerce signals such as payment routes, trace IDs, queue state, deployment commits, provider names, and time windows.
 - Evidence collection uses a small named tool registry, and each result carries a bounded tool trace with availability and duration metadata.
 - Investigation persistence records safe model telemetry without credentials or raw provider responses; the UI displays structured model analysis separately from deterministic findings.
+- Similar completed findings are stored with deterministic vectors and retrieved through a fifth bounded evidence source; retrieval context is additive and the deterministic finding is calculated before it.
 
 Boundary verification:
 

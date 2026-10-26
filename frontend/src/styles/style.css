@@ -100,6 +100,11 @@ button:disabled { cursor: not-allowed; opacity: 0.55; }
 .investigation-meta { display: flex; flex-wrap: wrap; gap: 1rem 2rem; border-top: 1px solid #c9e5f2; margin-top: 1rem; padding-top: 0.8rem; }
 .investigation-meta span { display: grid; gap: 0.25rem; }
 .investigation-meta strong { font-size: 0.85rem; font-weight: 600; }
+.similar-incidents-panel { border: 1px solid #c9e5f2; border-radius: 0.5rem; background: #fff; margin: 0 0 1rem; padding: 0.8rem; }
+.similar-incidents-panel.degraded { border-color: #d97706; background: #fffbeb; }
+.similar-incidents-list { display: grid; gap: 0.55rem; }
+.similar-incident { display: grid; gap: 0.25rem; border-top: 1px solid #eef2f6; padding-top: 0.55rem; }
+.similar-incident span { color: #52606d; font-size: 0.8rem; }
 .finding-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .finding-heading h3 { color: #14532d; line-height: 1.35; }
 .confidence { color: #166534; font-size: 0.8rem; font-weight: 700; white-space: nowrap; }

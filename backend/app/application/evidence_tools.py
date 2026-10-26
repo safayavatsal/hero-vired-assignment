@@ -24,8 +24,15 @@ EVIDENCE_TOOLS = (
     EvidenceTool("service_health", "simulator.evidence.service_health", "Confirm local and dependency health."),
 )
 
+SIMILAR_INCIDENTS_TOOL = EvidenceTool(
+    "similar_incidents",
+    "similar_incidents",
+    "Find ranked findings from completed incidents with related service and symptoms.",
+)
 
-def evidence_tool_catalog() -> list[dict[str, Any]]:
+
+def evidence_tool_catalog(include_similar: bool = True) -> list[dict[str, Any]]:
+    tools = EVIDENCE_TOOLS + ((SIMILAR_INCIDENTS_TOOL,) if include_similar else ())
     return [
         {
             "source_type": tool.source_type,
@@ -33,5 +40,5 @@ def evidence_tool_catalog() -> list[dict[str, Any]]:
             "purpose": tool.purpose,
             "enabled": tool.enabled,
         }
-        for tool in EVIDENCE_TOOLS
+        for tool in tools
     ]

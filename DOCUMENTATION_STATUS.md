@@ -27,6 +27,7 @@
 | evidence tool catalog | Explicit bounded evidence contract | Implemented; enabled tools expose purpose and stable names through the API and persisted investigation traces |
 | resource analyzer surface | Kubernetes resource health checks | Implemented; six read-only analyzers expose namespace, kind, name, label, and analyzer filters through the analysis API, and the console now exposes a dedicated Kubernetes health tab with a visible sample scan and finding cards; Docker suite returned 70 passing tests and browser verification completed |
 | Helm local extension | Additive Kubernetes packaging | Implemented; the chart packages the API, worker, database, notification capture, incident UI, and demo store with configurable images, resources, persistence, probes, security settings, port-forward notes, and a Helm smoke-test hook |
+| Similar past incidents | Bounded historical finding context | Implemented; deterministic vectors are persisted for completed findings, ranked context is exposed as a fifth bounded evidence source, retrieval failures degrade to uncertainty, and the console renders the historical finding panel |
 
 The approved HLD and LLD remain the authority for boundaries and relationships. The current implementation includes durable investigation and action jobs, action-attempt, verification, delivery-attempt, and worker-startup pieces required by those documents.
 
@@ -85,6 +86,7 @@ Implemented:
 - Feature 10 adds clean-checkout Compose defaults, repeatable all-scenario demo/reset scripts, and a focused live-change analyzer path.
 - The UI refreshes the selected incident while polling, supports free-form page replies, and displays queued and running action states.
 - Investigation completion, no-local-fix classification, and verified remediation are visible as explicit terminal timeline states; verified local actions resolve the incident.
+- Similar-incident retrieval uses no new service or required credential, stores vectors in PostgreSQL, excludes the current incident, and leaves deterministic findings unchanged when history is empty or retrieval is unavailable.
 
 ## Environment-dependent verification:
 
@@ -132,3 +134,4 @@ Implemented:
 - The commerce demo adds separate frontend and backend projects on ports `8003` and `8004`, plus the captured inbox on port `8002`. Seven store-backend tests prove approved and declined routing, input validation, endpoint behavior, credential exclusion, and an unchanged declined outcome when observer delivery is unavailable. The customer storefront exposes payment references only; an embedded observer emits the canonical operational event separately. The main backend has 50 sandbox-compatible passing tests, the main frontend has five passing workflow tests, both production frontend builds pass, Compose validates, and the local Kubernetes manifest parses. On 2026-10-25, the Compose smoke verifier completed an approved payment, a declined payment with a fresh incident, investigation completion, page delivery, and one captured inbox message. The live browser pass repeated the declined checkout, fresh incident, completed investigation, responder page, captured notification, and an approved checkout with no new incident.
 - The investigation review surface now presents a structured brief, model status/latency, bounded tool trace, query timing, source availability, parameters, and opt-in raw payloads. The frontend smoke suite, production build, diff checks, and full local submission verifier pass after this change.
 - Helm extension verification passed `helm lint`, default and credential-override `helm template`, chart packaging, packaged test-hook presence, resource rendering, and `git diff --check`. Live Helm install and `helm test` remain pending until the local Kubernetes API is running; the attempted install reported `127.0.0.1:26443 connection refused`.
+- Similar-incident verification passed the focused ranking, empty-history, and failure-isolation tests, the backend suite (`73 passed`), frontend tests (`6 passed`), and the production build. Live Compose proof is pending because the local container runtime is not running.

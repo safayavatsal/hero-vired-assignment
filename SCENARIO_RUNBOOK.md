@@ -37,6 +37,7 @@ Each journey sends bounded operational metadata through the normal alert intake.
 10. For a resource snapshot, list the read-only analyzers, submit resources with a namespace or label filter, and confirm the response contains only normalized findings and suggested inspection steps.
 11. In the browser, open the `Kubernetes health` tab, click `Run sample scan`, and confirm the panel reports the detected problems, scanned resources, four finding cards, six read-only analyzers, and no cluster changes.
 12. For the Helm extension, run `helm lint`, install with `helm upgrade --install`, wait for the API rollout, run `helm test`, and repeat the browser workflow through the chart’s port-forwarded services.
+13. Repeat one scenario for a second incident and confirm `Similar past incidents` shows the earlier statement, category, and resolution without changing the deterministic finding.
 
 ## Failure-mode checks
 
@@ -52,6 +53,8 @@ Each journey sends bounded operational metadata through the normal alert intake.
 | Stale page/action version | Decision is rejected without changing the newer state |
 | Restart during durable work | Worker recovery resumes or safely retries leased work |
 | Missing model configuration | Deterministic finding remains available with explicit degraded model status |
+| Empty or small similar-incident history | `similar_incidents` is unavailable with a clear uncertainty note |
+| Similar-incident retrieval failure | Deterministic finding remains unchanged and the retrieval source is degraded |
 | Verified local action | Incident transitions to `resolved` and the timeline records verification and resolution |
 | External dependency finding | Incident transitions to `unfixable` and no local action is proposed |
 | Approved synthetic checkout | Order succeeds and no incident is created |

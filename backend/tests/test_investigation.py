@@ -3,6 +3,7 @@ import pytest
 from uuid import uuid4
 
 from app.application.investigation import InvestigationService
+from app.application.retrieval import InMemoryRetrievalRepository
 from app.application.simulator import SimulatorService
 from app.application.model_gateway import (
     DEFAULT_MODEL_GATEWAY_URL,
@@ -95,9 +96,10 @@ def test_investigation_findings_cite_collected_evidence(monkeypatch) -> None:
     assert [item["tool"] for item in result["tool_trace"]] == [
         "simulator.evidence.logs", "simulator.evidence.metrics",
         "simulator.evidence.deploys", "simulator.evidence.service_health",
+        "similar_incidents",
     ]
     assert all(item["enabled"] and item["purpose"] for item in result["tool_trace"])
-    assert len(result["tool_catalog"]) == 4
+    assert len(result["tool_catalog"]) == 5
     assert result["model_telemetry"]["status"] == "unavailable"
 
 
@@ -252,6 +254,67 @@ def test_model_analysis_and_telemetry_are_returned_for_a_realistic_incident() ->
     assert result["model_telemetry"]["status"] == "completed"
     logs = next(item for item in result["evidence"] if item["source_type"] == "logs")
     assert logs["items"][0]["route"] == "POST /v1/payments/authorize"
+
+
+def test_similar_incidents_are_ranked_after_a_repeated_scenario() -> None:
+    retrieval = InMemoryRetrievalRepository()
+    incident_service = ExistingIncident(service="payments-api")
+    service = InvestigationService(
+        incident_service,
+        SimulatorService(),
+        MemoryInvestigationRepository(),
+        retrieval_repository=retrieval,
+    )
+
+    first_id = uuid4()
+    service.investigate(first_id, "deployment_regression")
+    second = service.investigate(uuid4(), "deployment_regression")
+
+    similar = next(item for item in second["evidence"] if item["source_type"] == "similar_incidents")
+    assert similar["availability"] == "available"
+    assert similar["items"][0]["incident_id"] == str(first_id)
+    assert {"statement", "category", "resolution"} <= set(similar["items"][0])
+
+
+def test_similar_incidents_empty_history_is_unavailable() -> None:
+    service = InvestigationService(
+        ExistingIncident(service="payments-api"),
+        SimulatorService(),
+        MemoryInvestigationRepository(),
+        retrieval_repository=InMemoryRetrievalRepository(),
+    )
+
+    result = service.investigate(uuid4(), "deployment_regression")
+
+    similar = next(item for item in result["evidence"] if item["source_type"] == "similar_incidents")
+    assert similar["availability"] == "unavailable"
+    assert "at least 2 completed incidents" in similar["error"]
+
+
+def test_similar_incident_failure_does_not_change_deterministic_finding() -> None:
+    class FailingRetrieval:
+        def index(self, _result):
+            raise RuntimeError("retriever down")
+
+        def count(self):
+            raise RuntimeError("retriever down")
+
+        def search(self, *_args, **_kwargs):
+            raise RuntimeError("retriever down")
+
+    incident_id = uuid4()
+    baseline = InvestigationService(
+        ExistingIncident(service="payments-api"), SimulatorService(), MemoryInvestigationRepository()
+    ).investigate(incident_id, "deployment_regression")
+    degraded = InvestigationService(
+        ExistingIncident(service="payments-api"),
+        SimulatorService(),
+        MemoryInvestigationRepository(),
+        retrieval_repository=FailingRetrieval(),
+    ).investigate(incident_id, "deployment_regression")
+
+    assert degraded["findings"] == baseline["findings"]
+    assert next(item for item in degraded["evidence"] if item["source_type"] == "similar_incidents")["availability"] == "unavailable"
 
 
 def test_same_evidence_uses_versioned_cache() -> None:
