@@ -10,7 +10,10 @@ flowchart LR
     Storefront -->|catalog and payment API| StoreAPI[Demo store backend]
     StoreAPI -->|failed payment alert| API
     Responder[On-call engineer] --> UI[React + TypeScript incident console]
+    Responder --> MonitorUI[Demo observability frontend]
     UI -->|REST and polling| API[FastAPI API]
+    MonitorUI -->|read-only dashboard requests| MonitorAPI[Demo observability backend]
+    MonitorAPI -->|bounded incident/action reads| API
     Operator[Configured operator token] -.->|role authorization| API
     API --> Metrics[Bounded runtime metrics]
     API --> Store[(PostgreSQL system of record)]
@@ -31,6 +34,7 @@ flowchart LR
 | Component | Owns | Does not own |
 | --- | --- | --- |
 | React + TypeScript incident UI | Incident list, detail, timeline, evidence review, and human decision forms | State transitions, action execution, inferred completion, or payment processing |
+| Demo observability frontend | Service dashboard pages, before/current comparisons, and incident backlinks | Incident state, action execution, or durable metric storage |
 | Demo store frontend | Product selection, cart, synthetic checkout form, and payment result | Incident creation, payment processing, or durable state |
 | Demo store backend | Product catalog, synthetic payment validation, deterministic outcome, and bounded failure alert | Real payments, card persistence, or incident investigation |
 | FastAPI API | Validation, idempotency, state transitions, read models, and audit events | Long-running investigation or direct model execution |
@@ -41,6 +45,7 @@ flowchart LR
 | Model and delivery boundaries | Structured analysis, bounded allowlisted evidence requests, telemetry, optional delivery, ownership, local captured email, and reconciliation | Direct authorization or incident truth |
 | Operator role boundary | Optional server-side viewer, responder, approver, and administrator permissions for mutations | Full identity lifecycle, tenancy, or session management |
 | Runtime metrics | Request IDs, structured request records, and bounded route latency summaries | Durable tracing backend or long-term metric retention |
+| Demo observability backend | Read-only service profiles and bounded incident/action snapshots for local monitoring pages | Incident mutation, metric retention, or production telemetry ingestion |
 
 ## 3. Relational schema catalog
 

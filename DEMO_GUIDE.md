@@ -18,6 +18,12 @@ The API endpoints are available at `http://localhost:8001/api/v1/health` and `ht
 
 The incident console shows an investigation checklist for the selected scenario. Before starting, the four checks are pending; after `Start investigation`, they become active while the worker runs and complete when the finding is ready. This gives the presenter a visible explanation of what the system is checking.
 
+## Demo observability
+
+The separate read-only monitoring demo runs at `http://localhost:8005` with its backend on `http://localhost:8006`. Open the page directly to choose one of the three service dashboards, or complete a remediation and choose `Open monitoring view` from the verified action. The incident deep link loads the matching service page, shows synthetic CPU, memory, latency, error, storage, or queue signals, and compares the before value with the current value. A resolved verified action shows improved values; an external-dependency incident stays blocked. Use `Open incident remediation` on the monitoring page to return to the human workflow.
+
+The monitoring page is a feasibility demo: it proves the navigation and read-model boundary for service monitoring without adding a metric database or mutating incident state. New local pages can be added as bounded dashboard profiles for another service or issue.
+
 For a resource-health demo, open the `Kubernetes health` tab and click `Run sample scan`. It shows a Pending pod, an unhealthy deployment, problem counts, read-only analyzer coverage, and suggested inspection steps. The API remains available through `GET /api/v1/kubernetes/analyzers` and `POST /api/v1/kubernetes/analyze` for custom snapshots and filters; no resource is changed.
 
 Expand `Evidence used` and then `View tool trace` to show each bounded query's purpose, stable query name, availability, and duration. API clients can discover the same read-only catalog at `GET /api/v1/investigation-tools`.

@@ -188,6 +188,15 @@ classDiagram
         -ActionRepository action_repository
         +verify(attempt_id: UUID) Verification
     }
+    class ObservabilityBackend {
+        -str on_call_api_url
+        +dashboard_catalog() list~DashboardPage~
+        +incident_snapshot(id: UUID) DashboardSnapshot
+    }
+    class ObservabilityFrontend {
+        +render_dashboard(snapshot: DashboardSnapshot) None
+        +open_incident_link(id: UUID) None
+    }
 
     class IncidentRepository {
         <<interface>>
@@ -215,6 +224,8 @@ classDiagram
         +save(result: dict) UUID
         +get(id: UUID) dict
     }
+    ObservabilityFrontend --> ObservabilityBackend : reads
+    ObservabilityBackend --> IncidentController : bounded HTTP read
     class ActionRepository {
         <<interface>>
         +save(request: ActionRequest) None

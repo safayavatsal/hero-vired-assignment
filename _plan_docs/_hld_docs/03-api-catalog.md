@@ -44,6 +44,10 @@ This document lists the major HTTP APIs in the product. Detailed request validat
 | `/api/v1/simulator/evidence` | Query logs, metrics, deploys, or service health |
 | `/api/store/health` | Report demo-store backend health |
 | `/api/store/products` | Return the deterministic demo product catalog |
+| `/api/observability/health` | Report the local monitoring demo health |
+| `/api/observability/dashboards` | List the service-specific read-only dashboard pages |
+| `/api/observability/dashboards/{dashboard_id}` | Return a seeded dashboard snapshot without an incident |
+| `/api/observability/incidents/{incident_id}` | Return a read-only dashboard snapshot derived from incident and action state |
 
 
 ## API rules
@@ -60,3 +64,4 @@ This document lists the major HTTP APIs in the product. Detailed request validat
 - Queue metrics are read-only operational summaries and never include job payloads or error bodies.
 - Operator mutations use the opt-in role boundary when `AUTH_MODE=required`; the default local demo remains unauthenticated by design.
 - API responses return a bounded `X-Request-ID`; route-level metrics use fixed templates and status classes rather than raw URLs.
+- The demo observability backend reads incident and action state through bounded internal HTTP requests; it is not a second incident store.

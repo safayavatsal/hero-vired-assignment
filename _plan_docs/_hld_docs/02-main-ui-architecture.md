@@ -13,8 +13,10 @@ flowchart TB
     Decisions[Human decisions]
     Actions[Approved actions and verification]
     Store[Separate demo store frontend]
+    Monitor[Separate demo observability frontend]
 
     Store -->|payment failure alert| App
+    Monitor -->|read-only service view| Detail
     App --> List
     App --> Detail
     Detail --> Summary
@@ -31,6 +33,7 @@ flowchart TB
     Decisions -->|notify owner or claim locally| Detail
     Actions -->|approve and queue once| Actions
     Actions -->|persistent before and after state| Timeline
+    Actions -->|monitoring deep link| Monitor
 ```
 
 ## UI data boundaries

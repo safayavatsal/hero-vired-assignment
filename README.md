@@ -23,6 +23,7 @@ The product accepts normalized alerts, groups repeat deliveries, collects bounde
 - Incident console with separate `Incidents` and `Kubernetes health` tabs; the health view has a runnable sample snapshot, finding cards, problem counts, and an explicit no-cluster-changes boundary.
 - React incident console with stable selection, investigation controls, evidence review, action state, and timeline context.
 - Browser-based demo store with catalog, cart, synthetic checkout, customer-facing slow-checkout and delayed-fulfillment journeys, a controlled payment failure, an embedded observer, and a captured responder inbox.
+- Separate demo observability pages with service-specific synthetic metrics, before/current comparisons, and incident backlinks on ports `8005` and `8006`.
 - Local HTTP boundary tests for model, notification, ownership, and action reconciliation integrations.
 
 ## Repository map
@@ -38,6 +39,7 @@ The product accepts normalized alerts, groups repeat deliveries, collects bounde
 - `frontend/src/styles/` — frontend presentation styles
 - `demo-store/backend/` — synthetic catalog, payment router, and bounded alert adapter
 - `demo-store/frontend/` — standalone customer-facing store and checkout
+- `demo-observability/backend/` and `demo-observability/frontend/` — read-only local monitoring demo
 - `demo-output/` — local browser-only Kubernetes demo recordings
 
 ## Run locally
@@ -50,6 +52,8 @@ docker compose up --build
 - Frontend: `http://localhost:8000`
 - Demo store: `http://localhost:8003`
 - Demo store API: `http://localhost:8004/api/store/health`
+- Demo observability: `http://localhost:8005`
+- Demo observability API: `http://localhost:8006/api/observability/health`
 - Backend liveness: `http://localhost:8001/api/v1/health`
 - Backend readiness: `http://localhost:8001/api/v1/readiness`
 - Responder inbox: `http://localhost:8002`
@@ -76,6 +80,8 @@ docker compose config -q
 docker compose run --rm --user root api pytest -q tests
 (cd frontend && npm test && npm run build)
 (cd demo-store/frontend && npm run build)
+(cd demo-observability/frontend && npm test && npm run build)
+docker compose run --rm demo-observability-backend pytest -q tests
 docker compose run --rm --user root store-backend pytest -q tests
 ./scripts/verify-submission.sh
 ./scripts/reset-demo.sh

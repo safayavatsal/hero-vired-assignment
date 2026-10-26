@@ -35,6 +35,7 @@
 | Local operator roles | Opt-in server-side authorization seam | Implemented; configured tokens map to viewer, responder, approver, or administrator permissions when `AUTH_MODE=required`, while the default local path remains compatible |
 | Request correlation | Bounded HTTP IDs and runtime metrics | Implemented; API and demo-store boundaries return and propagate request IDs, while `GET /api/v1/metrics` reports fixed-label counts and latency percentiles |
 | Human-owned remediation | Discovery-driven category, explicit ownership, automatic queueing, persistent verification, explicit closure | Implemented; public scenario listings hide analyzer findings, page requests support recipient email or local ownership, approval queues once, blue action before/after state remains visible through verification, and the operator receives a direct link and closes the incident explicitly |
+| Demo observability surface | Read-only service monitoring pages and remediation backlinks | Implemented; the separate frontend/backend demo exposes three service dashboards on ports `8005`/`8006`, derives snapshots from incident/action state, and renders before/current outcomes without adding a metric store |
 
 The approved HLD and LLD remain the authority for boundaries and relationships. The current implementation includes durable investigation and action jobs, action-attempt, verification, delivery-attempt, and worker-startup pieces required by those documents.
 
@@ -96,6 +97,7 @@ Implemented:
 - Similar-incident retrieval uses no new service or required credential, stores vectors in PostgreSQL, excludes the current incident, and leaves deterministic findings unchanged when history is empty or retrieval is unavailable.
 - The optional evidence loop is enabled only for configured model gateways; missing models preserve the fixed path, while invalid requests and exhausted bounds remain telemetry rather than errors.
 - Model telemetry now includes estimated prompt/completion tokens, finite non-negative cost, source durations, and similar-history retrieval latency; local rate settings are optional.
+- Demo observability adds a read-only monitoring surface with three service-specific synthetic profiles, deep links from verified remediation, incident backlinks, and explicit local-data labeling.
 
 ## Environment-dependent verification:
 

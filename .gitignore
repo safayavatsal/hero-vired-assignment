@@ -11,4 +11,6 @@ node_modules/
 frontend/dist/
 demo-store/frontend/dist/
 demo-store/frontend/*.tsbuildinfo
+demo-observability/frontend/dist/
+demo-observability/frontend/*.tsbuildinfo
 AGENTS.md

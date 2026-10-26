@@ -41,6 +41,7 @@ Each journey sends bounded operational metadata through the normal alert intake.
 14. With a configured model gateway, request one allowed and one disallowed extra query; confirm the allowed result is cited only after collection and the disallowed request is recorded without execution.
 15. In `Evidence used`, confirm prompt tokens, completion tokens, estimated cost, and the slowest source are shown; verify the persisted result contains source durations and retrieval latency.
 16. For a new scenario, validate and trigger it with `./scripts/add-scenario.sh <definition.json>`, open the printed incident ID, and confirm the registered scenario appears in the console.
+17. After verification, open `Open monitoring view`, confirm the matching service dashboard shows before/current values and the action outcome, then use `Open incident remediation` to return to the issue.
 
 ## Failure-mode checks
 
@@ -73,6 +74,7 @@ Each journey sends bounded operational metadata through the normal alert intake.
 | Slow checkout journey | One `payments-api` incident is created with a latency-regression alert |
 | Delayed fulfillment journey | One `orders-worker` incident is created with a disk-pressure alert |
 | Onboarding script | One valid definition is registered and one incident ID is printed |
+| Demo observability | The incident deep link opens the matching read-only service dashboard, resolved actions show improved values, and the dashboard backlink returns to remediation |
 
 ## Commerce failure walkthrough
 

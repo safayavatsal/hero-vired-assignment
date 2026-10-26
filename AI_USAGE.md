@@ -61,6 +61,7 @@ The project owner identified, prioritized, or reviewed the following grouped fin
 - **Local model-path enhancement:** the owner wanted a no-secret success path for the model readout. The AI-assisted implementation adds an opt-in local contract gateway that derives structured output from the validated deterministic finding; the owner retains the model-provider decision.
 - **Operator-safety enhancement:** the owner approved a minimal authorization seam. The AI-assisted implementation adds an opt-in bearer-token role resolver and route-level permissions while preserving the local demo default; the owner retains the identity and tenancy boundary decision.
 - **Operational-correlation enhancement:** the owner approved local diagnostic evidence. The AI-assisted implementation adds bounded request IDs, outbound propagation, structured request records, and route latency metrics without a new runtime dependency; the owner retains the production telemetry decision.
+- **Monitoring navigation enhancement:** the owner identified that the incident link should lead to a useful monitoring view rather than reload the console. The AI-assisted implementation removes the on-call header’s demo-store shortcut, adds a separate read-only observability frontend/backend, maps three service profiles to incident/action state, and provides incident and remediation backlinks; the owner retains the monitoring scope and data-feasibility decision.
 
 ## Human-owned remediation enhancement
 
