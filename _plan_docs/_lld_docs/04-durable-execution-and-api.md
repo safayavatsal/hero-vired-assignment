@@ -5,7 +5,7 @@
 | Class | Responsibility | Main methods |
 | --- | --- | --- |
 | `Job` | Represent durable work, lease, retry count, and status | `lease()`, `retry()`, `complete()`, `fail()` |
-| `JobRepository` | Claim and persist durable jobs | `enqueue()`, `claim()`, `complete()`, `fail()` |
+| `JobRepository` | Claim, persist, and summarize durable jobs | `enqueue()`, `claim()`, `complete()`, `fail()`, `metrics()` |
 | `Worker` | Poll for leased work and dispatch handlers | `run_once()`, `recover_expired_leases()` |
 | `JobDispatcher` | Map job types to handlers | `dispatch(job)` |
 | `VerificationService` | Check post-action state independently | `verify()` |
@@ -16,4 +16,4 @@
 
 ## Connections
 
-`Worker` uses `JobRepository` and `JobDispatcher`. `JobDispatcher` selects `InvestigationHandler`, `ActionHandler`, or a verification handler. Controllers call application services and return read models; they do not contain domain rules.
+`Worker` uses `JobRepository` and `JobDispatcher`. `JobDispatcher` selects `InvestigationHandler`, `ActionHandler`, or a verification handler. The queue metrics route returns aggregate counts and timings through `JobRepository` without exposing payloads. Controllers call application services and return read models; they do not contain domain rules.

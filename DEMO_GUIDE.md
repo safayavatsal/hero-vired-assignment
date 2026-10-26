@@ -40,6 +40,8 @@ It prints one compact JSON result containing the approved outcome, provider-fail
 
 For the final local submission check, run `./scripts/verify-submission.sh` after the stack is running. It combines both backend suites, served-frontend and demo-store proxy checks, frontend builds, health checks, commerce proof, and diff validation.
 
+For queue health, run `curl http://localhost:8001/api/v1/jobs/metrics`. It reports pending, leased, retrying, succeeded, and dead-lettered work plus bounded queue wait and processing timings without returning job payloads.
+
 ## Live scenario addition demo
 
 New scenarios are registered as data through `POST /api/v1/simulator/scenarios` with a `definition` payload (see the README example). During a session:

@@ -227,6 +227,7 @@ classDiagram
         +claim(job_type: JobType) Job
         +complete(id: UUID) None
         +fail(id: UUID, error: str) None
+        +metrics(job_type: JobType?) dict
     }
     class TimelineRepository {
         <<interface>>

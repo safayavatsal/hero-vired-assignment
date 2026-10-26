@@ -1,0 +1,4 @@
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS leased_at TIMESTAMPTZ;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
+
+CREATE INDEX IF NOT EXISTS jobs_pending_age ON jobs (status, created_at);

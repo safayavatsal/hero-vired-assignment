@@ -54,7 +54,7 @@ All identifiers are UUIDs unless stated otherwise. JSON fields contain validated
 | `action_proposals` | `id` PK, `incident_id` FK, `scenario_id`, `action_type`, `target`, `parameters` JSONB, `status`, `approval_expires_at`, `approved_by`, `idempotency_key` UNIQUE, `simulator_action_id`, `result` JSONB, `incident_version`, `created_at`, `updated_at` |
 | `action_attempts` | `id` PK, `action_proposal_id` FK, `(action_proposal_id, attempt_number)` UNIQUE, `status`, `simulator_action_id`, `result` JSONB, `started_at`, `completed_at` |
 | `verifications` | `id` PK, `action_attempt_id` FK, `status`, `observed_state` JSONB, `verified_at` |
-| `jobs` | `id` PK, `incident_id` FK nullable, `job_type`, `status`, `payload` JSONB, `idempotency_key` UNIQUE, `attempts`, `max_attempts`, `available_at`, `lease_until`, `last_error`, `created_at`, `updated_at` |
+| `jobs` | `id` PK, `incident_id` FK nullable, `job_type`, `status`, `payload` JSONB, `idempotency_key` UNIQUE, `attempts`, `max_attempts`, `available_at`, `lease_until`, `leased_at`, `completed_at`, `last_error`, `created_at`, `updated_at` |
 | `page_delivery_attempts` | `id` PK, `page_id` FK, `(page_id, attempt_number)` UNIQUE, `status`, `external_id`, `created_at` |
 | `timeline_events` | `id` PK, `incident_id` FK, `event_type`, `event_time`, `received_time`, `(incident_id, sequence_number)` UNIQUE, `payload` JSONB |
 
@@ -68,5 +68,6 @@ All identifiers are UUIDs unless stated otherwise. JSON fields contain validated
 - Every action is typed, linked to an incident, and blocked until explicit approval exists.
 - Every action attempt has an outcome and a separate verification record; a timeout never implies success.
 - Every durable job has a lease, retry count, and idempotency key.
+- Queue state exposes bounded counts and wait/processing timings without returning job payloads.
 - Every user-visible state change emits an incident-local timeline event.
 - Validated model output cannot execute an action or mutate incident state directly.
