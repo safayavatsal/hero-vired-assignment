@@ -32,6 +32,7 @@
 | Cost and latency telemetry | Model and evidence timing readout | Implemented; bounded token estimates, finite cost, source durations, retrieval latency, and a compact evidence-panel summary are persisted and rendered |
 | Queue evaluation | Measured durable queue boundary | Implemented; the worker accepts an injectable queue contract and `scripts/benchmark-queue.py` reports bounded throughput and persisted queue timings without changing the default Compose runtime |
 | Local model path | No-secret structured model demonstration | Implemented; `MODEL_GATEWAY_MODE=local` returns contract-valid enrichment without changing deterministic findings or action authorization |
+| Local operator roles | Opt-in server-side authorization seam | Implemented; configured tokens map to viewer, responder, approver, or administrator permissions when `AUTH_MODE=required`, while the default local path remains compatible |
 
 The approved HLD and LLD remain the authority for boundaries and relationships. The current implementation includes durable investigation and action jobs, action-attempt, verification, delivery-attempt, and worker-startup pieces required by those documents.
 

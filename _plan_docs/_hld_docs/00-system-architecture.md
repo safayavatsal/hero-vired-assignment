@@ -11,6 +11,7 @@ flowchart LR
     StoreAPI -->|failed payment alert| API
     Responder[On-call engineer] --> UI[React + TypeScript incident console]
     UI -->|REST and polling| API[FastAPI API]
+    Operator[Configured operator token] -.->|role authorization| API
     API --> Store[(PostgreSQL system of record)]
     API --> Jobs[(PostgreSQL durable jobs)]
     Worker[Python worker] --> Jobs
@@ -37,6 +38,7 @@ flowchart LR
 | Historical finding retriever | Deterministic finding vectors, bounded ranked history lookup, and retrieval timing | Deterministic diagnosis, model authorization, or incident state |
 | Production simulator | Deterministic alerts, evidence sources, typed actions, and failure controls | Production credentials or arbitrary command execution |
 | Model and delivery boundaries | Structured analysis, bounded allowlisted evidence requests, telemetry, optional delivery, ownership, local captured email, and reconciliation | Direct authorization or incident truth |
+| Operator role boundary | Optional server-side viewer, responder, approver, and administrator permissions for mutations | Full identity lifecycle, tenancy, or session management |
 
 ## 3. Relational schema catalog
 

@@ -1,10 +1,11 @@
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.application.workflow import WorkflowService
+from app.application.auth import Principal, require_role
 
 
 router = APIRouter(prefix="/api/v1", tags=["workflow"])
@@ -46,7 +47,8 @@ class ActionDecision(BaseModel):
 
 
 @router.post("/incidents/{incident_id}/page")
-def create_page(incident_id: UUID, request: PageRequest) -> dict[str, Any]:
+def create_page(incident_id: UUID, request: PageRequest,
+                _principal: Principal = Depends(require_role("responder"))) -> dict[str, Any]:
     try:
         return workflow_service.create_page(incident_id, request.responder, request.fallback_responder, request.deadline_seconds)
     except Exception as error:
@@ -54,7 +56,8 @@ def create_page(incident_id: UUID, request: PageRequest) -> dict[str, Any]:
 
 
 @router.post("/pages/{page_id}/respond")
-def respond_page(page_id: UUID, request: PageResponse) -> dict[str, Any]:
+def respond_page(page_id: UUID, request: PageResponse,
+                 _principal: Principal = Depends(require_role("responder"))) -> dict[str, Any]:
     try:
         return workflow_service.respond(page_id, request.response_type, request.response_text, request.expected_version)
     except ValueError as error:
@@ -67,7 +70,8 @@ def list_pages(incident_id: UUID) -> list[dict[str, Any]]:
 
 
 @router.post("/incidents/{incident_id}/actions")
-def propose_action(incident_id: UUID, request: ActionRequest) -> dict[str, Any]:
+def propose_action(incident_id: UUID, request: ActionRequest,
+                   _principal: Principal = Depends(require_role("responder"))) -> dict[str, Any]:
     try:
         return workflow_service.propose_action(incident_id, request.scenario_id, request.action_type, request.target,
                                                request.parameters, request.idempotency_key, request.approval_seconds)
@@ -76,7 +80,8 @@ def propose_action(incident_id: UUID, request: ActionRequest) -> dict[str, Any]:
 
 
 @router.post("/incidents/{incident_id}/actions/preview")
-def preview_action(incident_id: UUID, request: ActionPreviewRequest) -> dict[str, Any]:
+def preview_action(incident_id: UUID, request: ActionPreviewRequest,
+                   _principal: Principal = Depends(require_role("responder"))) -> dict[str, Any]:
     try:
         return workflow_service.preview_action(incident_id, request.scenario_id, request.action_type, request.target, request.parameters)
     except ValueError as error:
@@ -84,7 +89,8 @@ def preview_action(incident_id: UUID, request: ActionPreviewRequest) -> dict[str
 
 
 @router.post("/actions/{action_id}/decision")
-def decide_action(action_id: UUID, request: ActionDecision) -> dict[str, Any]:
+def decide_action(action_id: UUID, request: ActionDecision,
+                  _principal: Principal = Depends(require_role("approver"))) -> dict[str, Any]:
     try:
         return workflow_service.decide_action(action_id, request.approved, request.responder, request.expected_version)
     except ValueError as error:
@@ -97,7 +103,8 @@ def list_actions(incident_id: UUID) -> list[dict[str, Any]]:
 
 
 @router.post("/actions/{action_id}/execute")
-def execute_action(action_id: UUID) -> dict[str, Any]:
+def execute_action(action_id: UUID,
+                   _principal: Principal = Depends(require_role("approver"))) -> dict[str, Any]:
     try:
         return workflow_service.execute_action(action_id)
     except ValueError as error:
@@ -105,7 +112,8 @@ def execute_action(action_id: UUID) -> dict[str, Any]:
 
 
 @router.post("/actions/{action_id}/verify")
-def verify_action(action_id: UUID) -> dict[str, Any]:
+def verify_action(action_id: UUID,
+                  _principal: Principal = Depends(require_role("responder"))) -> dict[str, Any]:
     try:
         return workflow_service.verify_action(action_id)
     except ValueError as error:
@@ -113,7 +121,8 @@ def verify_action(action_id: UUID) -> dict[str, Any]:
 
 
 @router.post("/actions/{action_id}/reconcile")
-def reconcile_action(action_id: UUID) -> dict[str, Any]:
+def reconcile_action(action_id: UUID,
+                     _principal: Principal = Depends(require_role("administrator"))) -> dict[str, Any]:
     try:
         return workflow_service.reconcile_action(action_id)
     except ValueError as error:

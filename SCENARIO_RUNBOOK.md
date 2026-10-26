@@ -59,6 +59,7 @@ Each journey sends bounded operational metadata through the normal alert intake.
 | Queue benchmark | `./scripts/benchmark-queue.py --count 20` completes bounded work and reports throughput without changing the default runtime |
 | Missing model configuration | Deterministic finding remains available with explicit degraded model status |
 | Local model mode | `MODEL_GATEWAY_MODE=local` returns bounded structured enrichment without credentials or action authority |
+| Required operator roles | `AUTH_MODE=required` rejects missing or insufficient tokens before protected workflow mutations |
 | Empty or small similar-incident history | `similar_incidents` is unavailable with a clear uncertainty note |
 | Similar-incident retrieval failure | Deterministic finding remains unchanged and the retrieval source is degraded |
 | Disallowed model evidence query | Request is rejected in telemetry and no unapproved provider call occurs |

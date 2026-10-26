@@ -54,3 +54,4 @@ This file is the index of the detailed decision records in [`_decision_docs/`](_
 | [033 — Bounded Evidence Loop](_decision_docs/033-bounded-evidence-loop.md) | Allows validated, bounded read-only model re-queries while preserving the fixed no-model path. |
 | [034 — Cost And Latency Telemetry](_decision_docs/034-cost-latency-telemetry.md) | Persists bounded token/cost estimates and source timing, then shows a compact evidence-panel summary. |
 | [035 — Scenario Onboarding Kit](_decision_docs/035-scenario-onboarding-kit.md) | Adds one validated command for registering a scenario and creating its first incident. |
+| [036 — Local Operator Roles](_decision_docs/036-local-operator-roles.md) | Adds an opt-in server-side role boundary for operator mutations while preserving the local demo default. |

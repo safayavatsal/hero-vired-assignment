@@ -16,6 +16,7 @@ This document lists the major HTTP APIs in the product. Detailed request validat
 | `/api/v1/actions/{action_id}/execute` | Execute an approved action through the simulator |
 | `/api/v1/actions/{action_id}/verify` | Verify the persisted action outcome |
 | `/api/v1/actions/{action_id}/reconcile` | Reconcile an unknown action through the configured external executor |
+| `/api/v1/auth/context` | Return the authenticated local operator role without exposing credentials |
 | `/api/v1/simulator/scenarios` | Add or select a deterministic simulator scenario |
 | `/api/v1/simulator/alerts` | Trigger a simulator alert for a scenario |
 | `/api/v1/simulator/reset` | Reset the selected simulator scenario |
@@ -52,3 +53,4 @@ This document lists the major HTTP APIs in the product. Detailed request validat
 - Similar-incident retrieval, bounded model re-queries, and telemetry are additive fields in the existing investigation response; no new investigation route is required.
 - `scripts/add-scenario.sh` uses the existing scenario-registration and alert endpoints, then prints the accepted incident identifier.
 - Queue metrics are read-only operational summaries and never include job payloads or error bodies.
+- Operator mutations use the opt-in role boundary when `AUTH_MODE=required`; the default local demo remains unauthenticated by design.

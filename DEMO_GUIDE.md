@@ -116,6 +116,8 @@ cp .env.example .env
 
 Use `MODEL_GATEWAY_MODE=local` for the no-secret model-success demo. The local gateway is bounded and contract-valid; it does not replace the deterministic finding or authorize actions.
 
+The optional operator boundary uses `AUTH_MODE=required` and an environment-only `OPERATOR_TOKENS` mapping. Use it to demonstrate role checks; leave `AUTH_MODE=off` for the default local UI until a real identity system is added.
+
 Feature 8 runtime bounds can be tuned in `.env`: `EVIDENCE_TIMEOUT_SECONDS`, `EVIDENCE_CONCURRENCY`, `MODEL_GATEWAY_TIMEOUT_SECONDS`, `MODEL_MAX_EVIDENCE_ITEMS`, `MODEL_MAX_PROMPT_BYTES`, `EXTERNAL_BOUNDARY_TIMEOUT_SECONDS`, and `JOB_RETRY_BACKOFF_SECONDS`. The defaults keep local investigations bounded and do not require a hosted deployment.
 
 Run the deterministic evaluation cases:

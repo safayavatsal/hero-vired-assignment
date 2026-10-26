@@ -12,6 +12,7 @@ Make the browser workflow unambiguous after a finding is produced: show the resu
 4. Gate remediation on acknowledgement and show the evidence-backed reason for the recommendation before proposal or approval.
 5. Deliver notifications to the resolved owner when available and include incident identity, finding context, evidence, and local navigation links.
 6. Make remediation review read-only until the operator chooses Approve or Reject; show the projected before/after service state.
+7. Add an opt-in server-side role boundary so viewer, responder, approver, and administrator permissions are enforced by the API.
 
 ## Acceptance checks
 
@@ -22,6 +23,7 @@ Make the browser workflow unambiguous after a finding is produced: show the resu
 - Local notification delivery identifies the specific responder and includes the incident console and responder inbox links.
 - Reviewing a remediation produces a sandbox projection without changing simulator state or creating an action decision.
 - Approve and Reject are the only controls that create the audited action decision after the projection is visible.
+- With `AUTH_MODE=required`, missing or insufficient operator credentials are rejected before workflow mutation.
 
 ## Status
 

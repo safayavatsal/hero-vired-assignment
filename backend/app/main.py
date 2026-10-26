@@ -9,6 +9,7 @@ from app.api.simulator import router as simulator_router
 from app.api.incidents import router as incident_router
 from app.api.investigations import router as investigation_router
 from app.api.jobs import router as jobs_router
+from app.api.auth import router as auth_router
 from app.api.kubernetes import router as kubernetes_router
 from app.api.workflow import router as workflow_router
 
@@ -35,6 +36,7 @@ app.include_router(simulator_router)
 app.include_router(incident_router)
 app.include_router(investigation_router)
 app.include_router(jobs_router)
+app.include_router(auth_router)
 app.include_router(kubernetes_router)
 app.include_router(workflow_router)
 

@@ -1,11 +1,12 @@
 from typing import Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.application.incident import investigation_service
 from app.application.evidence_tools import evidence_tool_catalog
+from app.application.auth import Principal, require_role
 
 
 router = APIRouter(prefix="/api/v1", tags=["investigations"])
@@ -17,7 +18,8 @@ class InvestigationRequest(BaseModel):
 
 
 @router.post("/incidents/{incident_id}/investigate")
-def investigate(incident_id: UUID, request: InvestigationRequest) -> dict[str, Any]:
+def investigate(incident_id: UUID, request: InvestigationRequest,
+                _principal: Principal = Depends(require_role("responder"))) -> dict[str, Any]:
     try:
         return investigation_service.enqueue(incident_id, request.scenario_id, request.mode)
     except ValueError as error:
