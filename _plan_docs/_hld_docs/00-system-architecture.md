@@ -16,7 +16,10 @@ flowchart LR
     Worker[Python worker] --> Jobs
     Worker --> Store
     Worker --> Simulator[Production simulator]
+    Worker --> Retrieval[Historical finding retriever]
+    Retrieval --> Store
     Worker --> Model[Provider-neutral model adapter]
+    Model -.->|validated bounded evidence requests| Worker
     Worker --> Pager[Paging and executor boundaries]
     API --> Inbox[Local captured responder inbox]
 ```
@@ -31,8 +34,9 @@ flowchart LR
 | FastAPI API | Validation, idempotency, state transitions, read models, and audit events | Long-running investigation or direct model execution |
 | Python worker | Investigation jobs, action execution, verification, retries, leases, and overdue-page recovery | Browser presentation or unvalidated human intent |
 | PostgreSQL | Incidents, alerts, evidence, findings, pages, actions, jobs, attempts, verifications, and timeline history | External alert generation or model reasoning |
+| Historical finding retriever | Deterministic finding vectors, bounded ranked history lookup, and retrieval timing | Deterministic diagnosis, model authorization, or incident state |
 | Production simulator | Deterministic alerts, evidence sources, typed actions, and failure controls | Production credentials or arbitrary command execution |
-| Model and delivery boundaries | Structured analysis, optional delivery, ownership, local captured email, and reconciliation | Direct authorization or incident truth |
+| Model and delivery boundaries | Structured analysis, bounded allowlisted evidence requests, telemetry, optional delivery, ownership, local captured email, and reconciliation | Direct authorization or incident truth |
 
 ## 3. Relational schema catalog
 
@@ -42,9 +46,10 @@ All identifiers are UUIDs unless stated otherwise. JSON fields contain validated
 | --- | --- |
 | `incidents` | `id` PK, `fingerprint` UNIQUE NOT NULL, `service`, `severity`, `status`, `summary` NOT NULL, `version` NOT NULL, `created_at`, `updated_at` |
 | `alerts` | `id` PK, `incident_id` FK, `source_event_id` UNIQUE NOT NULL, `fingerprint`, `source`, `service`, `severity`, `alert_type`, `labels` JSONB, `description`, `lifecycle`, `source_time`, `received_time`, `raw_payload` JSONB |
-| `investigations` | `id` PK, `incident_id` FK UNIQUE, `scenario_id`, `generated_at`, `model_status`, `model_error`, `model_analysis` JSONB, `prompt_version` |
+| `investigations` | `id` PK, `incident_id` FK UNIQUE, `scenario_id`, `generated_at`, `model_status`, `model_error`, `model_analysis` JSONB, `prompt_version`, `tool_trace` JSONB, `model_telemetry` JSONB |
 | `investigation_evidence` | `(investigation_id, id)` PK/FK, `source_type`, `query`, `parameters` JSONB, `availability`, `observed_at`, `collected_at`, `duration_ms`, `error`, `items` JSONB |
 | `investigation_findings` | `(investigation_id, id)` PK/FK, `category`, `statement`, `confidence`, `suggested_next_step`, `evidence_ids` JSONB, `uncertainty` |
+| `finding_embeddings` | `id` PK, `incident_id`, `investigation_id`, `service`, `category`, `statement`, `suggested_next_step`, deterministic `embedding` JSONB, `created_at`; indexed by creation time |
 | `pages` | `id` PK, `incident_id` FK, `(incident_id, level)` UNIQUE, `responder`, `fallback_responder`, `status`, `deadline_at`, `response_type`, `response_text`, `incident_version`, `created_at`, `updated_at` |
 | `action_proposals` | `id` PK, `incident_id` FK, `scenario_id`, `action_type`, `target`, `parameters` JSONB, `status`, `approval_expires_at`, `approved_by`, `idempotency_key` UNIQUE, `simulator_action_id`, `result` JSONB, `incident_version`, `created_at`, `updated_at` |
 | `action_attempts` | `id` PK, `action_proposal_id` FK, `(action_proposal_id, attempt_number)` UNIQUE, `status`, `simulator_action_id`, `result` JSONB, `started_at`, `completed_at` |
@@ -57,6 +62,9 @@ All identifiers are UUIDs unless stated otherwise. JSON fields contain validated
 
 - Every alert has a source idempotency key and preserved validated payload.
 - Every evidence item retains its query, parameters, result, availability, timing, and failure state.
+- Historical context is indexed only after a completed finding and is returned as evidence; unavailable, empty, or slow retrieval adds uncertainty without changing the deterministic finding.
+- Additional model evidence requests are allowlisted, citation-validated, and bounded by rounds, items, requests, and wall-clock time.
+- Investigation telemetry records source durations, retrieval latency, bounded token estimates, and finite cost estimates without raw provider responses.
 - Every action is typed, linked to an incident, and blocked until explicit approval exists.
 - Every action attempt has an outcome and a separate verification record; a timeout never implies success.
 - Every durable job has a lease, retry count, and idempotency key.

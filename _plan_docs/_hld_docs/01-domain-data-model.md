@@ -7,6 +7,7 @@ erDiagram
     INCIDENT ||--o{ ALERT : contains
     INCIDENT ||--o{ EVIDENCE : gathers
     INCIDENT ||--o{ FINDING : produces
+    FINDING ||--o| FINDING_EMBEDDING : indexes
     MODEL_RUN ||--o{ FINDING : produces
     INCIDENT ||--o{ PAGE : sends
     INCIDENT ||--o{ DECISION : receives
@@ -52,6 +53,14 @@ erDiagram
         uuid model_run_id FK
         text kind
         numeric confidence
+    }
+    FINDING_EMBEDDING {
+        uuid id PK
+        uuid incident_id
+        uuid investigation_id
+        text service
+        text category
+        jsonb embedding
     }
     PAGE {
         uuid id PK
@@ -104,5 +113,6 @@ erDiagram
 
 - An incident is the aggregate root for alerts, evidence, findings, pages, decisions, actions, jobs, and timeline events.
 - A model run may produce multiple findings, while each finding remains attached to the incident that supplied its evidence.
+- A completed finding may have one deterministic embedding projection used to retrieve related historical findings; retrieved context remains evidence and never replaces the finding.
 - An action request may have multiple attempts, but verification belongs to a specific attempt.
 - Timeline events provide the user-facing audit sequence without replacing the normalized source tables.

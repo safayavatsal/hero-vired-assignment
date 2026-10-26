@@ -15,6 +15,28 @@ fi
 BASE_URL="${BASE_URL:-http://localhost:8001}"
 REQUEST_TIMEOUT_SECONDS="${REQUEST_TIMEOUT_SECONDS:-10}"
 
+post_json() {
+  python3 - "$1" "$2" "$REQUEST_TIMEOUT_SECONDS" <<'PY'
+import sys
+import urllib.error
+import urllib.request
+
+url, payload, timeout = sys.argv[1], sys.argv[2], float(sys.argv[3])
+request = urllib.request.Request(
+    url,
+    data=payload.encode("utf-8"),
+    headers={"content-type": "application/json"},
+    method="POST",
+)
+try:
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        sys.stdout.buffer.write(response.read())
+except urllib.error.HTTPError as error:
+    sys.stderr.buffer.write(error.read())
+    raise SystemExit(1)
+PY
+}
+
 mapfile -t scenario_payload < <(python3 - "$definition_file" <<'PY'
 import json
 import math
@@ -91,21 +113,16 @@ print(json.dumps({"scenario_id": sys.argv[1], "definition": json.loads(sys.argv[
 PY
 )
 
-curl --fail-with-body -sS --max-time "$REQUEST_TIMEOUT_SECONDS" \
-  -X POST "$BASE_URL/api/v1/simulator/scenarios" \
-  -H 'content-type: application/json' \
-  -d "$registration_payload" >/dev/null
+post_json "$BASE_URL/api/v1/simulator/scenarios" "$registration_payload" >/dev/null
 
-alert_response=$(curl --fail-with-body -sS --max-time "$REQUEST_TIMEOUT_SECONDS" \
-  -X POST "$BASE_URL/api/v1/simulator/alerts" \
-  -H 'content-type: application/json' \
-  -d "$(python3 - "$scenario_id" <<'PY'
+alert_payload=$(python3 - "$scenario_id" <<'PY'
 import json
 import sys
 
 print(json.dumps({"scenario_id": sys.argv[1]}, separators=(",", ":")))
 PY
-)")
+)
+alert_response=$(post_json "$BASE_URL/api/v1/simulator/alerts" "$alert_payload")
 
 python3 - "$alert_response" <<'PY'
 import json

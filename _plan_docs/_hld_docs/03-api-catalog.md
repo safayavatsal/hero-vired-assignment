@@ -33,6 +33,7 @@ This document lists the major HTTP APIs in the product. Detailed request validat
 | `/api/v1/incidents/{incident_id}/pages` | Return page delivery and response state |
 | `/api/v1/incidents/{incident_id}/actions` | Return typed action proposal and execution state |
 | `/api/v1/incidents/{incident_id}/evidence` | Return collected evidence and availability states |
+| `/api/v1/investigation-tools` | List the fixed and historical evidence tools with purposes and enabled state |
 | `/api/v1/health` | Report API and dependency health |
 | `/api/v1/simulator/scenarios` | List available simulator scenarios without hidden causes |
 | `/api/v1/simulator/state` | Return selected scenario state and action records |
@@ -47,3 +48,5 @@ This document lists the major HTTP APIs in the product. Detailed request validat
 - Human decisions return the updated incident state and the created timeline event.
 - Action approval never executes an action inside the request handler; it creates durable work.
 - Error responses expose safe problem details and never treat model or simulator text as trusted instructions.
+- Similar-incident retrieval, bounded model re-queries, and telemetry are additive fields in the existing investigation response; no new investigation route is required.
+- `scripts/add-scenario.sh` uses the existing scenario-registration and alert endpoints, then prints the accepted incident identifier.

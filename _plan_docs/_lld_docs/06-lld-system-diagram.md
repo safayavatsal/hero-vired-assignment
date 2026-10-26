@@ -41,6 +41,15 @@ classDiagram
         -str uncertainty
         +validate_confidence() None
     }
+    class FindingEmbedding {
+        -UUID id
+        -UUID incident_id
+        -UUID investigation_id
+        -str service
+        -str category
+        -list~float~ embedding
+        +similarity(query: list~float~) float
+    }
     class Page {
         -UUID id
         -UUID incident_id
@@ -139,10 +148,20 @@ classDiagram
     class InvestigationService {
         -EvidenceProvider evidence_provider
         -ModelGateway model_gateway
-        -FindingRepository finding_repository
-        -TimelineRepository timeline_repository
-        +investigate(id: UUID) list~Finding~
-        +collect_evidence(id: UUID) list~Evidence~
+        -InvestigationRepository repository
+        -RetrievalRepository retrieval_repository
+        +investigate(id: UUID, scenario_id: str) dict
+        +enqueue(id: UUID, scenario_id: str, mode: str) dict
+        +_query_similar_incidents(id: UUID, service: str, finding: Finding) Evidence
+        +_model_analysis(evidence: list~Evidence~) dict
+        +_model_telemetry(evidence: list~Evidence~) dict
+    }
+    class EvidenceTool {
+        -str source_type
+        -str name
+        -str purpose
+        -bool enabled
+        +query(provider: EvidenceProvider) dict
     }
     class PagingService {
         -PagingGateway paging_gateway
@@ -178,15 +197,23 @@ classDiagram
     }
     class EvidenceProvider {
         <<interface>>
-        +collect(id: UUID) list~Evidence~
+        +query_evidence(source_type: str) dict
+        +finding_rules(scenario_id: str) list~dict~
+    }
+    class RetrievalRepository {
+        <<interface>>
+        +index(result: dict) None
+        +count() int
+        +search(query_embedding: list~float~, limit: int, exclude_incident_id: str) list~dict~
     }
     class ModelGateway {
         <<interface>>
-        +analyze(evidence: list~Evidence~) list~Finding~
+        +analyze(prompt: dict) dict
     }
-    class FindingRepository {
+    class InvestigationRepository {
         <<interface>>
-        +save_all(findings: list~Finding~) None
+        +save(result: dict) UUID
+        +get(id: UUID) dict
     }
     class ActionRepository {
         <<interface>>
@@ -241,9 +268,10 @@ classDiagram
         +get_by_id(id: UUID) Incident
         +find_by_fingerprint(value: str) Incident
     }
-    class PostgresFindingRepository {
+    class PostgresInvestigationRepository {
         -DatabaseSession session
-        +save_all(findings: list~Finding~) None
+        +save(result: dict) UUID
+        +get(id: UUID) dict
     }
     class PostgresActionRepository {
         -DatabaseSession session
@@ -267,7 +295,19 @@ classDiagram
     }
     class ProviderModelGateway {
         -ModelClient client
-        +analyze(evidence: list~Evidence~) list~Finding~
+        +analyze(prompt: dict) dict
+    }
+    class PostgresRetrievalRepository {
+        -DatabaseSession session
+        +index(result: dict) None
+        +count() int
+        +search(query_embedding: list~float~, limit: int, exclude_incident_id: str) list~dict~
+    }
+    class InMemoryRetrievalRepository {
+        -list records
+        +index(result: dict) None
+        +count() int
+        +search(query_embedding: list~float~, limit: int, exclude_incident_id: str) list~dict~
     }
     class SimulatorActionExecutor {
         -SimulatorClient client
@@ -292,6 +332,7 @@ classDiagram
     Incident "1" o-- "many" Alert : contains
     Incident "1" o-- "many" Evidence : gathers
     Incident "1" o-- "many" Finding : produces
+    Finding "1" o-- "0..1" FindingEmbedding : indexes
     Incident "1" o-- "many" Page : sends
     Incident "1" o-- "many" Decision : receives
     Incident "1" o-- "many" ActionRequest : proposes
@@ -309,8 +350,9 @@ classDiagram
     IncidentService ..> JobRepository : enqueues
     InvestigationService ..> EvidenceProvider : reads
     InvestigationService ..> ModelGateway : analyzes
-    InvestigationService ..> FindingRepository : persists
-    InvestigationService ..> TimelineRepository : records
+    InvestigationService ..> InvestigationRepository : persists
+    InvestigationService ..> RetrievalRepository : retrieves
+    InvestigationService ..> EvidenceTool : bounds
     PagingService ..> PagingGateway : sends
     PagingService ..> TimelineRepository : records
     DecisionService ..> ActionRepository : persists
@@ -328,7 +370,9 @@ classDiagram
     ActionHandler ..> ActionExecutor : executes
     ActionHandler --> VerificationService : verifies
     PostgresIncidentRepository ..|> IncidentRepository
-    PostgresFindingRepository ..|> FindingRepository
+    PostgresInvestigationRepository ..|> InvestigationRepository
+    PostgresRetrievalRepository ..|> RetrievalRepository
+    InMemoryRetrievalRepository ..|> RetrievalRepository
     PostgresActionRepository ..|> ActionRepository
     PostgresJobRepository ..|> JobRepository
     PostgresTimelineRepository ..|> TimelineRepository
