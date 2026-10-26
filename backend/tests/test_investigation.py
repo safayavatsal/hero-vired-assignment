@@ -9,6 +9,7 @@ from app.application.simulator import SimulatorService
 from app.application.model_gateway import (
     DEFAULT_MODEL_GATEWAY_URL,
     HttpModelGateway,
+    LocalModelGateway,
     UnavailableModelGateway,
     _openai_request,
     _openai_response,
@@ -87,6 +88,7 @@ class CompletedModelGateway:
 
 def test_investigation_findings_cite_collected_evidence(monkeypatch) -> None:
     monkeypatch.delenv("MODEL_GATEWAY_TOKEN", raising=False)
+    monkeypatch.delenv("MODEL_GATEWAY_MODE", raising=False)
     service = InvestigationService(ExistingIncident(), SimulatorService(), MemoryInvestigationRepository())
 
     result = service.investigate(uuid4(), "deployment_regression")
@@ -154,6 +156,7 @@ def test_slow_evidence_source_is_bounded(monkeypatch) -> None:
 
 def test_model_gateway_is_safe_when_unconfigured(monkeypatch) -> None:
     monkeypatch.delenv("MODEL_GATEWAY_TOKEN", raising=False)
+    monkeypatch.delenv("MODEL_GATEWAY_MODE", raising=False)
     service = InvestigationService(ExistingIncident(), SimulatorService(), MemoryInvestigationRepository())
 
     result = service.investigate(uuid4(), "disk_pressure")
@@ -163,6 +166,7 @@ def test_model_gateway_is_safe_when_unconfigured(monkeypatch) -> None:
 
 def test_model_gateway_uses_configured_url_and_format(monkeypatch) -> None:
     monkeypatch.setenv("MODEL_GATEWAY_TOKEN", "test-token")
+    monkeypatch.delenv("MODEL_GATEWAY_MODE", raising=False)
     monkeypatch.setenv("MODEL_GATEWAY_URL", "https://provider.test/responses")
     monkeypatch.setenv("MODEL_GATEWAY_FORMAT", "openai_responses")
 
@@ -175,6 +179,7 @@ def test_model_gateway_uses_configured_url_and_format(monkeypatch) -> None:
 
 def test_model_gateway_uses_default_url_when_url_is_unset(monkeypatch) -> None:
     monkeypatch.setenv("MODEL_GATEWAY_TOKEN", "test-token")
+    monkeypatch.delenv("MODEL_GATEWAY_MODE", raising=False)
     monkeypatch.delenv("MODEL_GATEWAY_URL", raising=False)
     monkeypatch.delenv("MODEL_GATEWAY_FORMAT", raising=False)
 
@@ -183,6 +188,20 @@ def test_model_gateway_uses_default_url_when_url_is_unset(monkeypatch) -> None:
     assert isinstance(service.model_gateway, HttpModelGateway)
     assert service.model_gateway.url == DEFAULT_MODEL_GATEWAY_URL
     assert service.model_gateway.response_format == "openai_responses"
+
+
+def test_local_model_gateway_returns_contract_valid_analysis(monkeypatch) -> None:
+    monkeypatch.setenv("MODEL_GATEWAY_MODE", "local")
+    monkeypatch.delenv("MODEL_GATEWAY_TOKEN", raising=False)
+
+    service = InvestigationService(ExistingIncident(), SimulatorService(), MemoryInvestigationRepository())
+
+    assert isinstance(service.model_gateway, LocalModelGateway)
+    result = service.investigate(uuid4(), "disk_pressure")
+
+    assert result["model_status"] == "completed"
+    assert result["model_analysis"]["evidence_ids"]
+    assert result["model_telemetry"]["status"] == "completed"
 
 
 def test_invalid_model_citations_are_rejected() -> None:
@@ -435,6 +454,7 @@ def test_same_evidence_uses_versioned_cache() -> None:
 
 def test_persisted_investigation_is_idempotent_after_service_restart(monkeypatch) -> None:
     monkeypatch.delenv("MODEL_GATEWAY_TOKEN", raising=False)
+    monkeypatch.delenv("MODEL_GATEWAY_MODE", raising=False)
     repository = MemoryInvestigationRepository()
     incident_id = uuid4()
     first = InvestigationService(ExistingIncident(), SimulatorService(), repository)
@@ -488,6 +508,7 @@ def test_deeper_investigation_bypasses_completed_result() -> None:
 
 def test_persisted_unavailable_investigation_retries_after_provider_configuration(monkeypatch) -> None:
     monkeypatch.delenv("MODEL_GATEWAY_TOKEN", raising=False)
+    monkeypatch.delenv("MODEL_GATEWAY_MODE", raising=False)
     repository = MemoryInvestigationRepository()
     incident_id = uuid4()
     first = InvestigationService(ExistingIncident(), SimulatorService(), repository)

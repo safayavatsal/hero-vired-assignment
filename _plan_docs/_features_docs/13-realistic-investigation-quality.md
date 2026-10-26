@@ -12,6 +12,8 @@ Make the local assignment feel like a usable on-call product for a small e-comme
 4. Present the structured model analysis and investigation progress in the React workflow, remove duplicate responder content, and keep human approval as the action gate.
 5. Add focused scenario tests and run the backend, frontend, build, Compose, and static checks before updating the project records.
 
+The local model mode provides a contract-valid no-secret path for demonstrations while preserving the optional remote gateway boundary.
+
 ## Success checks
 
 - A fresh scenario investigation contains concrete e-commerce evidence and valid citations.

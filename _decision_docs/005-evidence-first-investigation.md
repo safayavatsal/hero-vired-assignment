@@ -12,4 +12,5 @@ Investigation output must contain the current condition, likely cause, confidenc
 
 - The model explains facts instead of inventing observations.
 - Missing or unavailable sources remain visible.
+- A local contract gateway can demonstrate structured enrichment without credentials; it reads the deterministic finding and cannot authorize actions.
 - Prompt evaluation can check evidence coverage and unsupported claims.

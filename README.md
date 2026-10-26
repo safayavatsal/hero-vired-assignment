@@ -146,7 +146,7 @@ Trigger its alerts with `{"scenario_id":"cache_stampede"}` against `/api/v1/simu
 
 For the presenter-facing commerce flow, open port `8003`, add a product, and use the `Demo journeys` section to try slow checkout, delayed fulfillment, and provider-unavailable checkout. The separate store backend sends only bounded operational metadata to the normal alert endpoint. The customer sees a safe reference, not an internal incident link. In a separate operator-console tab, locate each resulting incident, confirm its automatically selected investigation context, run the investigation, notify the service owner, and open the responder inbox on port `8002` to show the captured notification. The approved test card completes without creating an incident.
 
-The investigation view uses realistic e-commerce signals rather than a single generic fixture message. It records named bounded evidence queries and safe model telemetry, then shows the structured model readout separately from the deterministic finding. A configured model gateway can supply the structured analysis; without one, the deterministic finding remains visible with an explicit degraded model status.
+The investigation view uses realistic e-commerce signals rather than a single generic fixture message. It records named bounded evidence queries and safe model telemetry, then shows the structured model readout separately from the deterministic finding. Set `MODEL_GATEWAY_MODE=local` for a no-secret contract-valid model readout; a configured remote gateway remains optional, and without either the deterministic finding remains visible with an explicit degraded model status.
 
 ## Verify on local Kubernetes
 

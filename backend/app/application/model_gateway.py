@@ -27,6 +27,25 @@ class UnavailableModelGateway:
         raise ModelUnavailableError("model gateway is not configured")
 
 
+class LocalModelGateway:
+    model = "local-contract"
+    response_format = "structured"
+
+    def analyze(self, prompt: dict[str, Any]) -> dict[str, Any]:
+        findings = prompt.get("deterministic_findings") or []
+        if not findings:
+            raise ValueError("local model requires a deterministic finding")
+        finding = findings[0]
+        return {
+            "current_condition": finding["statement"],
+            "likely_cause": finding["statement"],
+            "confidence": finding["confidence"],
+            "suggested_next_step": finding["suggested_next_step"],
+            "evidence_ids": finding["evidence_ids"],
+            "uncertainty": finding.get("uncertainty"),
+        }
+
+
 class HttpModelGateway:
     def __init__(self, url: str, token: str, timeout_seconds: float = 5.0, model: str | None = None,
                  response_format: str = "openai_responses") -> None:
@@ -65,6 +84,8 @@ class HttpModelGateway:
 
 
 def configured_model_gateway() -> ModelGateway:
+    if os.getenv("MODEL_GATEWAY_MODE", "").strip().lower() == "local":
+        return LocalModelGateway()
     token = os.getenv("MODEL_GATEWAY_TOKEN")
     if not token:
         return UnavailableModelGateway()
