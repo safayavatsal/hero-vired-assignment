@@ -16,4 +16,24 @@
 
 ## Connections
 
-`DecisionService` changes `ActionRequest` only after validating the responder and approval state. `ActionService` enqueues durable work. `ActionHandler` calls `ActionExecutor`, persists the attempt, and schedules verification. No API handler calls the simulator directly.
+`DecisionService` changes `ActionRequest` only after validating the responder and approval state. A page request either delivers to a validated recipient or creates an acknowledged local ownership claim. `ActionService` enqueues durable work after the browser records approval. `ActionHandler` calls `ActionExecutor`, persists the attempt, and schedules verification. No API handler calls the simulator directly.
+
+```mermaid
+sequenceDiagram
+    participant U as Operator UI
+    participant A as API
+    participant D as PostgreSQL
+    participant W as Worker
+
+    U->>A: Investigate
+    A->>D: Persist evidence and discovered finding
+    U->>A: Notify email or claim ownership
+    A->>D: Persist page recipient and ownership state
+    U->>A: Approve typed action
+    A->>D: Persist approval
+    U->>A: Queue approved action automatically
+    A->>D: Persist queued job
+    W->>D: Execute and persist before/after result
+    U->>A: Verify service state
+    A->>D: Persist verification and resolution
+```

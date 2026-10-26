@@ -26,6 +26,10 @@ flowchart TB
     Decisions -->|reply| Detail
     Decisions -->|approve or reject| Detail
     Actions -->|result and verification| Timeline
+    Detail -->|finding discovers category| Decisions
+    Decisions -->|notify owner or claim locally| Detail
+    Actions -->|approve and queue once| Actions
+    Actions -->|persistent before and after state| Timeline
 ```
 
 ## UI data boundaries

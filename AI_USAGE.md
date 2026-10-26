@@ -62,4 +62,8 @@ The project owner identified, prioritized, or reviewed the following grouped fin
 - **Operator-safety enhancement:** the owner approved a minimal authorization seam. The AI-assisted implementation adds an opt-in bearer-token role resolver and route-level permissions while preserving the local demo default; the owner retains the identity and tenancy boundary decision.
 - **Operational-correlation enhancement:** the owner approved local diagnostic evidence. The AI-assisted implementation adds bounded request IDs, outbound propagation, structured request records, and route latency metrics without a new runtime dependency; the owner retains the production telemetry decision.
 
+## Human-owned remediation enhancement
+
+The owner identified that diagnosis, ownership, approval, queueing, and verification were visually ambiguous. The AI-assisted implementation now keeps analyzer categories internal until evidence completes, supports recipient email or local ownership, combines approval with queueing in the browser, persists action before/after state, and updates the HLD/LLD/API records. The owner retains the workflow, safety, and identity-boundary decisions.
+
 These contributions are recorded as human detection, direction, and verification; implementation changes remain explicitly attributed as AI-assisted.

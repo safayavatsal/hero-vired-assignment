@@ -16,6 +16,7 @@ def test_scenarios_hide_root_causes() -> None:
     assert response.status_code == 200
     assert len(response.json()) == 3
     assert all("hidden_cause" not in scenario for scenario in response.json())
+    assert all("finding" not in scenario for scenario in response.json())
 
 
 def test_scenarios_expose_bounded_runbooks_without_hidden_causes() -> None:
@@ -195,7 +196,8 @@ def test_registered_scenario_survives_restart_and_hides_root_cause(tmp_path: Pat
     public = {scenario["id"]: scenario for scenario in restarted.list_scenarios()}["cache_stampede"]
 
     assert public["service"] == "catalog-api"
-    assert public["finding"]["suggested_next_step"] == "restart"
+    assert "finding" not in public
+    assert restarted.finding_rules("cache_stampede")[0]["suggested_next_step"] == "restart"
     assert "hidden_cause" not in public
     assert restarted.select_scenario("cache_stampede")["scenario"]["service"] == "catalog-api"
 

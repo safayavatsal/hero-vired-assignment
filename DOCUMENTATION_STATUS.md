@@ -34,6 +34,7 @@
 | Local model path | No-secret structured model demonstration | Implemented; `MODEL_GATEWAY_MODE=local` returns contract-valid enrichment without changing deterministic findings or action authorization |
 | Local operator roles | Opt-in server-side authorization seam | Implemented; configured tokens map to viewer, responder, approver, or administrator permissions when `AUTH_MODE=required`, while the default local path remains compatible |
 | Request correlation | Bounded HTTP IDs and runtime metrics | Implemented; API and demo-store boundaries return and propagate request IDs, while `GET /api/v1/metrics` reports fixed-label counts and latency percentiles |
+| Human-owned remediation | Discovery-driven category, explicit ownership, automatic queueing, persistent verification | Implemented; public scenario listings hide analyzer findings, page requests support recipient email or local ownership, approval queues once, and action before/after state remains visible through verification |
 
 The approved HLD and LLD remain the authority for boundaries and relationships. The current implementation includes durable investigation and action jobs, action-attempt, verification, delivery-attempt, and worker-startup pieces required by those documents.
 

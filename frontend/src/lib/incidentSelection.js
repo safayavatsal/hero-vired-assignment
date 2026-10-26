@@ -6,6 +6,11 @@ export function scenarioForService(scenarios, service) {
   return scenarios.find((scenario) => scenario.service === service)?.id;
 }
 
+export function actionTypeForFinding(finding, scenario) {
+  const suggested = finding?.suggested_next_step;
+  return suggested && scenario?.allowed_actions?.includes(suggested) ? suggested : null;
+}
+
 export function activeAction(actions, match) {
   const eligible = match
     ? actions.filter((action) => action.scenario_id === match.scenarioId && action.target === match.target)

@@ -9,7 +9,7 @@ This document lists the major HTTP APIs in the product. Detailed request validat
 | `/api/v1/alerts` | Accept and correlate an incoming alert idempotently |
 | `/api/v1/incidents/{incident_id}/status` | Apply a validated incident state transition |
 | `/api/v1/incidents/{incident_id}/investigate` | Collect bounded evidence and produce deterministic findings |
-| `/api/v1/incidents/{incident_id}/page` | Deliver a durable primary responder page |
+| `/api/v1/incidents/{incident_id}/page` | Deliver a durable primary responder page or create a local ownership claim |
 | `/api/v1/pages/{page_id}/respond` | Acknowledge, reply to, or timeout a page |
 | `/api/v1/incidents/{incident_id}/actions` | Create an approval-bound typed action proposal |
 | `/api/v1/actions/{action_id}/decision` | Approve or reject a typed action |
@@ -50,6 +50,8 @@ This document lists the major HTTP APIs in the product. Detailed request validat
 - All mutating endpoints accept an idempotency key where duplicate requests are possible.
 - Human decisions return the updated incident state and the created timeline event.
 - Action approval never executes an action inside the request handler; it creates durable work.
+- A page request may include a validated recipient email or `notify=false` for a local ownership claim.
+- The browser combines approval with the existing execute request so one operator action records approval and queueing; the execute route remains compatible for other clients.
 - Error responses expose safe problem details and never treat model or simulator text as trusted instructions.
 - Similar-incident retrieval, bounded model re-queries, and telemetry are additive fields in the existing investigation response; no new investigation route is required.
 - `scripts/add-scenario.sh` uses the existing scenario-registration and alert endpoints, then prints the accepted incident identifier.

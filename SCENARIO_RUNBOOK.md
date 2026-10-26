@@ -101,3 +101,11 @@ Run `./scripts/verify-submission.sh` after starting Compose for the final combin
 The current local verification includes the Docker/PostgreSQL backend suite, frontend smoke tests and production build, liveness/readiness checks, live scenario delivery, persisted workflow checks, the demo-store journeys on ports `8003` and `8004`, and frontend HTTP serving on port `8000`. Hosted deployment is outside this local assignment boundary.
 
 The frontend interaction pass also includes a newest-page regression test, server-detail error handling, toast dismissal/timeout behavior, primary-action hierarchy, removal of decorative step labels, a single responder section, and structured model-readout rendering.
+
+## Human-owned remediation check
+
+1. Confirm the scenario listing shows service and allowed actions but no category or recommended action.
+2. Start investigation and wait for the completed finding to reveal the category and next step.
+3. Notify a validated owner email, or choose local ownership and confirm the page is acknowledged without a delivery attempt.
+4. Review the sandbox projection, approve once, and confirm the action is queued without a second queue control.
+5. Wait for execution, confirm before/after state remains visible, then verify and confirm the incident becomes resolved.

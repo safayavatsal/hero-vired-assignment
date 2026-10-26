@@ -3,6 +3,7 @@ from uuid import uuid4
 import pytest
 
 from app.application import workflow as workflow_module
+from app.api.workflow import PageRequest
 from app.application.workflow import WorkflowService
 
 
@@ -107,3 +108,36 @@ def test_page_response_allows_acknowledgement_after_owner_note(monkeypatch) -> N
     result = WorkflowService("postgresql://test").respond(page_id, "acknowledge", "Taking ownership")
 
     assert result == {"id": str(page_id), "status": "acknowledged"}
+
+
+def test_page_request_supports_recipient_email_and_self_ownership() -> None:
+    request = PageRequest(responder_email="owner@example.test", notify=False)
+
+    assert request.responder_email == "owner@example.test"
+    assert request.notify is False
+
+
+def test_self_ownership_creates_acknowledged_page_without_delivery(monkeypatch) -> None:
+    incident_id = uuid4()
+    page_id = uuid4()
+
+    class Connection:
+        def execute(self, _query, _params):
+            return _Result(None)
+
+    service = WorkflowService("postgresql://test")
+    monkeypatch.setattr(service, "_incident", lambda _incident_id: {
+        "id": str(incident_id), "service": "orders-worker", "severity": "high",
+        "summary": "disk pressure", "version": 1,
+    })
+    monkeypatch.setattr(service.ownership_gateway, "resolve", lambda *_args: None)
+    monkeypatch.setattr(service.notification_gateway, "deliver", lambda _payload: pytest.fail("self ownership sent a notification"))
+    monkeypatch.setattr(workflow_module.psycopg, "connect", lambda *args, **kwargs: _Context(Connection()))
+    monkeypatch.setattr(WorkflowService, "_timeline", staticmethod(lambda *_args: None))
+    monkeypatch.setattr(WorkflowService, "_get_page", staticmethod(lambda _connection, _page_id: {
+        "id": str(page_id), "status": "acknowledged", "response_type": "acknowledge",
+    }))
+
+    result = service.create_page(incident_id, "local-operator", None, 300, notify=False)
+
+    assert result["page"]["status"] == "acknowledged"

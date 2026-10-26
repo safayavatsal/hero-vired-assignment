@@ -51,6 +51,8 @@ sequenceDiagram
     A-->>U: Ordered backend truth
 ```
 
+The browser obtains the remediation action from the completed finding, accepts either a recipient email or a local ownership claim, and combines approval with queueing. Execution before/after state stays in the action read model until the verification request records the final result.
+
 ## Runtime guarantees
 
 - Duplicate, late, and out-of-order alerts are accepted safely through source keys, fingerprints, and event ordering.

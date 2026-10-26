@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { activeAction, activePage, scenarioForService, workflowStates } from "../src/lib/incidentSelection.js";
+import { actionTypeForFinding, activeAction, activePage, scenarioForService, workflowStates } from "../src/lib/incidentSelection.js";
 
 test("selects a scenario from the service returned by the API", () => {
   assert.equal(scenarioForService([
@@ -42,4 +42,12 @@ test("keeps the workflow sequential until each operator decision is complete", (
   assert.equal(workflowStates({ status: "completed", findings: [{}] }, { status: "replied" }, { status: "verified" }).response, "current");
   assert.equal(workflowStates({ status: "completed", findings: [{}] }, { status: "replied" }, { status: "verified" }).action, "locked");
   assert.equal(workflowStates({ status: "completed", findings: [{}] }, { status: "acknowledged" }, undefined, true).action, "done");
+});
+
+test("derives the remediation action from the completed finding", () => {
+  const scenario = { allowed_actions: ["clear_disk", "restart"] };
+
+  assert.equal(actionTypeForFinding(undefined, scenario), null);
+  assert.equal(actionTypeForFinding({ suggested_next_step: "clear_disk" }, scenario), "clear_disk");
+  assert.equal(actionTypeForFinding({ suggested_next_step: "rollback" }, scenario), null);
 });

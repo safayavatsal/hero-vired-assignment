@@ -66,13 +66,17 @@ class WorkflowService:
                     recovered += 1
         return recovered
 
-    def create_page(self, incident_id: UUID, responder: str | None, fallback: str | None, deadline_seconds: int) -> dict[str, Any]:
+    def create_page(self, incident_id: UUID, responder: str | None, fallback: str | None,
+                    deadline_seconds: int, recipient_email: str | None = None, notify: bool = True) -> dict[str, Any]:
         incident = self._incident(incident_id)
         ownership = self.ownership_gateway.resolve(incident["service"], incident["severity"])
         responder = responder or (ownership or {}).get("responder") or "primary-oncall"
         fallback = fallback or (ownership or {}).get("fallback_responder") or "secondary-oncall"
+        recipient_email = recipient_email or (ownership or {}).get("responder_email")
         now = datetime.now(timezone.utc)
         deadline = now + timedelta(seconds=deadline_seconds)
+        status = "delivered" if notify else "acknowledged"
+        response_type = None if notify else "acknowledge"
         with psycopg.connect(self.database_url, row_factory=dict_row) as connection:
             existing = connection.execute(
                 "SELECT * FROM pages WHERE incident_id = %s AND level = 'primary'", (incident_id,)
@@ -85,25 +89,29 @@ class WorkflowService:
                 "page_id": str(page_id), "incident_id": str(incident_id), "responder": responder,
                   "fallback_responder": fallback, "service": incident["service"],
                   "summary": incident["summary"], "severity": incident["severity"],
-                  "responder_email": (ownership or {}).get("responder_email"),
+                  "responder_email": recipient_email,
                 **page_context,
-            })
+            }) if notify else None
             connection.execute(
                 """INSERT INTO pages
-                (id, incident_id, level, responder, fallback_responder, status, deadline_at, created_at, updated_at, incident_version)
-                VALUES (%s, %s, 'primary', %s, %s, 'delivered', %s, %s, %s, %s)""",
-                (page_id, incident_id, responder, fallback, deadline, now, now, incident["version"]),
+                (id, incident_id, level, responder, fallback_responder, status, deadline_at, response_type,
+                 recipient_email, created_at, updated_at, incident_version)
+                VALUES (%s, %s, 'primary', %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                (page_id, incident_id, responder, fallback, status, deadline, response_type, recipient_email, now, now, incident["version"]),
             )
-            connection.execute(
-                """INSERT INTO page_delivery_attempts
-                (id, page_id, attempt_number, status, external_id, created_at)
-                VALUES (%s, %s, 1, %s, %s, %s)""",
-                (uuid4(), page_id, "delivered", delivery.get("id") if delivery else None, now),
-            )
-            timeline = {"page_id": str(page_id), "responder": responder}
-            if delivery and delivery.get("id"):
-                timeline["delivery_id"] = delivery["id"]
-            self._timeline(connection, incident_id, "page_delivered", timeline)
+            if notify:
+                connection.execute(
+                    """INSERT INTO page_delivery_attempts
+                    (id, page_id, attempt_number, status, external_id, created_at)
+                    VALUES (%s, %s, 1, %s, %s, %s)""",
+                    (uuid4(), page_id, 1, "delivered", delivery.get("id") if delivery else None, now),
+                )
+                timeline = {"page_id": str(page_id), "responder": responder}
+                if delivery and delivery.get("id"):
+                    timeline["delivery_id"] = delivery["id"]
+                self._timeline(connection, incident_id, "page_delivered", timeline)
+            else:
+                self._timeline(connection, incident_id, "page_claimed", {"page_id": str(page_id), "responder": responder})
             return {"duplicate": False, "page": self._get_page(connection, page_id)}
 
     @staticmethod

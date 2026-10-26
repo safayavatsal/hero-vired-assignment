@@ -100,6 +100,8 @@ Open `http://localhost:8000`, run one guided incident workflow, and use the stor
 
 The workflow strip is sequential: investigation comes first, responder work unlocks after a finding, and action controls unlock after acknowledgement. `Verified` appears only after service-state verification succeeds.
 
+For the human-owned remediation path, start an investigation and wait for the finding before choosing an action. In step 2, enter an owner email and choose `Notify service owner`, or choose `I’ll take ownership` to acknowledge locally without delivery. In step 3, review the projected state and choose `Approve and queue ...`; there is no separate queue click. After the worker completes, the observed before/after state remains visible while `Verify service state` re-checks and closes the incident.
+
 For an in-cluster backend suite without pytest cache permission warnings:
 
 ```bash

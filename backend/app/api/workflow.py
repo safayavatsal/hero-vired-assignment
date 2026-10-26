@@ -15,6 +15,8 @@ workflow_service = WorkflowService()
 class PageRequest(BaseModel):
     responder: str | None = Field(default=None, min_length=1)
     fallback_responder: str | None = Field(default=None, min_length=1)
+    responder_email: str | None = Field(default=None, min_length=3, max_length=254, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    notify: bool = True
     deadline_seconds: int = Field(default=300, ge=1, le=3600)
 
 
@@ -50,7 +52,14 @@ class ActionDecision(BaseModel):
 def create_page(incident_id: UUID, request: PageRequest,
                 _principal: Principal = Depends(require_role("responder"))) -> dict[str, Any]:
     try:
-        return workflow_service.create_page(incident_id, request.responder, request.fallback_responder, request.deadline_seconds)
+        return workflow_service.create_page(
+            incident_id,
+            request.responder,
+            request.fallback_responder,
+            request.deadline_seconds,
+            request.responder_email,
+            request.notify,
+        )
     except Exception as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 

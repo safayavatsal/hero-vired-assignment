@@ -494,10 +494,4 @@ class SimulatorService:
             "controls": definition.controls,
             "runbook": list(definition.runbook),
         }
-        if definition.finding:
-            public["finding"] = {
-                "metric": definition.finding["metric"],
-                "category": definition.finding["category"],
-                "suggested_next_step": definition.finding["suggested_next_step"],
-            }
         return public
