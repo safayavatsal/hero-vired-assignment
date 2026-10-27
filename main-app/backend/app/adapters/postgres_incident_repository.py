@@ -1,4 +1,3 @@
-import json
 import os
 from datetime import datetime, timezone
 from typing import Any
@@ -9,6 +8,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 from app.domain.incident import Alert, INCIDENT_TRANSITIONS
+from app.application.serialization import json_safe
 
 
 DATABASE_URL = os.getenv(
@@ -112,7 +112,7 @@ class PostgresIncidentRepository:
                     alert.id, alert.incident_id, alert.source_event_id, alert.fingerprint,
                     alert.source, alert.service, alert.severity, alert.alert_type,
                     Jsonb(alert.labels), alert.description, alert.lifecycle,
-                    alert.source_time, alert.received_time, Jsonb(_json_safe(alert.raw_payload)),
+                    alert.source_time, alert.received_time, Jsonb(json_safe(alert.raw_payload)),
                 ),
             )
             latest_alert = connection.execute(
@@ -154,7 +154,7 @@ class PostgresIncidentRepository:
                 """,
                 (
                     uuid4(), alert.incident_id, alert.source_time, alert.received_time, sequence,
-                    Jsonb(_json_safe({"alert_id": str(alert.id), "source_event_id": alert.source_event_id,
+                    Jsonb(json_safe({"alert_id": str(alert.id), "source_event_id": alert.source_event_id,
                                       "fingerprint": alert.fingerprint, "lifecycle": alert.lifecycle,
                                       "raw_payload": alert.raw_payload})),
                 ),
@@ -249,7 +249,7 @@ class PostgresIncidentRepository:
                 (id, incident_id, event_type, event_time, received_time, sequence_number, payload)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
                 """,
-                (uuid4(), incident_id, event_type, now, now, sequence, Jsonb(_json_safe(payload))),
+                (uuid4(), incident_id, event_type, now, now, sequence, Jsonb(json_safe(payload))),
             )
             connection.commit()
 
@@ -286,7 +286,6 @@ class PostgresIncidentRepository:
             "version": row["version"], "alert_count": row.get("alert_count", 0),
             "updated_at": row["updated_at"].isoformat(),
         }
-
     @staticmethod
     def _alert(row: dict[str, Any]) -> dict[str, Any]:
         return {
@@ -297,7 +296,3 @@ class PostgresIncidentRepository:
             "lifecycle": row["lifecycle"], "source_time": row["source_time"].isoformat(),
             "received_time": row["received_time"].isoformat(), "raw_payload": row["raw_payload"],
         }
-
-
-def _json_safe(value: Any) -> Any:
-    return json.loads(json.dumps(value, default=lambda item: item.isoformat() if isinstance(item, datetime) else str(item)))

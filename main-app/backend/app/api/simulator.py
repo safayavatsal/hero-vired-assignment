@@ -1,11 +1,12 @@
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Query
 from pydantic import BaseModel, Field
 
 from app.application.simulator import simulator_service
 from app.application.incident import alert_pipeline_service
+from app.api.errors import map_error
 
 
 router = APIRouter(prefix="/api/v1/simulator", tags=["simulator"])
@@ -43,13 +44,11 @@ def list_scenarios() -> list[dict[str, Any]]:
 
 
 @router.post("/scenarios")
+@map_error(404)
 def select_scenario(request: ScenarioRequest) -> dict[str, Any]:
-    try:
-        if request.definition is not None:
-            simulator_service.register_scenario(request.scenario_id, request.definition)
-        return simulator_service.select_scenario(request.scenario_id)
-    except ValueError as error:
-        raise HTTPException(status_code=404, detail=str(error)) from error
+    if request.definition is not None:
+        simulator_service.register_scenario(request.scenario_id, request.definition)
+    return simulator_service.select_scenario(request.scenario_id)
 
 
 @router.post("/reset")
@@ -68,46 +67,38 @@ def set_failure_controls(request: FailureControlRequest) -> dict[str, Any]:
 
 
 @router.post("/alerts")
+@map_error(400)
 def trigger_alert(request: AlertRequest) -> dict[str, Any]:
-    try:
-        result = simulator_service.trigger_alert(
-            request.scenario_id,
-            request.duplicate_count,
-            request.late,
-            request.flapping,
-            request.out_of_order,
-            request.delayed_seconds,
-        )
-        result["accepted"] = [alert_pipeline_service.accept(delivery) for delivery in result["deliveries"]]
-        return result
-    except ValueError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    result = simulator_service.trigger_alert(
+        request.scenario_id,
+        request.duplicate_count,
+        request.late,
+        request.flapping,
+        request.out_of_order,
+        request.delayed_seconds,
+    )
+    result["accepted"] = [alert_pipeline_service.accept(delivery) for delivery in result["deliveries"]]
+    return result
 
 
 @router.get("/evidence")
+@map_error(400)
 def query_evidence(source_type: str = Query(...)) -> dict[str, Any]:
-    try:
-        return simulator_service.query_evidence(source_type)
-    except ValueError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    return simulator_service.query_evidence(source_type)
 
 
 @router.post("/actions")
+@map_error(400)
 def execute_action(request: ActionRequest) -> dict[str, Any]:
-    try:
-        return simulator_service.execute_action(
-            request.action_type,
-            request.target,
-            request.parameters,
-            request.idempotency_key,
-        )
-    except ValueError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    return simulator_service.execute_action(
+        request.action_type,
+        request.target,
+        request.parameters,
+        request.idempotency_key,
+    )
 
 
 @router.post("/actions/{action_id}/verify")
+@map_error(404)
 def verify_action(action_id: UUID) -> dict[str, Any]:
-    try:
-        return simulator_service.verify_action(action_id)
-    except ValueError as error:
-        raise HTTPException(status_code=404, detail=str(error)) from error
+    return simulator_service.verify_action(action_id)

@@ -1,4 +1,3 @@
-import json
 import os
 from datetime import datetime
 from typing import Any
@@ -7,6 +6,8 @@ from uuid import UUID, uuid4
 import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
+
+from app.application.serialization import json_safe
 
 
 DATABASE_URL = os.getenv(
@@ -40,10 +41,10 @@ class PostgresInvestigationRepository:
                     result["scenario_id"],
                     datetime.fromisoformat(result["generated_at"]),
                     result["model_status"], result.get("model_error"),
-                    Jsonb(_json_safe(result["model_analysis"])) if result.get("model_analysis") else None,
+                    Jsonb(json_safe(result["model_analysis"])) if result.get("model_analysis") else None,
                     result.get("prompt_version", "investigation-v1"),
-                    Jsonb(_json_safe(result.get("tool_trace", []))),
-                    Jsonb(_json_safe(result.get("model_telemetry", {}))),
+                    Jsonb(json_safe(result.get("tool_trace", []))),
+                    Jsonb(json_safe(result.get("model_telemetry", {}))),
                 ),
             )
             for evidence in result["evidence"]:
@@ -55,10 +56,10 @@ class PostgresInvestigationRepository:
                     """,
                     (
                         evidence["id"], investigation_id, evidence["source_type"],
-                        evidence.get("query", ""), Jsonb(_json_safe(evidence.get("parameters") or {})),
+                        evidence.get("query", ""), Jsonb(json_safe(evidence.get("parameters") or {})),
                         evidence["availability"], datetime.fromisoformat(evidence["observed_at"]),
                         datetime.fromisoformat(result["generated_at"]), evidence.get("duration_ms"), evidence.get("error"),
-                        Jsonb(_json_safe(evidence["items"])),
+                        Jsonb(json_safe(evidence["items"])),
                     ),
                 )
             for finding in result["findings"]:
@@ -118,11 +119,6 @@ class PostgresInvestigationRepository:
                     "evidence_ids": row["evidence_ids"], "uncertainty": row["uncertainty"],
                 } for row in findings],
             }
-
-
-def _json_safe(value: Any) -> Any:
-    return json.loads(json.dumps(value, default=lambda item: item.isoformat() if isinstance(item, datetime) else str(item)))
-
 
 def prompt_contract_hash() -> str:
     from app.application.investigation import InvestigationService

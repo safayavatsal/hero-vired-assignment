@@ -2,10 +2,11 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 from app.application.incident import alert_pipeline_service
+from app.api.errors import map_error
 
 
 router = APIRouter(prefix="/api/v1", tags=["incidents"])
@@ -40,27 +41,20 @@ def list_incidents() -> list[dict[str, Any]]:
 
 
 @router.get("/incidents/{incident_id}")
+@map_error(404)
 def get_incident(incident_id: UUID) -> dict[str, Any]:
-    try:
-        return alert_pipeline_service.get_incident(incident_id)
-    except ValueError as error:
-        raise HTTPException(status_code=404, detail=str(error)) from error
+    return alert_pipeline_service.get_incident(incident_id)
 
 
 @router.get("/incidents/{incident_id}/timeline")
+@map_error(404)
 def get_timeline(incident_id: UUID) -> list[dict[str, Any]]:
-    try:
-        return alert_pipeline_service.get_timeline(incident_id)
-    except ValueError as error:
-        raise HTTPException(status_code=404, detail=str(error)) from error
+    return alert_pipeline_service.get_timeline(incident_id)
 
 
 @router.post("/incidents/{incident_id}/status")
+@map_error(lambda error: 404 if str(error) == "incident not found" else 409)
 def transition_incident(incident_id: UUID, request: IncidentTransition) -> dict[str, Any]:
-    try:
-        return alert_pipeline_service.transition(
-            incident_id, request.target_status, request.expected_version
-        )
-    except ValueError as error:
-        status_code = 404 if str(error) == "incident not found" else 409
-        raise HTTPException(status_code=status_code, detail=str(error)) from error
+    return alert_pipeline_service.transition(
+        incident_id, request.target_status, request.expected_version
+    )

@@ -1,12 +1,13 @@
 from typing import Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
 from app.application.incident import investigation_service
 from app.application.evidence_tools import evidence_tool_catalog
 from app.application.auth import Principal, require_role
+from app.api.errors import map_error
 
 
 router = APIRouter(prefix="/api/v1", tags=["investigations"])
@@ -18,13 +19,10 @@ class InvestigationRequest(BaseModel):
 
 
 @router.post("/incidents/{incident_id}/investigate")
+@map_error(lambda error: 404 if str(error) == "incident not found" else 409)
 def investigate(incident_id: UUID, request: InvestigationRequest,
                 _principal: Principal = Depends(require_role("responder"))) -> dict[str, Any]:
-    try:
-        return investigation_service.enqueue(incident_id, request.scenario_id, request.mode)
-    except ValueError as error:
-        status_code = 404 if str(error) == "incident not found" else 409
-        raise HTTPException(status_code=status_code, detail=str(error)) from error
+    return investigation_service.enqueue(incident_id, request.scenario_id, request.mode)
 
 
 @router.get("/investigation-tools")
@@ -33,8 +31,6 @@ def list_investigation_tools() -> dict[str, Any]:
 
 
 @router.get("/incidents/{incident_id}/evidence")
+@map_error(404)
 def get_investigation(incident_id: UUID) -> dict[str, Any]:
-    try:
-        return investigation_service.get_status(incident_id)
-    except ValueError as error:
-        raise HTTPException(status_code=404, detail=str(error)) from error
+    return investigation_service.get_status(incident_id)

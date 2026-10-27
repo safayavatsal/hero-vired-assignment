@@ -1,9 +1,10 @@
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 from app.application.kubernetes_analyzers import analyze_resources, analyzer_catalog
+from app.api.errors import map_error
 
 
 router = APIRouter(prefix="/api/v1/kubernetes", tags=["kubernetes"])
@@ -24,15 +25,13 @@ def list_analyzers() -> dict[str, Any]:
 
 
 @router.post("/analyze")
+@map_error(400)
 def analyze(request: KubernetesAnalysisRequest) -> dict[str, Any]:
-    try:
-        return analyze_resources(
-            request.resources,
-            namespace=request.namespace,
-            resource_type=request.resource_type,
-            resource_name=request.resource_name,
-            labels=request.labels,
-            analyzer_names=request.analyzers,
-        )
-    except ValueError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+    return analyze_resources(
+        request.resources,
+        namespace=request.namespace,
+        resource_type=request.resource_type,
+        resource_name=request.resource_name,
+        labels=request.labels,
+        analyzer_names=request.analyzers,
+    )
